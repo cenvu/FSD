@@ -1,0 +1,23 @@
+     2        0 drwxr-xr-x   17 cenvu            staff                 544 Jul 25 18:18 /Volumes/apfsx_vol
+    27        0 lrwxr-xr-x    1 cenvu            staff                  14 Jul 25 18:18 /Volumes/apfsx_vol/symlink_broken -> does_not_exist
+    35        8 -rw-r--r--    1 cenvu            staff                   6 Jul 25 18:18 /Volumes/apfsx_vol/REPORT.TXT
+    33        0 -rw-r--r--    1 cenvu            staff             1048576 Jul 25 18:18 /Volumes/apfsx_vol/sparse.bin
+    21        0 drwxr-xr-x    2 cenvu            staff                  64 Jul 25 18:18 /Volumes/apfsx_vol/empty_dir
+    16        0 drwxr-xr-x    3 cenvu            staff                  96 Jul 25 18:18 /Volumes/apfsx_vol/deep
+    17        0 drwxr-xr-x    3 cenvu            staff                  96 Jul 25 18:18 /Volumes/apfsx_vol/deep/a
+    18        0 drwxr-xr-x    3 cenvu            staff                  96 Jul 25 18:18 /Volumes/apfsx_vol/deep/a/b
+    19        0 drwxr-xr-x    2 cenvu            staff                  64 Jul 25 18:18 /Volumes/apfsx_vol/deep/a/b/c
+    24        0 drwxr-xr-x    3 cenvu            staff                  96 Jul 25 18:18 /Volumes/apfsx_vol/app.app
+    25        0 -rw-r--r--    1 cenvu            staff                   0 Jul 25 18:18 /Volumes/apfsx_vol/app.app/Contents
+    32        0 -rw-r--r--    1 cenvu            staff                   0 Jul 25 18:18 /Volumes/apfsx_vol/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.txt
+    22        8 -rw-r--r--    1 cenvu            staff                  12 Jul 25 12:00 /Volumes/apfsx_vol/regular_file.txt
+    26        0 lrwxr-xr-x    1 cenvu            staff                  16 Jul 25 18:18 /Volumes/apfsx_vol/symlink_valid -> regular_file.txt
+    31        8 -rw-r--r--    1 cenvu            staff                   3 Jul 25 18:18 /Volumes/apfsx_vol/café_NFD.txt
+    28        0 drwx------    5 cenvu            staff                 160 Jul 25 18:18 /Volumes/apfsx_vol/.fseventsd
+    29        8 -rw-------    1 cenvu            staff                  36 Jul 25 18:18 /Volumes/apfsx_vol/.fseventsd/fseventsd-uuid
+    37        8 -rw-------    1 cenvu            staff                  75 Jul 25 18:18 /Volumes/apfsx_vol/.fseventsd/ffba0106c84afadb
+    36        8 -rw-------    1 cenvu            staff                 332 Jul 25 18:18 /Volumes/apfsx_vol/.fseventsd/ffba0106c84afada
+    30        8 -rw-r--r--    1 cenvu            staff                   3 Jul 25 18:18 /Volumes/apfsx_vol/café_NFC.txt
+    20        0 -rw-r--r--    1 cenvu            staff                   0 Jul 25 18:18 /Volumes/apfsx_vol/empty_file
+    23        8 -rw-r--r--    1 cenvu            staff                   7 Jul 25 18:18 /Volumes/apfsx_vol/.hidden_file
+    34        8 -rw-r--r--    1 cenvu            staff                   6 Jul 25 18:18 /Volumes/apfsx_vol/Report.txt

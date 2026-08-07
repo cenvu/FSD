@@ -1,0 +1,34 @@
+fsextinfo 20260201
+
+Extended File System information:
+
+Volume information:
+	File system			: ext4
+	Label				: 
+	Compatible features		: 0x0000103c
+		Has journal (EXT3_FEATURE_COMPAT_HAS_JOURNAL)
+		Have extended inode attributes (EXT2_FEATURE_COMPAT_EXT_ATTR)
+		Resizable volume (EXT2_FEATURE_COMPAT_RESIZE_INO)
+		Use directory hash index (EXT2_FEATURE_COMPAT_DIR_INDEX)
+		Has orphan file (EXT4_FEATURE_COMPAT_ORPHAN_FILE)
+
+	Incompatible features		: 0x000022c2
+		Has directory type (EXT2_FEATURE_INCOMPAT_FILETYPE)
+		Has extents (EXT4_FEATURE_INCOMPAT_EXTENTS)
+		Has 64-bit support (EXT4_FEATURE_INCOMPAT_64BIT)
+		Has flexible block groups (EXT4_FEATURE_INCOMPAT_FLEX_BG)
+		Has metadata checksum seed (EXT4_FEATURE_INCOMPAT_CSUM_SEED)
+
+	Read-only compatible features	: 0x0000046b
+		Has sparse superblocks and group descriptor tables (EXT2_FEATURE_RO_COMPAT_SPARSE_SUPER)
+		Contains large files (EXT2_FEATURE_RO_COMPAT_LARGE_FILE)
+		(EXT4_FEATURE_RO_COMPAT_HUGE_FILE)
+		(EXT4_FEATURE_RO_COMPAT_DIR_NLINK)
+		(EXT4_FEATURE_RO_COMPAT_EXTRA_ISIZE)
+		Has metadata checksums (EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)
+
+	Number of inodes		: 16384
+	Last mount path			: 
+	Last mount time			: Not set (0)
+	Last written time		: Jul 25, 2026 08:58:07 UTC
+

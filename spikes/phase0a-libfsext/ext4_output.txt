@@ -1,0 +1,19 @@
+Successfully opened volume: fixtures/valid_ext4.img
+Filesystem format version: 4
+ENTRY: path='/', type=dir, inode=2, size=0, mode=40755, uid=0, gid=0
+ENTRY: path='//lost+found', type=dir, inode=11, size=0, mode=40700, uid=0, gid=0
+ENTRY: path='//case_file.txt', type=file, inode=13, size=6, mode=100644, uid=501, gid=20
+ENTRY: path='//empty_dir', type=dir, inode=14, size=0, mode=40755, uid=501, gid=20
+ENTRY: path='//empty_file', type=file, inode=15, size=0, mode=100644, uid=501, gid=20
+ENTRY: path='//long_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', type=file, inode=16, size=0, mode=100644, uid=501, gid=20
+ENTRY: path='//nested', type=dir, inode=17, size=0, mode=40755, uid=501, gid=20
+ENTRY: path='//nested/dir1', type=dir, inode=18, size=0, mode=40755, uid=501, gid=20
+ENTRY: path='//nested/dir1/dir2', type=dir, inode=19, size=0, mode=40755, uid=501, gid=20
+ENTRY: path='//regular_file.txt', type=file, inode=20, size=12, mode=100644, uid=501, gid=20
+ENTRY: path='//sparse_file', type=file, inode=21, size=1048577, mode=100644, uid=501, gid=20
+ENTRY: path='//symlink_broken', type=symlink, inode=22, size=11, mode=120755, uid=501, gid=20
+  -> SYMLINK TARGET: 'nonexistent'
+ENTRY: path='//symlink_good', type=symlink, inode=23, size=16, mode=120755, uid=501, gid=20
+  -> SYMLINK TARGET: 'regular_file.txt'
+ENTRY: path='//유니코드_파일.txt', type=file, inode=24, size=8, mode=100644, uid=501, gid=20
+ENTRY: path='//', type=file, inode=25, size=12, mode=100644, uid=0, gid=0

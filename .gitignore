@@ -1,0 +1,81 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Xcode
+DerivedData/
+.gemini-derived-data/
+.benchmark-derived-data/
+build/
+*.xcuserstate
+xcuserdata/
+*.xccheckout
+*.xcscmblueprint
+*.xcactivitylog
+*.xcresult/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# Local databases and runtime data
+*.sqlite
+*.sqlite3
+*.sqlite-shm
+*.sqlite-wal
+*.db
+*.db-shm
+*.db-wal
+Runtime/
+Reports/
+Exports/
+
+# Profiling, logs, caches, and temporary files
+*.profraw
+*.profdata
+*.trace
+*.log
+*.tmp
+*.temp
+.cache/
+__pycache__/
+*.pyc
+.codegraph/
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+Config.local.*
+
+# Local agent scratch state
+.agent/
+.ai-scratch/
+.claude/scheduled_tasks.lock
+
+# Generated disk-image and raw-device feasibility fixtures
+**/fixtures/**/*.img
+**/fixtures/**/*.dmg
+**/fixtures/**/*.raw
+
+# Native/autotools build products from feasibility spikes
+**/.deps/
+**/.libs/
+*.o
+*.lo
+*.la
+*.a
+*.so
+*.dylib
+*.dSYM/
+spikes/phase0a-libfsext/phase0a_libfsext_spike
+spikes/phase0a-libfsext/libfsext-release/**/Makefile
+spikes/phase0a-libfsext/libfsext-release/config.log
+spikes/phase0a-libfsext/libfsext-release/config.status
+spikes/phase0a-libfsext/libfsext-release/libfsext.pc
+spikes/phase0a-libfsext/libfsext-release/libfsext.spec
+spikes/phase0a-libfsext/libfsext-release/fsexttools/fsextinfo
+spikes/phase0a-libfsext/libfsext-release/fsexttools/fsextmount
+spikes/phase0a-native-applefs/spike
+spikes/phase0a-native-applefs/fixtures/spike

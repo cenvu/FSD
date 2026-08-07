@@ -1,0 +1,1896 @@
+= Extended File System
+Analysis of the Linux ext file systems
+
+:toc:
+:toclevels: 4
+
+:numbered!:
+[abstract]
+== Summary
+
+The Extended File System (ext) is one of the more common file system used in
+Linux.
+
+This document is intended as a working document for the ext file system format.
+Which should allow existing Open Source forensic tooling to be able to process
+this type of file system.
+
+[preface]
+== Document information
+
+[cols="1,5"]
+|===
+| Author(s): | Joachim Metz <joachim.metz@gmail.com>
+| Abstract: | This document contains information about the Extended File System (ext)
+| Classification: | Public
+| Keywords: | Extended File System, ext
+|===
+
+[preface]
+== License
+
+....
+Copyright (C) 2010-2024, Joachim Metz <joachim.metz@gmail.com>.
+Permission is granted to copy, distribute and/or modify this document under the
+terms of the GNU Free Documentation License, Version 1.3 or any later version
+published by the Free Software Foundation; with no Invariant Sections, no
+Front-Cover Texts, and no Back-Cover Texts. A copy of the license is included
+in the section entitled "GNU Free Documentation License".
+....
+
+[preface]
+== Revision history
+
+[cols="1,1,1,5",options="header"]
+|===
+| Version | Author | Date | Comments
+| 0.0.1 | J.B. Metz | October 2010 | Initial version, based on earlier notes.
+| 0.0.2 | J.B. Metz | June 2014 | License and email changes.
+| 0.0.3 | J.B. Metz | May 2015 | Switched to asccidoc format.
+| 0.0.4 | J.B. Metz | May 2015 | Additional information.
+| 0.0.5 | J.B. Metz | October 2017 | Additional information.
+| 0.0.6 | J.B. Metz | January 2018 | Textual changes.
+| 0.0.7 | J.B. Metz | May 2018 | Additional information about format.
+| 0.0.8 | J.B. Metz | July 2020 | Additional information about format.
+| 0.0.9 | J.B. Metz | August 2020 | Additional information about format.
+| 0.0.10 | J.B. Metz | February 2021 | Additional information about format.
+| 0.0.11 | J.B. Metz | April 2021 | Additional information about read-only compatibility flags.
+| 0.0.12 | J.B. Metz | July 2021 | Additional information about extended attributes.
+| 0.0.13 | J.B. Metz | February 2022 | Additional information about read-only compatibility flags.
+| 0.0.14 | J.B. Metz | May 2022 | Additional information about device number.
+| 0.0.15 | J.B. Metz | May 2023 | Additional information about extended attribute.
+| 0.0.16 | J.B. Metz | August 2023 | Additional information about meta block groups.
+| 0.0.17 | J.B. Metz | March 2024 | Additional information about orphan file feature.
+|===
+
+:numbered:
+== Overview
+
+The Extended File System (ext) is one of the more common file system used in
+Linux.
+
+[cols="1,5",options="header"]
+|===
+| Characteristics | Description
+| Byte order | little-endian
+| Date and time values | number of seconds (ext2, ext3, ext4) or nanoseconds (ext4 with extra precision) since January 1, 1970 00:00:00 UTC (POSIX epoch), disregarding leap seconds
+| Character strings | UTF-8
+|===
+
+[yellow-background]*TODO: determine if older versions contained date and time values in local time*
+[yellow-background]*TODO: determine if older versions contained character strings in ASCII with codepage*
+
+=== Versions
+
+There are multiple version of ext.
+
+[cols="1,5",options="header"]
+|===
+| Version | Remarks
+| 1 | April 1992
+| 2 | January 1993
+| 3 | November 2001 +
+Introduced journal, dynamic growth, large directory indexing (HTree)
+| 4 | October 2006 (unstable), October 2008 (stable) +
+Introduced extents, improved timestamps
+|===
+
+=== Test version
+
+The following version of programs were used to test the information within this
+document:
+
+* Linux mke2fs 1.42.9
+
+== Terminology
+
+[yellow-background]*TODO: add text*
+
+== The volume
+
+An ext volume consists of:
+
+* one or more block groups
+
+=== Block group
+
+A block group consists of:
+
+* optional 1024 bytes of boot code or zero bytes (at offset: 0)
+* optional superblock
+* optional group descriptor table
+* block bitmap
+* inode bitmap
+* allocated and unallocated blocks
+
+The primary superblock is stored at offset 1024 relative from the start of the
+volume. Backup superblocks are stored at offset 1024 relative from the start of
+the block group if block size <= 1024 or otherwise at offset 0 from the start
+of the block group.
+
+The group descriptor table is stored in the block after the superblock.
+
+The ext2 revision 0 stores a copy at the start of every block group, along with
+backups of the group descriptor table. Later revisions can reduce the number of
+backup copies by only putting backups in specific groups (sparse superblock
+feature EXT2_FEATURE_RO_COMPAT_SPARSE_SUPER).
+
+[NOTE]
+Not all values in a backup superblock and backup group descriptor tables
+always match those of the primary superblock and group descriptor table.
+
+=== Flex block groups
+
+Flex (or flexible) block groups are a set of block groups that treated as
+a single logical block group. Metadata such as the superblock, group
+descriptors, data block bitmaps spans the entire logical block group and
+not the individual block groups part of the set.
+
+=== Meta block groups
+
+Meta block groups (META_BG) are a set (or cluster) of block groups, for which
+its group descriptor structures can be stored in a single block.
+
+The first meta block group value in the superblock indicates what the first
+meta block group is to cluster as a meta block group. For example if the first
+meta block group value is 256, and the number of group descriptors that can be
+stored in a single block 64, then the group descriptors for the block groups
+`[0, 16383]` are stored in the group descriptor table after the primary
+superblock and corresponding locations of backups.
+
+Successive group descriptor tables, for example `[16384, 16447]`, are stored in
+the first block group of a meta block group and backups in the second and last
+block groups of the meta block group.
+
+=== Blocks
+
+The volume is devided in blocks:
+
+....
+block offset = block number x block size
+....
+
+The block size is defined in the superblock.
+
+== The superblock
+
+=== The ext2 and ext3 superblock
+
+The ext2 and ext3 superblock is 454 bytes of size and consists of:
+
+[cols="1,1,1,5",options="header"]
+|===
+| Offset | Size | Value | Description
+| 0 | 4 | | Number of inodes
+| 4 | 4 | | Number of blocks
+| 8 | 4 | | Number of reserved blocks +
+These are used to prevent the file system from filling up
+| 12 | 4 | | Number of unallocated blocks
+| 16 | 4 | | Number of unallocated inodes
+| 20 | 4 | | First data block number +
+Value contains the block number relative from the start of the volume
+| 24 | 4 | | Block size +
+Contains the number of bits to shift 1024 to the MSB (left)
+| 28 | 4 | | Fragment size +
+Contains the number of bits to shift 1024 to the MSB (left)
+| 32 | 4 | | Number of blocks per block group
+| 36 | 4 | | Number of fragments per block group
+| 40 | 4 | | Number of inodes per block group
+| 44 | 4 | | Last mount time +
+Contains POSIX timestamp
+| 48 | 4 | | Last written time +
+Contains POSIX timestamp +
+[yellow-background]*Superblock last written?*
+| 52 | 2 | | (current) mount count
+| 54 | 2 | | Maximum mount count
+| 56 | 2 | 0x53 0xef | Signature
+| 58 | 2 | | File system state flags +
+See section: <<file_system_state_flags,File system state flags>>
+| 60 | 2 | | Error-handling status +
+See section: <<error_handling_status,Error-handling status>>
+| 62 | 2 | | Minor format revision
+| 64 | 4 | | Last consistency check time +
+Contains POSIX timestamp
+| 68 | 4 | | Consistency check interval +
+Contains POSIX timestamp
+| 72 | 4 | | Creator operating system +
+See section: <<creator_operating_system,Creator operating system>>
+| 76 | 4 | | Format revision +
+See section: <<format_revisision,Format revision>>
+| 80 | 2 | | Reserved block owner (or user) identifier (UID)
+| 82 | 2 | | Reserved block group identifier (GID)
+4+| _Dynamic inode information_ +
+_If major version is EXT2_DYNAMIC_REV_
+| 84 | 4 | | First non-reserved inode
+| 88 | 2 | | Inode size +
+The inode size must be a power of 2 larger or equal to 128, the maximum supported by mke2fs is 1024
+| 90 | 2 | | Block group +
+Contains a block group number
+| 92 | 4 | | Compatible features flags +
+See section: <<compatible_features_flags,Compatible features flags>>
+| 96 | 4 | | Incompatible features flags +
+See section: <<incompatible_features_flags,Incompatible features flags>>
+| 100 | 4 | | Read-only compatible features flags +
+See section: <<read_only_compatible_features_flags,Read-only compatible features flags>>
+| 104 | 16 | | File system identifier +
+Contains UUID that is stored in big-endian
+| 120 | 16 | | Volume (label) name +
+Contains an UTF-8 string ([yellow-background]*is this ASCII with a codepage on older systems?*)
+| 136 | 64 | | Last mount path +
+Contains an UTF-8 string ([yellow-background]*is this ASCII with a codepage on older systems?*)
+| 200 | 4 | | Algorithm usage bitmap
+4+| _Performance hints_ +
+_If EXT2_COMPAT_PREALLOC is set_
+| 204 | 1 | | Number of pre-allocated blocks per file
+| 205 | 1 | | Number of pre-allocated blocks per directory
+| 206 | 2 | | [yellow-background]*Unknown (padding)*
+4+| _Journalling support_ +
+_If EXT3_FEATURE_COMPAT_HAS_JOURNAL is set_
+| 208 | 16 | | Journal identifier +
+Contains UUID that is stored in big-endian
+| 224 | 4 | | Journal inode
+| 228 | 4 | | Journal device +
+[yellow-background]*What does this value contain?*
+| 232 | 4 | | Orphan inode list head +
+The orphan inode list is a list of inodes to delete +
+[yellow-background]*What does this value contain?*
+| 236 | 4 x 4 | | hash-tree seed
+| 252 | 1 | | Default hash version
+| 253 | 3 | | [yellow-background]*Unknown (padding)*
+| 256 | 4 | | Default mount options
+| 260 | 4 | | First metadata block group (or metablock) +
+Contains a block group number
+| 264 | 190 | | [yellow-background]*Unknown (reserved)*
+|===
+
+=== The ext4 superblock
+
+The superblock is 1024 bytes of size and consists of:
+
+[cols="1,1,1,5",options="header"]
+|===
+| Offset | Size | Value | Description
+| 0 | 4 | | Number of inodes
+| 4 | 4 | | Number of blocks +
+Contains the lower 32-bit of the value if 64-bit support (EXT4_FEATURE_INCOMPAT_64BIT) is enabled
+| 8 | 4 | | Number of reserved blocks +
+Contains the lower 32-bit of the value if 64-bit support (EXT4_FEATURE_INCOMPAT_64BIT) is enabled +
+These are used to prevent the file system from filling up
+| 12 | 4 | | Number of unallocated blocks +
+Contains the lower 32-bit of the value if 64-bit support (EXT4_FEATURE_INCOMPAT_64BIT) is enabled
+| 16 | 4 | | Number of unallocated inodes +
+Contains the lower 32-bit of the value if 64-bit support (EXT4_FEATURE_INCOMPAT_64BIT) is enabled
+| 20 | 4 | | Root group block number +
+Value contains the block number relative from the start of the volume
+| 24 | 4 | | Block size +
+Contains the number of bits to shift 1024 to the MSB (left)
+| 28 | 4 | | Fragment size +
+Contains the number of bits to shift 1024 to the MSB (left)
+| 32 | 4 | | Number of blocks per block group
+| 36 | 4 | | Number of fragments per block group
+| 40 | 4 | | Number of inodes per block group
+| 44 | 4 | | Last mount time +
+Contains POSIX timestamp
+| 48 | 4 | | Last written time +
+Contains POSIX timestamp +
+[yellow-background]*Superblock last written?*
+| 52 | 2 | | (current) mount count
+| 54 | 2 | | Maximum mount count
+| 56 | 2 | 0x53 0xef | Signature
+| 58 | 2 | | File system state flags +
+See section: <<file_system_state_flags,File system state flags>>
+| 60 | 2 | | Error-handling status +
+See section: <<error_handling_status,Error-handling status>>
+| 62 | 2 | | Minor format revision
+| 64 | 4 | | Last consistency check time +
+Contains POSIX timestamp
+| 68 | 4 | | Consistency check interval +
+Contains POSIX timestamp
+| 72 | 4 | | Creator operating system +
+See section: <<creator_operating_system,Creator operating system>>
+| 76 | 4 | | Format revision +
+See section: <<format_revisision,Format revision>>
+| 80 | 2 | | Reserved block owner (or user) identifier (UID)
+| 82 | 2 | | Reserved block group identifier (GID)
+4+| _Dynamic inode information_ +
+_If major version is EXT2_DYNAMIC_REV_
+| 84 | 4 | | First non-reserved inode
+| 88 | 2 | | Inode size +
+The inode size must be a power of 2 larger or equal to 128, the maximum supported by mke2fs is 1024
+| 90 | 2 | | Block group
+| 92 | 4 | | Compatible features flags +
+See section: <<compatible_features_flags,Compatible features flags>>
+| 96 | 4 | | Incompatible features flags +
+See section: <<incompatible_features_flags,Incompatible features flags>>
+| 100 | 4 | | Read-only compatible features flags +
+See section: <<read_only_compatible_features_flags,Read-only compatible features flags>>
+| 104 | 16 | | File system identifier +
+Contains UUID that is stored in big-endian
+| 120 | 16 | | Volume (label) name +
+Contains an UTF-8 string ([yellow-background]*is this ASCII with a codepage on older systems?*)
+| 136 | 64 | | Last mount path +
+Contains an UTF-8 string ([yellow-background]*is this ASCII with a codepage on older systems?*)
+| 200 | 4 | | Algorithm usage bitmap
+4+| _Performance hints_ +
+_If EXT2_COMPAT_PREALLOC is set_
+| 204 | 1 | | Number of pre-allocated blocks per file
+| 205 | 1 | | Number of pre-allocated blocks per directory
+| 206 | 2 | | [yellow-background]*Unknown (padding)*
+4+| _Journalling support_ +
+_If EXT3_FEATURE_COMPAT_HAS_JOURNAL is set_
+| 208 | 16 | | Journal identifier +
+Contains UUID that is stored in big-endian
+| 224 | 4 | | Journal inode
+| 228 | 4 | | Journal device +
+[yellow-background]*What does this value contain?*
+| 232 | 4 | | Head of orphan inode list +
+The orphan inode list is a list of inodes to delete +
+[yellow-background]*What does this value contain?*
+| 236 | 4 x 4 | | hash-tree seed
+| 252 | 1 | | Default hash version
+| 253 | 1 | | Journal backup type
+| 254 | 2 | | Group descriptor size
+| 256 | 4 | | Default mount options
+| 260 | 4 | | First metadata block group (or metablock)
+4+| _Defined in ext3 reserved in earlier versions_
+| 264 | 4 | | File system creation time +
+Contains number of seconds since January 1, 1970 00:00:00 UTC (POSIX epoch), disregarding leap second
+| 268 | 17 x 4 | | Backup journal inodes
+4+| _If 64-bit support (EXT4_FEATURE_INCOMPAT_64BIT) is enabled_
+| 336 | 4 | | Number of blocks +
+Contains the upper 32-bit of the value
+| 340 | 4 | | Number of reserved blocks +
+Contains the upper 32-bit of the value
+| 344 | 4 | | Number of unallocated blocks
+Contains the upper 32-bit of the value
+| 348 | 2 | | Minimum inode size
+| 350 | 2 | | Reserved inode size
+| 352 | 4 | | Miscellaneous flags
+| 356 | 2 | | RAID stride
+| 358 | 2 | | Multiple mount protection (MMP) update interval in seconds
+| 360 | 8 | | Block for multi-mount protection
+| 368 | 4 | | [yellow-background]*Unknown (blocks on all data disks (N*stride))*
+| 372 | 1 | | Flex block group size +
+The size is stored as: 2 ^ value
+| 373 | 1 | | Checksum type +
+See section: <<checksum_types,checksum types>>
+| 374 | 1 | | [yellow-background]*Unknown (encryption level)*
+| 375 | 1 | | [yellow-background]*Unknown (padding)*
+| 376 | 8 | | [yellow-background]*Unknown (s_kbytes_written)*
+| 384 | 4 | | Inode number of active snapshot
+| 388 | 4 | | Identifier of active snapshot
+| 392 | 8 | | [yellow-background]*Unknown (reserved s_snapshot_r_blocks_count)*
+| 400 | 4 | | Inode number of snapshot list head
+| 404 | 4 | | [yellow-background]*Unknown (s_error_count)*
+| 408 | 4 | | [yellow-background]*Unknown (s_first_error_time)*
+| 412 | 4 | | [yellow-background]*Unknown (s_first_error_ino)*
+| 416 | 8 | | [yellow-background]*Unknown (s_first_error_block)*
+| 424 | 32 | | [yellow-background]*Unknown (s_first_error_func)*
+| 456 | 4 | | [yellow-background]*Unknown (s_first_error_line)*
+| 460 | 4 | | [yellow-background]*Unknown (s_last_error_time)*
+| 464 | 4 | | [yellow-background]*Unknown (s_last_error_ino)*
+| 468 | 4 | | [yellow-background]*Unknown (s_last_error_line)*
+| 472 | 8 | | [yellow-background]*Unknown (s_last_error_block)*
+| 480 | 32 | | [yellow-background]*Unknown (s_last_error_func)*
+| 512 | 64 | | [yellow-background]*Unknown (s_mount_opts)*
+| 576 | 4 | | [yellow-background]*Unknown (s_usr_quota_inum)*
+| 560 | 4 | | [yellow-background]*Unknown (s_grp_quota_inum)*
+| 564 | 4 | | [yellow-background]*Unknown (s_overhead_clusters)*
+| 568 | 2 x 4 | | [yellow-background]*Unknown (s_backup_bgs)*
+| 576 | 4 | | [yellow-background]*Unknown (s_encrypt_algos)*
+| 580 | 16 | | [yellow-background]*Unknown (s_encrypt_pw_salt)*
+| 596 | 4 | | [yellow-background]*Unknown (s_lpf_ino)*
+| 600 | 4 | | [yellow-background]*Unknown (s_prj_quota_inum)*
+| 604 | 4 | | [yellow-background]*Unknown (s_checksum_seed)*
+| 608 | 1 | | [yellow-background]*Unknown (s_wtime_hi)*
+| 609 | 1 | | [yellow-background]*Unknown (s_mtime_hi)*
+| 610 | 1 | | [yellow-background]*Unknown (s_mkfs_time_hi)*
+| 611 | 1 | | [yellow-background]*Unknown (s_lastcheck_hi)*
+| 612 | 1 | | [yellow-background]*Unknown (s_first_error_time_hi)*
+| 613 | 1 | | [yellow-background]*Unknown (s_last_error_time_hi)*
+| 614 | 1 | | [yellow-background]*Unknown (s_first_error_errcode)*
+| 615 | 1 | | [yellow-background]*Unknown (s_last_error_errcode)*
+| 616 | 2 | | [yellow-background]*Unknown (s_encoding)*
+| 618 | 2 | | [yellow-background]*Unknown (s_encoding_flags)*
+| 620 | 4 | | [yellow-background]*Unknown (s_orphan_file_inum)*
+| 624 | 94 x 4 | | [yellow-background]*Unknown (reserved)*
+| 1000 | 4 | | Checksum
+|===
+
+[NOTE]
+Some versions of mkfs.ext set the file system creation time even for ext2 and
+when EXT3_FEATURE_COMPAT_HAS_JOURNAL is not set.
+
+The checksum is calculated from the data in the superblock before the checksum.
+
+If checksum type is CRC-32C, the checksum is stored as 0xffffffff - CRC-32C.
+
+[yellow-background]*Is the only way to determine the file system version the
+compatibility and equivalent flags?*
+
+=== [[file_system_state_flags]]File system state flags
+
+[cols="1,1,5",options="header"]
+|===
+| Value | Identifier | Description
+| 0x0001 | | Is clean
+| 0x0002 | | Has errors
+| 0x0004 | | Recovering orphan inodes
+|===
+
+=== [[error_handling_status]]Error-handling status
+
+[cols="1,1,5",options="header"]
+|===
+| Value | Identifier | Description
+| 1 | | Continue
+| 2 | | Remount as read-only
+| 3 | | Panic
+|===
+
+=== [[creator_operating_system]]Creator operating system
+
+[cols="1,1,5",options="header"]
+|===
+| Value | Identifier | Description
+| 0 | | Linux
+| 1 | | GNU Hurd
+| 2 | | Masix
+| 3 | | FreeBSD
+| 4 | | Lites
+|===
+
+=== [[format_revisision]]Format revision
+
+[cols="1,1,5",options="header"]
+|===
+| Value | Identifier | Description
+| 0 | EXT2_GOOD_OLD_REV | Original version with a fixed inode size of 128 bytes
+| 1 | EXT2_DYNAMIC_REV | Version with dynamic inode size support
+|===
+
+=== [[compatible_features_flags]]Compatible features flags
+
+[cols="1,1,5",options="header"]
+|===
+| Value | Identifier | Description
+| 0x00000001 | EXT2_COMPAT_PREALLOC | Pre-allocate directory blocks +
+Reduces fragmentation
+| 0x00000002 | EXT2_FEATURE_COMPAT_IMAGIC_INODES | Has AFS server inodes.
+| 0x00000004 | EXT3_FEATURE_COMPAT_HAS_JOURNAL | Has a journal.
+| 0x00000008 | EXT2_FEATURE_COMPAT_EXT_ATTR | Has extended inode attributes.
+| 0x00000010 | EXT2_FEATURE_COMPAT_RESIZE_INO +
+EXT2_FEATURE_COMPAT_RESIZE_INODE | Has reserved GDT blocks for file system expansion. +
+[yellow-background]*Requires RO_COMPAT_SPARSE_SUPER*
+| 0x00000020 | EXT2_FEATURE_COMPAT_DIR_INDEX | Has hash-indexed directories.
+| 0x00000040 | COMPAT_LAZY_BG | [yellow-background]*Unknown (Lazy block group)*
+| 0x00000080 | COMPAT_EXCLUDE_INODE | [yellow-background]*Unknown (Exclude inode)* +
+[yellow-background]*Not implemented, intended for file system snapshot feature?*
+| 0x00000100 | COMPAT_EXCLUDE_BITMAP | [yellow-background]*Unknown (Exclude inode)* +
+[yellow-background]*Not implemented, intended for file system snapshot feature?*
+| 0x00000200 | EXT4_FEATURE_COMPAT_SPARSE_SUPER2 | Has a version 2 sparse super block.
+| 0x00000400 | EXT4_FEATURE_COMPAT_FAST_COMMIT | [yellow-background]*TODO: add description*
+| 0x00000800 | EXT4_FEATURE_COMPAT_STABLE_INODES | [yellow-background]*TODO: add description*
+| 0x00001000 | EXT4_FEATURE_COMPAT_ORPHAN_FILE | Has orphan file.
+|===
+
+[NOTE]
+That the EXT2_FEATURE_COMPAT_, EXT3_FEATURE_COMPAT_, EXT4_FEATURE_COMPAT_
+and COMPAT_ can be used interchangeably.
+
+=== [[incompatible_features_flags]]Incompatible features flags
+
+[cols="1,1,5",options="header"]
+|===
+| Value | Identifier | Description
+| 0x00000001 | EXT2_FEATURE_INCOMPAT_COMPRESSION | Has compression +
+[yellow-background]*Not yet supported*
+| 0x00000002 | EXT2_FEATURE_INCOMPAT_FILETYPE | Has directory type
+| 0x00000004 | EXT3_FEATURE_INCOMPAT_RECOVER | Needs recovery
+| 0x00000008 | EXT3_FEATURE_INCOMPAT_JOURNAL_DEV | Has journal device
+| 0x00000010 | EXT2_FEATURE_INCOMPAT_META_BG | Has meta (or metadata) block groups
+| | |
+| 0x00000040 | EXT4_FEATURE_INCOMPAT_EXTENTS | Has extents
+| 0x00000080 | EXT4_FEATURE_INCOMPAT_64BIT | Has 64-bit support
+| 0x00000100 | EXT4_FEATURE_INCOMPAT_MMP | Multiple mount protection
+| 0x00000200 | EXT4_FEATURE_INCOMPAT_FLEX_BG | Has flex (or flexible) block groups
+| 0x00000400 | EXT4_FEATURE_INCOMPAT_EA_INODE | Inodes can be used to store large extended attribute values
+| | |
+| 0x00001000 | EXT4_FEATURE_INCOMPAT_DIRDATA | Data in directory entry +
+[yellow-background]*Not yet supported, in development*
+| 0x00002000 | EXT4_FEATURE_INCOMPAT_CSUM_SEED +
+EXT4_FEATURE_INCOMPAT_BG_USE_META_CSUM | Initial metadata checksum value (or seed) is stored in the superblock
+| 0x00004000 | EXT4_FEATURE_INCOMPAT_LARGEDIR | Large directory >2GB or 3-level hash tree (HTree).
+| 0x00008000 | EXT4_FEATURE_INCOMPAT_INLINE_DATA | Has data stored in inode.
+| 0x00010000 | EXT4_FEATURE_INCOMPAT_ENCRYPT | Has encrypted inodes.
+| 0x00020000 | EXT4_FEATURE_INCOMPAT_CASEFOLD | Hash case folding
+|===
+
+[NOTE]
+That the EXT2_FEATURE_INCOMPAT_, EXT3_FEATURE_INCOMPAT_, EXT4_FEATURE_INCOMPAT_
+and INCOMPAT_ can be used interchangeably.
+
+=== [[read_only_compatible_features_flags]]Read-only compatible features flags
+
+[cols="1,1,5",options="header"]
+|===
+| Value | Identifier | Description
+| 0x00000001 | EXT2_FEATURE_RO_COMPAT_SPARSE_SUPER | Has sparse superblocks and group descriptor tables. +
+Superblocks are stored in block groups 0, 1 and those that are powers of 3, 5 and 7. +
+Otherwise a superblock is stored in every block group.
+| 0x00000002 | EXT2_FEATURE_RO_COMPAT_LARGE_FILE | Contains large files.
+| 0x00000004 | EXT2_FEATURE_RO_COMPAT_BTREE_DIR | Intended for hash-tree directory (or directory B-tree) +
+[yellow-background]*Not implemented*
+| 0x00000008 | EXT4_FEATURE_RO_COMPAT_HUGE_FILE | Has huge file support.
+| 0x00000010 | EXT4_FEATURE_RO_COMPAT_GDT_CSUM | Has group descriptors with checksums.
+| 0x00000020 | EXT4_FEATURE_RO_COMPAT_DIR_NLINK | The ext3 32000 subdirectory limit does not apply. +
+A directory's number of links will be set to 1 if it is incremented past 64999
+| 0x00000040 | EXT4_FEATURE_RO_COMPAT_EXTRA_ISIZE | Has large inodes. +
+The size of an inode can be larger than ext2 inode size.
+| 0x00000080 | RO_COMPAT_HAS_SNAPSHOT | Has snapshots. +
+[yellow-background]*Not implemented, intended for file system snapshot feature?*
+| 0x00000100 | EXT4_FEATURE_RO_COMPAT_QUOTA | Quota is handled transactionally with the journal.
+| 0x00000200 | EXT4_FEATURE_RO_COMPAT_BIGALLOC | Has big block allocation bitmaps. +
+Block allocation bitmaps are tracked in units of clusters (of blocks) instead of blocks.
+| 0x00000400 | EXT4_FEATURE_RO_COMPAT_METADATA_CSUM | File system metadata has checksums.
+| 0x00000800 | EXT4_FEATURE_RO_COMPAT_REPLICA | Supports replicas.
+| 0x00001000 | EXT4_FEATURE_RO_COMPAT_READONLY | Read-only file system image.
+| 0x00002000 | EXT4_FEATURE_RO_COMPAT_PROJECT | File system tracks project quotas.
+| 0x00004000 | EXT4_FEATURE_RO_COMPAT_SHARED_BLOCKS | File system has (read-only) shared blocks.
+| 0x00008000 | EXT4_FEATURE_RO_COMPAT_VERITY | [yellow-background]*Unknown (Verity inodes may be present on the filesystem.)*
+| 0x00010000 | EXT4_FEATURE_RO_COMPAT_ORPHAN_PRESENT | Orphan file may be non-empty.
+|===
+
+[NOTE]
+That the EXT2_FEATURE_RO_COMPAT_, EXT3_FEATURE_RO_COMPAT_,
+EXT4_FEATURE_RO_COMPAT_ and RO_COMPAT_ can be used interchangeably.
+
+[NOTE]
+In some ext file systems used by ChromeOS it has been observed that the upper
+8-bits of the read-only compatible features flags are set as in 0xff000003.
+debugfs identifies these as FEATURE_R24 - FEATURE_R31.
+
+=== [[checksum_types]]Checksum types
+
+[cols="1,1,5",options="header"]
+|===
+| Value | Identifier | Description
+| 1 | EXT4_CRC32C_CHKSUM | CRC-32C (or CRC32-C), which uses the Castagnoli polynomial (0x1edc6f41)
+|===
+
+== The group descriptor table
+
+The group descriptor table is stored in the block following the super block.
+
+The group descriptor table consist of:
+
+* one or more group descriptors
+
+=== The ext2 and ext3 group descriptor
+
+The ext2 and ext3 group descriptor is 32 bytes of size and consists of:
+
+[cols="1,1,1,5",options="header"]
+|===
+| Offset | Size | Value | Description
+| 0 | 4 | | Block bitmap block number +
+Value contains the block number relative from the start of the volume
+| 4 | 4 | | Inode bitmap block number +
+Value contains the block number relative from the start of the volume
+| 8 | 4 | | Inode table block number +
+Value contains the block number relative from the start of the volume
+| 12 | 2 | | Number of unallocated blocks
+| 14 | 2 | | Number of unallocated inodes
+| 16 | 2 | | Number of directories
+| 18 | 2 | | [yellow-background]*Unknown (padding)*
+| 20 | 3 x 4 | | [yellow-background]*Unknown (reserved)*
+|===
+
+=== The ext4 group descriptor
+
+The ext4 group descriptor is 68 bytes of size and consists of:
+
+[cols="1,1,1,5",options="header"]
+|===
+| Offset | Size | Value | Description
+| 0 | 4 | | Block bitmap block number +
+Contains the lower 32-bit of the value if 64-bit support (EXT4_FEATURE_INCOMPAT_64BIT) is enabled +
+Value contains the block number relative from the start of the volume
+| 4 | 4 | | Inode bitmap block number +
+Contains the lower 32-bit of the value if 64-bit support (EXT4_FEATURE_INCOMPAT_64BIT) is enabled +
+Value contains the block number relative from the start of the volume
+| 8 | 4 | | Inode table block number +
+Contains the lower 32-bit of the value if 64-bit support (EXT4_FEATURE_INCOMPAT_64BIT) is enabled +
+Value contains the block number relative from the start of the volume
+| 12 | 2 | | Number of unallocated blocks +
+Contains the lower 16-bit of the value if 64-bit support (EXT4_FEATURE_INCOMPAT_64BIT) is enabled
+| 14 | 2 | | Number of unallocated inodes +
+Contains the lower 16-bit of the value if 64-bit support (EXT4_FEATURE_INCOMPAT_64BIT) is enabled
+| 16 | 2 | | Number of directories +
+Contains the lower 16-bit of the value if 64-bit support (EXT4_FEATURE_INCOMPAT_64BIT) is enabled
+| 18 | 2 | | Block group flags +
+See section: <<block_group_flags,Block group flags>>
+| 20 | 4 | | Exclude bitmap block number +
+Contains the lower 32-bit of the value if 64-bit support (EXT4_FEATURE_INCOMPAT_64BIT) is enabled +
+Value contains the block number relative from the start of the volume +
+[yellow-background]*The excluded bitmap is used for snapshots*
+| 24 | 2 | | Block bitmap checksum +
+Contains the lower 16-bit of the value if 64-bit support (EXT4_FEATURE_INCOMPAT_64BIT) is enabled +
+The checksum is a CRC-32C [yellow-background]*TODO: crc32c(s_uuid+grp_num+bbitmap)*
+| 26 | 2 | | Inode bitmap checksum +
+Contains the lower 16-bit of the value if 64-bit support (EXT4_FEATURE_INCOMPAT_64BIT) is enabled +
+The checksum is a CRC-32C [yellow-background]*TODO: crc32c(s_uuid+grp_num+ibitmap)*
+| 28 | 2 | | Number of unused inodes +
+Contains the lower 16-bit of the value if 64-bit support (EXT4_FEATURE_INCOMPAT_64BIT) is enabled +
+| 30 | 2 | | Checksum
+4+| _If 64-bit support (EXT4_FEATURE_INCOMPAT_64BIT) is enabled and group descriptor size > 32_
+| 32 | 4 | | Block bitmap block number +
+Contains the upper 32-bit of the value +
+Value contains the block number relative from the start of the volume
+| 36 | 4 | | Inode bitmap block number +
+Contains the upper 32-bit of the value +
+Value contains the block number relative from the start of the volume
+| 40 | 4 | | Inode table block number +
+Contains the upper 32-bit of the value +
+Value contains the block number relative from the start of the volume
+| 44 | 2 | | Number of unallocated blocks +
+Contains the upper 16-bit of the value +
+| 46 | 2 | | Number of unallocated inodes +
+Contains the upper 16-bit of the value +
+| 48 | 2 | | Number of directories +
+Contains the upper 16-bit of the value +
+| 50 | 2 | | Number of unused inodes +
+Contains the upper 16-bit of the value +
+| 52 | 4 | | Exclude bitmap block number +
+Contains the upper 32-bit of the value +
+Value contains the block number relative from the start of the volume +
+[yellow-background]*The excluded bitmap is used for snapshots*
+| 56 | 2 | | Block bitmap checksum +
+Contains the upper 16-bit of the value +
+The checksum is a CRC-32C [yellow-background]*TODO: crc32c(s_uuid+grp_num+bbitmap)*
+| 60 | 2 | | Inode bitmap checksum +
+Contains the upper 16-bit of the value +
+The checksum is a CRC-32C [yellow-background]*TODO: crc32c(s_uuid+grp_num+ibitmap)*
+| 64 | 4 | | [yellow-background]*Unknown (reserved)*
+|===
+
+The checksum is calculated from:
+
+* file system identifier in the superblock
+* group number
+* data of the group descriptor with the checksum set to 0-byte values.
+
+If checksum type is CRC-32C, the checksum is stored as the lower 16-bits of 0xffffffff
+- CRC-32C, otherwise the checksum is stored as CRC-16.
+
+=== [[block_group_flags]]Block group flags
+
+*TODO: add description*
+
+== The direct and indirect blocks
+
+Direct blocks are blocks that part of the data stream of a file entry.
+
+A direct block number is 0 that is part of the data stream represents a sparse
+data block.
+
+Indirect blocks are blocks that refer to blocks containing direct or indirect
+block numbers. There are multiple levels of indirect block:
+
+* indirect blocks (level 1), that refer to direct blocks
+* double indirect blocks (level 2), that refer to indirect blocks
+* triple indirect blocks (level 3), that refer to double indirect blocks
+
+An indirect block number is 0 that is part of the data stream represents sparse
+data blocks.
+
+== The extents
+
+The extents were introduced in ext4 and are controlled by
+EXT4_FEATURE_INCOMPAT_EXTENTS.
+
+The extents form an extent B-Tree of which the nodes are stored as:
+
+* extents header
+* extents or extent index descriptors
+* extents footer
+
+[NOTE]
+Inodes can have an implicit last sparse extent if the the inode data size is
+greater than the total data size defined by the extent descriptors.
+
+=== [[ext4_extents_header]]The ext4 extents header
+
+The ext4 extents header (ext4_extent_header) is 12 bytes of size and consists of:
+
+[cols="1,1,1,5",options="header"]
+|===
+| Offset | Size | Value | Description
+| 0 | 2 | 0xf30a | Signature
+| 2 | 2 | | Number of extents or extent indexes descriptors
+| 4 | 2 | | Maximum number of extents or extent indexes descriptors
+| 6 | 2 | | Depth +
+Where 0 reprensents a leaf node and 1 to 5 different levels of branch nodes.
+| 8 | 4 | | Generation +
+Used by Lustre, but not standard ext4.
+|===
+
+=== [[ext4_extent]]The ext4 extent descriptor
+
+The ext4 extents store the leaf nodes of the extent B-Tree.
+
+The ext4 extent descriptor (ext4_extent) is 12 bytes of size and consists of:
+
+[cols="1,1,1,5",options="header"]
+|===
+| Offset | Size | Value | Description
+| 0 | 4 | | Logical block number
+| 4 | 2 | | Number of blocks
+| 6 | 2 | | Upper part of physical block number
+| 8 | 4 | | Lower part of physical block number
+|===
+
+If number of blocks > 32768 the extent is considered "uninitialized" which is
+(as far as currently known) comparable to extent being sparse. The number of
+blocks of the sparse extent can be determined as following:
+
+....
+sparse number of blocks = number of block - 32768
+....
+
+[NOTE]
+Sparse extents can exist between the extent descriptors. In such a case the
+logical block number will not align with the information from the previous
+extent descriptors.
+
+=== [[ext4_extent_index]]The ext4 extent index descriptor
+
+The ext4 extent indexes store the branch nodes of the extent B-Tree.
+
+The ext4 extent index descriptor (ext4_extent_idx) is 12 bytes of size and
+consists of:
+
+[cols="1,1,1,5",options="header"]
+|===
+| Offset | Size | Value | Description
+| 0 | 4 | | Logical block number +
+Contains the first logical block number of next depth extents block
+| 4 | 4 | | Lower part of physical block number +
+Contains the block number of the next depth extents block
+| 8 | 2 | | Upper part of physical block number +
+Contains the block number of the next depth extents block
+| 10 | 2 | | [yellow-background]*Unknown (unused)*
+|===
+
+=== The ext4 extents footer
+
+The ext4 extents footer (ext4_extent_tail) is 4 bytes of size and consists of:
+
+[cols="1,1,1,5",options="header"]
+|===
+| Offset | Size | Value | Description
+| 0 | 4 | | Checksum of an extents block +
+Contains a CRC32
+|===
+
+== The inode
+
+[NOTE]
+The size of the inode is defined in the superblock when dynamic inode
+information is present.
+
+[NOTE]
+An ext4 inode can be used on ext2 formatted file system. Seen in combination
+with format revision 1 and inode size > 128 created by mkfs.ext2.
+
+=== The ext2 inode
+
+The ext2 inode is 128 bytes of size and consists of:
+
+[cols="1,1,1,5",options="header"]
+|===
+| Offset | Size | Value | Description
+| 0 | 2 | | File mode +
+Contains file type and permissions +
+See section: <<file_mode,File mode>>
+| 2 | 2 | | Lower part of owner (or user) identifier (UID)
+| 4 | 4 | | Data size
+| 8 | 4 | | (last) access time +
+Contains a POSIX timestamp
+| 12 | 4 | | (last) inode change time +
+Contains a POSIX timestamp
+| 16 | 4 | | (last) modification time +
+Contains a POSIX timestamp
+| 20 | 4 | | Deletion time +
+Contains a POSIX timestamp
+| 24 | 2 | | Lower part of group identifier (GID)
+| 26 | 2 | | Number of (hard) links
+| 28 | 4 | | Blocks count
+| 32 | 4 | | Flags +
+See section: <<inode_flags,Inode flags>>
+| 36 | 4 | | [yellow-background]*Unknown (reserved)*
+| 40 | 12 x 4 | | Array of direct block numbers +
+Value contains the block number relative from the start of the volume
+| 88 | 4 | | Indirect block number +
+Value contains the block number relative from the start of the volume
+| 92 | 4 | | Double indirect block number +
+Value contains the block number relative from the start of the volume
+| 96 | 4 | | Triple indirect block number +
+Value contains the block number relative from the start of the volume
+| 100 | 4 | | NFS generation number
+| 104 | 4 | | File ACL (or extended attributes) block number
+| 108 | 4 | | [yellow-background]*Unknown (Directory ACL)*
+| 112 | 4 | | Fragment block address
+| 116 | 1 | | Fragment block index
+| 117 | 1 | | Fragment size
+| 118 | 2 | | [yellow-background]*Unknown (padding)*
+| 120 | 2 | | Upper part of owner (or user) identifier (UID)
+| 122 | 2 | | Upper part of group identifier (GID)
+| 124 | 4 | | [yellow-background]*Unknown (reserved)*
+|===
+
+[NOTE]
+For a character and block device the first 2 bytes of the array of direct
+block numbers contain the minor and major device number respectively.
+
+=== The ext3 inode
+
+The ext3 inode is 132 bytes of size and consists of:
+
+[cols="1,1,1,5",options="header"]
+|===
+| Offset | Size | Value | Description
+| 0 | 2 | | File mode +
+Contains file type and permissions +
+See section: <<file_mode,File mode>>
+| 2 | 2 | | Lower part of owner (or user) identifier (UID)
+| 4 | 4 | | Data size
+| 8 | 4 | | (last) access time +
+Contains a POSIX timestamp
+| 12 | 4 | | (last) inode change time +
+Contains a POSIX timestamp
+| 16 | 4 | | (last) modification time +
+Contains a POSIX timestamp
+| 20 | 4 | | Deletion time +
+Contains a POSIX timestamp
+| 24 | 2 | | Lower part of group identifier (GID)
+| 26 | 2 | | Number of (hard) links
+| 28 | 4 | | Blocks count
+| 32 | 4 | | Flags +
+See section: <<inode_flags,Inode flags>>
+| 36 | 4 | | [yellow-background]*Unknown (reserved)*
+| 40 | 12 x 4 | | Array of direct block numbers +
+Value contains the block number relative from the start of the volume
+| 88 | 4 | | Indirect block number +
+Value contains the block number relative from the start of the volume
+| 92 | 4 | | Double indirect block number +
+Value contains the block number relative from the start of the volume
+| 96 | 4 | | Triple indirect block number +
+Value contains the block number relative from the start of the volume
+| 100 | 4 | | NFS generation number
+| 104 | 4 | | File ACL (or extended attributes) block number
+| 108 | 4 | | [yellow-background]*Unknown (Directory ACL)*
+| 112 | 4 | | Fragment block address
+| 116 | 1 | | Fragment block index
+| 117 | 1 | | Fragment size
+| 118 | 2 | | [yellow-background]*Unknown (padding)*
+| 120 | 2 | | Upper part of owner (or user) identifier (UID)
+| 122 | 2 | | Upper part of group identifier (GID)
+| 124 | 4 | | [yellow-background]*Unknown (reserved)*
+| 128 | 2 | | Extended inode size
+| 130 | 2 | | [yellow-background]*Unknown (padding)*
+|===
+
+[NOTE]
+For a character and block device the first 2 bytes of the array of direct
+block numbers contain the minor and major device number respectively.
+
+=== The ext4 inode
+
+The ext4 inode is 160 bytes of size and consists of:
+
+[cols="1,1,1,5",options="header"]
+|===
+| Offset | Size | Value | Description
+| 0 | 2 | | File mode +
+Contains file type and permissions +
+See section: <<file_mode,File mode>>
+| 2 | 2 | | Lower part of owner (or user) identifier (UID)
+| 4 | 4 | | Lower part of data size
+4+| _If EXT4_EA_INODE_FL is not set_
+| 8 | 4 | | (last) access time +
+Contains a POSIX timestamp
+| 12 | 4 | | (last) inode change time +
+Contains a POSIX timestamp
+| 16 | 4 | | (last) modification time +
+Contains a POSIX timestamp
+4+| _If EXT4_EA_INODE_FL is set_
+| 8 | 4 | | [yellow-background]*Unknown (extended attribute value data checksum)*
+| 12 | 4 | | [yellow-background]*Unknown (lower part of extended attribute reference count)*
+| 16 | 4 | | [yellow-background]*Unknown (inode number that owns the extended attribute)*
+4+| _Common_
+| 20 | 4 | | Deletion time +
+Contains a POSIX timestamp
+| 24 | 2 | | Lower part of group identifier (GID)
+| 26 | 2 | | Number of (hard) links
+| 28 | 4 | | Lower part of blocks count
+| 32 | 4 | | Flags +
+See section: <<inode_flags,Inode flags>>
+4+| _If EXT4_EA_INODE_FL is not set_
+| 36 | 4 | | [yellow-background]*Unknown (lower part of version)*
+4+| _If EXT4_EA_INODE_FL is set_
+| 36 | 4 | | [yellow-background]*Unknown (upper part of extended attribute reference count)*
+4+| _If EXT4_EXTENTS_FL and EXT4_INLINE_DATA_FL are not set_
+| 40 | 12 x 4 | | Array of direct block numbers +
+Value contains the block number relative from the start of the volume
+| 88 | 4 | | Indirect block number +
+Value contains the block number relative from the start of the volume
+| 92 | 4 | | Double indirect block number +
+Value contains the block number relative from the start of the volume
+| 96 | 4 | | Triple indirect block number +
+Value contains the block number relative from the start of the volume
+4+| _If EXT4_EXTENTS_FL is set_
+| 40 | 12 | | Extents header +
+Also see: <<ext4_extents_header,The ext4 extents header>>
+| 52 | 4 x 12 | | extents or extents indexes +
+Also see: <<ext4_extent,The ext4 extent>> or <<ext4_extent_index,The ext4 extent index>>
+4+| _If EXT4_INLINE_DATA_FL is set_
+| 40 | 60 | | File entry data
+4+| _Common_
+| 100 | 4 | | NFS generation number
+| 104 | 4 | | Lower part of file ACL (or extended attributes) block number
+| 108 | 4 | | Upper part of data size
+| 112 | 4 | | Fragment block address
+| 116 | 2 | | Upper part of blocks count
+| 118 | 2 | | Upper part of file ACL (or extended attributes) block number
+| 120 | 2 | | Upper part of owner (or user) identifier (UID)
+| 122 | 2 | | Upper part of group identifier (GID)
+| 124 | 2 | | Lower part of checksum +
+Contains the lower 16-bit of the checksum value
+| 126 | 2 | | [yellow-background]*Unknown (reserved)*
+| 128 | 2 | | Extended inode size
+| 130 | 2 | | Upper part of checksum +
+Contains the upper 16-bit of the checksum value
+| 132 | 4 | | (last) inode change time extra precision
+| 136 | 4 | | (last) modification time extra precision
+| 140 | 4 | | (last) access time extra precision
+| 144 | 4 | | Creation time
+| 148 | 4 | | Creation time extra precision
+| 152 | 4 | | [yellow-background]*Unknown (upper part of version)*
+| 156 | 4 | | [yellow-background]*Unknown (i_projid)*
+|===
+
+[NOTE]
+For a character and block device the first 2 bytes of the array of direct
+block numbers contain the minor and major device number respectively.
+
+The checksum is calculated from:
+
+* file system identifier in the superblock
+* inode number
+* NFS generation number in the inode
+* data of the inode with the lower and upper part of the checksum set to 0-byte values.
+
+If checksum type is CRC-32C, the checksum is stored as 0xffffffff - CRC-32C.
+
+[yellow-background]*TODO describe extra precision*
+
+==== Notes
+
+From observations when EXT4_EA_INODE_FL is set (last) modification time can
+contain a valid timestamp.
+
+According to https://ext4.wiki.kernel.org/index.php/Ext4_Disk_Layout#Large_Extended_Attribute_Values 
+
+....
+For backward compatibility with older versions of this feature, the
+i_mtime/i_generation may store a back-reference to the inode number and
+i_generation of the one owning inode (in cases where the EA inode is not
+referenced by multiple inodes) to verify that the EA inode is the correct one
+being accessed.
+....
+
+=== [[file_mode]]File mode
+
+[cols="1,1,5",options="header"]
+|===
+| Value | Identifier | Description
+3+| _Access other_ +
+_Bitmask: 0x0007 (S_IRWXO)_
+| 0x0001 | S_IXOTH | X-access for other
+| 0x0002 | S_IWOTH | W-access for other
+| 0x0004 | S_IROTH | R-access for other
+3+| _Access group_ +
+_Bitmask: 0x0038 (S_IRWXG)_
+| 0x0008 | S_IXGRP | X-access for group
+| 0x0010 | S_IWGRP | W-access for group
+| 0x0020 | S_IRGRP | R-access for group
+3+| _Access owner (or user)_ +
+_Bitmask: 0x01c0 (S_IRWXU)_
+| 0x0040 | S_IXUSR | X-access for owner (or user)
+| 0x0080 | S_IWUSR | W-access for owner (or user)
+| 0x0100 | S_IRUSR | R-access for owner (or user)
+3+| _Other_
+| 0x0200 | S_ISTXT | Sticky bit
+| 0x0400 | S_ISGID | Set group identifer (GID) on execution
+| 0x0800 | S_ISUID | Set owner (or user) identifer (UID) on execution
+3+| _Type of file_ +
+_Bitmask: 0xf000 (S_IFMT)_
+| 0x1000 | S_IFIFO | Named pipe (FIFO)
+| 0x2000 | S_IFCHR | Character device
+| 0x4000 | S_IFDIR | Directory
+| 0x6000 | S_IFBLK | Block device
+| 0x8000 | S_IFREG | Regular file
+| 0xa000 | S_IFLNK | Symbolic link
+| 0xc000 | S_IFSOCK | Socket
+|===
+
+=== [[inode_flags]]Inode flags
+
+[cols="1,1,5",options="header"]
+|===
+| Value | Identifier | Description
+| 0x00000001 | EXT2_SECRM_FL +
+EXT3_SECRM_FL +
+EXT4_SECRM_FL +
+EXT4_INODE_SECRM | Secure deletion
+| 0x00000002 | EXT2_UNRM_FL +
+EXT3_UNRM_FL +
+EXT4_UNRM_FL +
+EXT4_INODE_UNRM | Undelete
+| 0x00000004 | EXT2_COMPR_FL +
+EXT3_COMPR_FL +
+EXT4_COMPR_FL +
+EXT4_INODE_COMPR | Compressed file +
+[yellow-background]*Not yet supported*
+| 0x00000008 | EXT2_SYNC_FL +
+EXT3_SYNC_FL +
+EXT4_SYNC_FL +
+EXT4_INODE_SYNC | Synchronous updates
+| 0x00000010 | EXT2_IMMUTABLE_FL +
+EXT3_IMMUTABLE_FL +
+EXT4_IMMUTABLE_FL +
+EXT4_INODE_IMMUTABLE | Immutable file
+| 0x00000020 | EXT2_APPEND_FL +
+EXT3_APPEND_FL +
+EXT4_APPEND_FL +
+EXT4_INODE_APPEND | Writes to file may only append
+| 0x00000040 | EXT2_NODUMP_FL +
+EXT3_NODUMP_FL +
+EXT4_NODUMP_FL +
+EXT4_INODE_NODUMP | Do not remove (or dump) file
+| 0x00000080 | EXT2_NOATIME_FL +
+EXT3_NOATIME_FL +
+EXT4_NOATIME_FL +
+EXT4_INODE_NOATIME | Do not update access time (atime)
+| 0x00000100 | EXT2_DIRTY_FL +
+EXT3_DIRTY_FL +
+EXT4_DIRTY_FL +
+EXT4_INODE_DIRTY | Dirty compressed file +
+[yellow-background]*Not used*
+| 0x00000200 | EXT2_COMPRBLK_FL +
+EXT3_COMPRBLK_FL +
+EXT4_COMPRBLK_FL +
+EXT4_INODE_COMPRBLK | One or more compressed clusters +
+[yellow-background]*Not used*
+| 0x00000400 | EXT2_NOCOMP_FL +
+EXT3_NOCOMP_FL +
+EXT4_NOCOMPR_FL +
+EXT4_INODE_NOCOMPR | Do not compress +
+[yellow-background]*Not used*
+3+| _ext2 and ext3_
+| 0x00000800 | EXT2_ECOMPR_FL +
+EXT3_ECOMPR_FL | Encrypted Compression error
+3+| _ext4_
+| 0x00000800 | EXT4_ENCRYPT_FL +
+EXT4_INODE_ENCRYPT | Encrypted file
+3+| _Common_
+| 0x00001000 | EXT2_BTREE_FL +
+EXT2_INDEX_FL +
+EXT3_INDEX_FL +
+EXT4_INDEX_FL +
+EXT4_INODE_INDEX | Hash-indexed directory (previously referred to as B-tree format).
+| 0x00002000 | EXT2_IMAGIC_FL +
+EXT3_IMAGIC_FL +
+EXT4_IMAGIC_FL +
+EXT4_INODE_IMAGIC | AFS directory
+| 0x00004000 | EXT2_JOURNAL_DATA_FL +
+EXT3_JOURNAL_DATA_FL +
+EXT4_JOURNAL_DATA_FL +
+EXT4_INODE_JOURNAL_DATA | File data must be written using the journal.
+| 0x00008000 | EXT2_NOTAIL_FL +
+EXT3_NOTAIL_FL +
+EXT4_NOTAIL_FL +
+EXT4_INODE_NOTAIL | File tail should not be merged +
+[yellow-background]*Not used by ext4*
+| 0x00010000 | EXT2_DIRSYNC_FL +
+EXT3_DIRSYNC_FL +
+EXT4_DIRSYNC_FL +
+EXT4_INODE_DIRSYNC | Directory entries should be written synchronously (dirsync)
+| 0x00020000 | EXT2_TOPDIR_FL +
+EXT3_TOPDIR_FL +
+EXT4_TOPDIR_FL +
+EXT4_INODE_TOPDIR | Top of directory hierarchy
+3+| _ext4_
+| 0x00040000 | EXT4_HUGE_FILE_FL +
+EXT4_INODE_HUGE_FILE | Is a huge file +
+See section: <<huge_files,Huge files>>
+| 0x00080000 | EXT4_EXTENTS_FL +
+EXT4_INODE_EXTENTS | Inode uses extents
+| 0x00100000 | EXT4_INODE_VERITY | Verity protected inode
+| 0x00200000 | EXT4_EA_INODE_FL +
+EXT4_INODE_EA_INODE | Inode used for large extended attribute
+| 0x00400000 | EXT4_EOFBLOCKS_FL +
+EXT4_INODE_EOFBLOCKS | Blocks allocated beyond EOF
+| | |
+| 0x01000000 | EXT4_SNAPFILE_FL | Inode is a snapshot
+| 0x02000000 | EXT4_INODE_DAX | Inode is DAX
+| 0x04000000 | EXT4_SNAPFILE_DELETED_FL | Snapshot is being deleted
+| 0x08000000 | EXT4_SNAPFILE_SHRUNK_FL | Snapshot shrink has completed
+| 0x10000000 | EXT4_INLINE_DATA_FL +
+EXT4_INODE_INLINE_DATA | Inode has inline data
+| 0x20000000 | EXT4_PROJINHERIT_FL +
+EXT4_INODE_PROJINHERIT | Create sub file entries with the same project identifier
+| 0x40000000 | EXT4_INODE_CASEFOLD | Casefolded directory
+| 0x80000000 | EXT4_INODE_RESERVED | [yellow-background]*Unknown (reserved)*
+|===
+
+=== Reserved inode numbers
+
+[cols="1,1,5",options="header"]
+|===
+| Value | Identifier | Description
+| 1 | EXT2_BAD_INO +
+EXT3_BAD_INO +
+EXT4_BAD_INO | Bad blocks inode
+| 2 | EXT2_ROOT_INO +
+EXT3_ROOT_INO +
+EXT4_ROOT_INO | Root inode
+| 3 | EXT4_USR_QUOTA_INO | Owner (or user) quota inode
+| 4 | EXT4_GRP_QUOTA_INO | Group quota inode
+| 5 | EXT2_BOOT_LOADER_INO +
+EXT3_BOOT_LOADER_INO +
+EXT4_BOOT_LOADER_INO | Boot loader inode
+| 6 | EXT2_UNDEL_DIR_INO +
+EXT3_UNDEL_DIR_INO +
+EXT4_UNDEL_DIR_INO | Undelete directory inode
+| 7 | EXT3_RESIZE_INO +
+EXT4_RESIZE_INO | Reserved group descriptors inode
+| 8 | EXT3_JOURNAL_INO +
+EXT4_JOURNAL_INO | Journal inode
+|===
+
+== Inline data
+
+ext4 supports storing file entry data inline when the inode flag
+EXT4_INLINE_DATA_FL is set.
+
+[NOTE]
+Inodes can have an implicit last sparse extent if the the inode data size is
+greater than 60 bytes.
+
+== [[huge_files]]Huge files
+
+[yellow-background]*TODO: add description*
+
+== Directory entries
+
+Directories entries are stored in the data blocks of a directory inode. The
+directory entries can be stored in multiple ways:
+
+* as linear directory entries
+* as inline data directory entries
+* as hash-tree directory entries
+
+=== Linear directory entries
+
+Linear directories entries are stored in a series of allocation blocks.
+
+Linear directory entries contain:
+
+* directory entry for "." (self)
+* directory entry for ".." (parent)
+* directory entry for other file system entries
+
+==== [[directory_entry]]The directory entry
+
+The directory entry is variable of size, at most 263 bytes, and consists of:
+
+[cols="1,1,1,5",options="header"]
+|===
+| Offset | Size | Value | Description
+| 0 | 4 | | Inode number
+| 4 | 2 | | Directory entry size +
+Must be a multitude of 4.
+| 6 | 1 | | Name size +
+Contains the size of the name without the end-of-string character +
+Maximum of 255
+| 7 | 1 | | File type +
+See section: <<file_types,File types>>
+| 8 | ... | | Name +
+Contains an UTF-8 string ([yellow-background]*is this ASCII with a codepage on older systems?*)
+|===
+
+Older directory entry structures considered the name size a 16-bit value, but
+the upper byte was never used.
+
+The name can contain any UTF-8 character value except the path separator '/'
+and the NUL-character.
+
+==== [[file_types]]File types
+
+[cols="1,1,5",options="header"]
+|===
+| Value | Identifier | Description
+| 0 | EXT2_FT_UNKNOWN | Unknown
+| 1 | EXT2_FT_REG_FILE | Regular file
+| 2 | EXT2_FT_DIR | Directory
+| 3 | EXT2_FT_CHRDEV | Character device
+| 4 | EXT2_FT_BLKDEV | Block device
+| 5 | EXT2_FT_FIFO | FIFO queue
+| 6 | EXT2_FT_SOCK | Socket
+| 7 | EXT2_FT_SYMLINK | Symbolic link
+|===
+
+=== Inline data directory entries
+
+ext4 supports storing the directory entries as inline data when the inode flag
+EXT4_INLINE_DATA_FL is set.
+
+The inline data directory entries is variable of size, at most 60 bytes, and
+consists of:
+
+[cols="1,1,1,5",options="header"]
+|===
+| Offset | Size | Value | Description
+| 0 | 4 | | Parent inode number
+| 4 | ... | | Array of directory entries +
+Contains: <<directory_entry,a directory entry>>
+|===
+
+=== Hash tree directory entries
+
+The data of the hash tree (HTree) is stored in the data blocs or extent defined
+by the directory inode. The hash-indexed directory entries are read-compatible
+with the "regular" <<directory_entry,directory entry>>.
+
+==== Hash tree root
+
+The hash tree root consists of:
+
+* dx_root
+  * directory entry for "." (self)
+  * directory entry for ".." (parent)
+  * dx_root_info
+  * Array of dx_entry
+* directory entry for other file system entries
+
+==== dx_root_info
+
+[cols="1,1,1,5",options="header"]
+|===
+| Offset | Size | Value | Description
+| 0 | 4 | 0 | [yellow-background]*Unknown (reserved)*
+| 4 | 1 | | Hash method (or version)
+| 5 | 1 | 8 | Root information size
+| 6 | 1 | | Number of indirect levels in the hash tree
+| 7 | 1 | | [yellow-background]*Unknown (unused flags)*
+|===
+
+==== dx_entry
+
+....
+struct dx_entry
+{
+	__le32 hash;
+	__le32 block;
+};
+....
+
+== Symbolic links
+
+If the target path of a symbolic link is less than 60 characters long, it is
+stored in the 60 bytes in the inode that are normally used for the 12 direct
+and 3 indirect block numbers. If the target path is longer than 60 characters,
+a block is allocated, and the block contains the target path. The inode data
+size contains the length of the target path.
+
+== [[extended_attributes]]Extended attributes
+
+Extended attributes can be stored:
+
+* in the inode block after the inode data
+* in the block referenced by the file ACL (or extended attributes) block number, if not 0
+
+[NOTE]
+Both should be read to get the all the extended attributes.
+
+Extended attributes consists of:
+
+* An extended attributes header
+* Extended attributes entries with a terminator
+
+=== The extended attributes inode header
+
+The extended attributes inode header (ext2_xattr_ibody_header,
+ext3_xattr_ibody_header, ext4_xattr_ibody_header) is 4 bytes of size and
+consists of:
+
+[cols="1,1,1,5",options="header"]
+|===
+| Offset | Size | Value | Description
+| 0 | 4 | 0xea020000 | Signature
+|===
+
+=== The extended attributes block header
+
+=== The ext2 and ext3 extended attributes block header
+
+The ext2 and ext3 extended attributes block header (ext2_xattr_header,
+ext3_xattr_header) is 32 bytes of size and consists of:
+
+[cols="1,1,1,5",options="header"]
+|===
+| Offset | Size | Value | Description
+| 0 | 4 | 0xea020000 | Signature
+| 4 | 4 | | [yellow-background]*Unknown (reference count)*
+| 8 | 4 | | Number of blocks
+| 12 | 4 | | Attributes hash
+| 16 | 4 x 4 | | [yellow-background]*Unknown (reserved)*
+|===
+
+=== The ext4 extended attributes block header
+
+The ext4 extended attributes block header (ext4_xattr_header) is 32 bytes of
+size and consists of:
+
+[cols="1,1,1,5",options="header"]
+|===
+| Offset | Size | Value | Description
+| 0 | 4 | 0xea020000 | Signature
+| 4 | 4 | | [yellow-background]*Unknown (Reference count)*
+| 8 | 4 | | Number of blocks
+| 12 | 4 | | Attributes hash
+| 16 | 4 | | Checksum
+| 20 | 3 x 4 | | [yellow-background]*Unknown (reserved)*
+|===
+
+=== The extended attributes entry
+
+The extended attributes entry (ext2_xattr_entry, ext3_xattr_entry,
+ext4_xattr_entry) is variable of size and consists of:
+
+[cols="1,1,1,5",options="header"]
+|===
+| Offset | Size | Value | Description
+| 0 | 1 | | Name size +
+Contains the size of the name without the end-of-string character
+| 1 | 1 | | Name index
+| 2 | 2 | | Value data offset +
+Value contains the offset of the value data relative from the start of the extended attributes block or after the extended attributes signature in the inode block data
+| 4 | 4 | | Value data inode number +
+Contains the inode number that contains the value data or 0 to indicate the current block
+| 8 | 4 | | Value data size
+| 12 | 4 | | [yellow-background]*Unknown (Attribute hash)*
+| 16 | ... | | Name string +
+Contains an ASCII string without end-of-string character
+| ... | ... | | 32-bit alignment padding
+|===
+
+The last extended attributes entry has the first 4 values set to 0 (8 bytes)
+and is used as a terminator.
+
+[NOTE]
+Note that the name can be empty, for example in combination with a prefix or
+with an encrypted file.
+
+=== The extended attribute name index
+
+The name index indicates the prefix of the extended attribute name.
+
+[cols="1,1,5",options="header"]
+|===
+| Name index | Name prefix | Description
+| 0 | "" | No prefix
+| 1 | "user." |
+| 2 | "system.posix_acl_access" |
+| 3 | "system.posix_acl_default" |
+| 4 | "trusted." |
+3+|
+| 6 | "security." |
+| 7 | "system." |
+| 8 | "system.richacl" |
+|===
+
+== Journal
+
+The journal was introduced in ext3.
+
+[yellow-background]*TODO: add text*
+
+== Notes
+
+....
+EXT2_BAD_INO	1	Allocated over bad blocks by mke2fs/e2fsck -c
+EXT2_ROOT_INO	2	The root directory of the file system
+EXT4_USR_QUOTA_INO	3	The now integrated and hidden user quota file. Previously used for ACL index?
+EXT4_GRP_QUOTA_INO	4	The now integrated and hidden group quota file. Previously used for ACL data?
+EXT2_BOOT_LOADER_INO	5	Apprently unused. Was probably intended to hide stage2 loaders, just like the fs starts padded with zeroes to allow stage1 loaders.
+EXT2_UNDEL_DIR_INO	6	Apparently unused. Was supposedly meant for undeletion functionality that was never implemented.
+EXT2_RESIZE_INO	7	Used to speed up resizing, by reserving room to let the block group descriptor table grow (mke2fs resize=) option.
+EXT2_JOURNAL_INO	8	The ext3 journal (mke2fs -j)
+EXT2_EXCLUDE_INO	9	Unused in vanilla, but used by the Next3 fs for snapshots.
+EXT4_REPLICA_INO	10	Unused in vanilla, but used for ext4 metadata replication out of tree in a Google patch.
+....
+
+....
+#define EXT4_STATE_JDATA	0x00000001 /* journaled data exists */
+#define EXT4_STATE_NEW	0x00000002 /* inode is newly created */
+#define EXT4_STATE_XATTR	0x00000004 /* has in-inode xattrs */
+#define EXT4_STATE_NO_EXPAND	0x00000008 /* No space for expansion */
+#define EXT4_STATE_DA_ALLOC_CLOSE	0x00000010 /* Alloc DA blks on close */
+#define EXT4_STATE_EXT_MIGRATE	0x00000020 /* Inode is migrating */
+#define EXT4_STATE_DIO_UNWRITTEN	0x00000040 /* need convert on dio done*/
+....
+
+:numbered!:
+[appendix]
+== References
+
+`[CARRIER05]`
+
+[cols="1,5",options="header"]
+|===
+| Title: | File System Forensic Analysis
+| Author(s): | Brian Carrier
+| Date: | 2005
+| ISBN-10: | 0-321-26817-2
+|===
+
+`[WIKI]`
+
+[cols="1,5",options="header"]
+|===
+| URL: | http://en.wikipedia.org/wiki/Extended_file_system +
+http://en.wikipedia.org/wiki/Ext2 +
+http://en.wikipedia.org/wiki/Ext3 +
+http://en.wikipedia.org/wiki/Ext4
+|===
+
+[cols="1,5",options="header"]
+|===
+| Title: | Design and Implementation of the Second Extended Filesystem
+| Author(s): | Rémy Card, Theodore Ts'o, Stephen Tweedie
+| URL: | http://e2fsprogs.sourceforge.net/ext2intro.html
+|===
+
+[cols="1,5",options="header"]
+|===
+| Title: | HOWTO recover deleted files on an ext3 file system
+| Author(s): | Carlo Wood
+| URL: | http://www.xs4all.nl/~carlo17/howto/undelete_ext3.html
+|===
+
+[cols="1,5",options="header"]
+|===
+| Title: | Ext4 (and Ext2/Ext3) Wiki
+| URL: | https://ext4.wiki.kernel.org/index.php/Main_Page
+|===
+
+[cols="1,5",options="header"]
+|===
+| Title: | The ext4 file system - A work in progress update
+| Author(s): | Suparna Bhattacharya
+| URL: | https://foss.in/2006/cfp/slides/ext4-foss.pdf
+|===
+
+[appendix]
+== GNU Free Documentation License
+
+Version 1.3, 3 November 2008
+Copyright © 2000, 2001, 2002, 2007, 2008 Free Software Foundation, Inc.
+<http://fsf.org/>
+
+Everyone is permitted to copy and distribute verbatim copies of this license
+document, but changing it is not allowed.
+
+=== 0. PREAMBLE
+
+The purpose of this License is to make a manual, textbook, or other functional
+and useful document "free" in the sense of freedom: to assure everyone the
+effective freedom to copy and redistribute it, with or without modifying it,
+either commercially or noncommercially. Secondarily, this License preserves for
+the author and publisher a way to get credit for their work, while not being
+considered responsible for modifications made by others.
+
+This License is a kind of "copyleft", which means that derivative works of the
+document must themselves be free in the same sense. It complements the GNU
+General Public License, which is a copyleft license designed for free software.
+
+We have designed this License in order to use it for manuals for free software,
+because free software needs free documentation: a free program should come with
+manuals providing the same freedoms that the software does. But this License is
+not limited to software manuals; it can be used for any textual work,
+regardless of subject matter or whether it is published as a printed book. We
+recommend this License principally for works whose purpose is instruction or
+reference.
+
+=== 1. APPLICABILITY AND DEFINITIONS
+
+This License applies to any manual or other work, in any medium, that contains
+a notice placed by the copyright holder saying it can be distributed under the
+terms of this License. Such a notice grants a world-wide, royalty-free license,
+unlimited in duration, to use that work under the conditions stated herein. The
+"Document", below, refers to any such manual or work. Any member of the public
+is a licensee, and is addressed as "you". You accept the license if you copy,
+modify or distribute the work in a way requiring permission under copyright law.
+
+A "Modified Version" of the Document means any work containing the Document or
+a portion of it, either copied verbatim, or with modifications and/or
+translated into another language.
+
+A "Secondary Section" is a named appendix or a front-matter section of the
+Document that deals exclusively with the relationship of the publishers or
+authors of the Document to the Document's overall subject (or to related
+matters) and contains nothing that could fall directly within that overall
+subject. (Thus, if the Document is in part a textbook of mathematics, a
+Secondary Section may not explain any mathematics.) The relationship could be a
+matter of historical connection with the subject or with related matters, or of
+legal, commercial, philosophical, ethical or political position regarding them.
+
+The "Invariant Sections" are certain Secondary Sections whose titles are
+designated, as being those of Invariant Sections, in the notice that says that
+the Document is released under this License. If a section does not fit the
+above definition of Secondary then it is not allowed to be designated as
+Invariant. The Document may contain zero Invariant Sections. If the Document
+does not identify any Invariant Sections then there are none.
+
+The "Cover Texts" are certain short passages of text that are listed, as
+Front-Cover Texts or Back-Cover Texts, in the notice that says that the
+Document is released under this License. A Front-Cover Text may be at most 5
+words, and a Back-Cover Text may be at most 25 words.
+
+A "Transparent" copy of the Document means a machine-readable copy, represented
+in a format whose specification is available to the general public, that is
+suitable for revising the document straightforwardly with generic text editors
+or (for images composed of pixels) generic paint programs or (for drawings)
+some widely available drawing editor, and that is suitable for input to text
+formatters or for automatic translation to a variety of formats suitable for
+input to text formatters. A copy made in an otherwise Transparent file format
+whose markup, or absence of markup, has been arranged to thwart or discourage
+subsequent modification by readers is not Transparent. An image format is not
+Transparent if used for any substantial amount of text. A copy that is not
+"Transparent" is called "Opaque".
+
+Examples of suitable formats for Transparent copies include plain ASCII without
+markup, Texinfo input format, LaTeX input format, SGML or XML using a publicly
+available DTD, and standard-conforming simple HTML, PostScript or PDF designed
+for human modification. Examples of transparent image formats include PNG, XCF
+and JPG. Opaque formats include proprietary formats that can be read and edited
+only by proprietary word processors, SGML or XML for which the DTD and/or
+processing tools are not generally available, and the machine-generated HTML,
+PostScript or PDF produced by some word processors for output purposes only.
+
+The "Title Page" means, for a printed book, the title page itself, plus such
+following pages as are needed to hold, legibly, the material this License
+requires to appear in the title page. For works in formats which do not have
+any title page as such, "Title Page" means the text near the most prominent
+appearance of the work's title, preceding the beginning of the body of the text.
+
+The "publisher" means any person or entity that distributes copies of the
+Document to the public.
+
+A section "Entitled XYZ" means a named subunit of the Document whose title
+either is precisely XYZ or contains XYZ in parentheses following text that
+translates XYZ in another language. (Here XYZ stands for a specific section
+name mentioned below, such as "Acknowledgements", "Dedications",
+"Endorsements", or "History".) To "Preserve the Title" of such a section when
+you modify the Document means that it remains a section "Entitled XYZ"
+according to this definition.
+
+The Document may include Warranty Disclaimers next to the notice which states
+that this License applies to the Document. These Warranty Disclaimers are
+considered to be included by reference in this License, but only as regards
+disclaiming warranties: any other implication that these Warranty Disclaimers
+may have is void and has no effect on the meaning of this License.
+
+=== 2. VERBATIM COPYING
+
+You may copy and distribute the Document in any medium, either commercially or
+noncommercially, provided that this License, the copyright notices, and the
+license notice saying this License applies to the Document are reproduced in
+all copies, and that you add no other conditions whatsoever to those of this
+License. You may not use technical measures to obstruct or control the reading
+or further copying of the copies you make or distribute. However, you may
+accept compensation in exchange for copies. If you distribute a large enough
+number of copies you must also follow the conditions in section 3.
+
+You may also lend copies, under the same conditions stated above, and you may
+publicly display copies.
+
+=== 3. COPYING IN QUANTITY
+
+If you publish printed copies (or copies in media that commonly have printed
+covers) of the Document, numbering more than 100, and the Document's license
+notice requires Cover Texts, you must enclose the copies in covers that carry,
+clearly and legibly, all these Cover Texts: Front-Cover Texts on the front
+cover, and Back-Cover Texts on the back cover. Both covers must also clearly
+and legibly identify you as the publisher of these copies. The front cover must
+present the full title with all words of the title equally prominent and
+visible. You may add other material on the covers in addition. Copying with
+changes limited to the covers, as long as they preserve the title of the
+Document and satisfy these conditions, can be treated as verbatim copying in
+other respects.
+
+If the required texts for either cover are too voluminous to fit legibly, you
+should put the first ones listed (as many as fit reasonably) on the actual
+cover, and continue the rest onto adjacent pages.
+
+If you publish or distribute Opaque copies of the Document numbering more than
+100, you must either include a machine-readable Transparent copy along with
+each Opaque copy, or state in or with each Opaque copy a computer-network
+location from which the general network-using public has access to download
+using public-standard network protocols a complete Transparent copy of the
+Document, free of added material. If you use the latter option, you must take
+reasonably prudent steps, when you begin distribution of Opaque copies in
+quantity, to ensure that this Transparent copy will remain thus accessible at
+the stated location until at least one year after the last time you distribute
+an Opaque copy (directly or through your agents or retailers) of that edition
+to the public.
+
+It is requested, but not required, that you contact the authors of the Document
+well before redistributing any large number of copies, to give them a chance to
+provide you with an updated version of the Document.
+
+=== 4. MODIFICATIONS
+
+You may copy and distribute a Modified Version of the Document under the
+conditions of sections 2 and 3 above, provided that you release the Modified
+Version under precisely this License, with the Modified Version filling the
+role of the Document, thus licensing distribution and modification of the
+Modified Version to whoever possesses a copy of it. In addition, you must do
+these things in the Modified Version:
+
+A. Use in the Title Page (and on the covers, if any) a title distinct from that
+of the Document, and from those of previous versions (which should, if there
+were any, be listed in the History section of the Document). You may use the
+same title as a previous version if the original publisher of that version
+gives permission.
+
+B. List on the Title Page, as authors, one or more persons or entities
+responsible for authorship of the modifications in the Modified Version,
+together with at least five of the principal authors of the Document (all of
+its principal authors, if it has fewer than five), unless they release you from
+this requirement.
+
+C. State on the Title page the name of the publisher of the Modified Version,
+as the publisher.
+
+D. Preserve all the copyright notices of the Document.
+
+E. Add an appropriate copyright notice for your modifications adjacent to the
+other copyright notices.
+
+F. Include, immediately after the copyright notices, a license notice giving
+the public permission to use the Modified Version under the terms of this
+License, in the form shown in the Addendum below.
+
+G. Preserve in that license notice the full lists of Invariant Sections and
+required Cover Texts given in the Document's license notice.
+
+H. Include an unaltered copy of this License.
+
+I. Preserve the section Entitled "History", Preserve its Title, and add to it
+an item stating at least the title, year, new authors, and publisher of the
+Modified Version as given on the Title Page. If there is no section Entitled
+"History" in the Document, create one stating the title, year, authors, and
+publisher of the Document as given on its Title Page, then add an item
+describing the Modified Version as stated in the previous sentence.
+
+J. Preserve the network location, if any, given in the Document for public
+access to a Transparent copy of the Document, and likewise the network
+locations given in the Document for previous versions it was based on. These
+may be placed in the "History" section. You may omit a network location for a
+work that was published at least four years before the Document itself, or if
+the original publisher of the version it refers to gives permission.
+
+K. For any section Entitled "Acknowledgements" or "Dedications", Preserve the
+Title of the section, and preserve in the section all the substance and tone of
+each of the contributor acknowledgements and/or dedications given therein.
+
+L. Preserve all the Invariant Sections of the Document, unaltered in their text
+and in their titles. Section numbers or the equivalent are not considered part
+of the section titles.
+
+M. Delete any section Entitled "Endorsements". Such a section may not be
+included in the Modified Version.
+
+N. Do not retitle any existing section to be Entitled "Endorsements" or to
+conflict in title with any Invariant Section.
+
+O. Preserve any Warranty Disclaimers.
+
+If the Modified Version includes new front-matter sections or appendices that
+qualify as Secondary Sections and contain no material copied from the Document,
+you may at your option designate some or all of these sections as invariant. To
+do this, add their titles to the list of Invariant Sections in the Modified
+Version's license notice. These titles must be distinct from any other section
+titles.
+
+You may add a section Entitled "Endorsements", provided it contains nothing but
+endorsements of your Modified Version by various parties—for example,
+statements of peer review or that the text has been approved by an organization
+as the authoritative definition of a standard.
+
+You may add a passage of up to five words as a Front-Cover Text, and a passage
+of up to 25 words as a Back-Cover Text, to the end of the list of Cover Texts
+in the Modified Version. Only one passage of Front-Cover Text and one of
+Back-Cover Text may be added by (or through arrangements made by) any one
+entity. If the Document already includes a cover text for the same cover,
+previously added by you or by arrangement made by the same entity you are
+acting on behalf of, you may not add another; but you may replace the old one,
+on explicit permission from the previous publisher that added the old one.
+
+The author(s) and publisher(s) of the Document do not by this License give
+permission to use their names for publicity for or to assert or imply
+endorsement of any Modified Version.
+
+=== 5. COMBINING DOCUMENTS
+
+You may combine the Document with other documents released under this License,
+under the terms defined in section 4 above for modified versions, provided that
+you include in the combination all of the Invariant Sections of all of the
+original documents, unmodified, and list them all as Invariant Sections of your
+combined work in its license notice, and that you preserve all their Warranty
+Disclaimers.
+
+The combined work need only contain one copy of this License, and multiple
+identical Invariant Sections may be replaced with a single copy. If there are
+multiple Invariant Sections with the same name but different contents, make the
+title of each such section unique by adding at the end of it, in parentheses,
+the name of the original author or publisher of that section if known, or else
+a unique number. Make the same adjustment to the section titles in the list of
+Invariant Sections in the license notice of the combined work.
+
+In the combination, you must combine any sections Entitled "History" in the
+various original documents, forming one section Entitled "History"; likewise
+combine any sections Entitled "Acknowledgements", and any sections Entitled
+"Dedications". You must delete all sections Entitled "Endorsements".
+
+=== 6. COLLECTIONS OF DOCUMENTS
+
+You may make a collection consisting of the Document and other documents
+released under this License, and replace the individual copies of this License
+in the various documents with a single copy that is included in the collection,
+provided that you follow the rules of this License for verbatim copying of each
+of the documents in all other respects.
+
+You may extract a single document from such a collection, and distribute it
+individually under this License, provided you insert a copy of this License
+into the extracted document, and follow this License in all other respects
+regarding verbatim copying of that document.
+
+=== 7. AGGREGATION WITH INDEPENDENT WORKS
+
+A compilation of the Document or its derivatives with other separate and
+independent documents or works, in or on a volume of a storage or distribution
+medium, is called an "aggregate" if the copyright resulting from the
+compilation is not used to limit the legal rights of the compilation's users
+beyond what the individual works permit. When the Document is included in an
+aggregate, this License does not apply to the other works in the aggregate
+which are not themselves derivative works of the Document.
+
+If the Cover Text requirement of section 3 is applicable to these copies of the
+Document, then if the Document is less than one half of the entire aggregate,
+the Document's Cover Texts may be placed on covers that bracket the Document
+within the aggregate, or the electronic equivalent of covers if the Document is
+in electronic form. Otherwise they must appear on printed covers that bracket
+the whole aggregate.
+
+=== 8. TRANSLATION
+
+Translation is considered a kind of modification, so you may distribute
+translations of the Document under the terms of section 4. Replacing Invariant
+Sections with translations requires special permission from their copyright
+holders, but you may include translations of some or all Invariant Sections in
+addition to the original versions of these Invariant Sections. You may include
+a translation of this License, and all the license notices in the Document, and
+any Warranty Disclaimers, provided that you also include the original English
+version of this License and the original versions of those notices and
+disclaimers. In case of a disagreement between the translation and the original
+version of this License or a notice or disclaimer, the original version will
+prevail.
+
+If a section in the Document is Entitled "Acknowledgements", "Dedications", or
+"History", the requirement (section 4) to Preserve its Title (section 1) will
+typically require changing the actual title.
+
+=== 9. TERMINATION
+
+You may not copy, modify, sublicense, or distribute the Document except as
+expressly provided under this License. Any attempt otherwise to copy, modify,
+sublicense, or distribute it is void, and will automatically terminate your
+rights under this License.
+
+However, if you cease all violation of this License, then your license from a
+particular copyright holder is reinstated (a) provisionally, unless and until
+the copyright holder explicitly and finally terminates your license, and (b)
+permanently, if the copyright holder fails to notify you of the violation by
+some reasonable means prior to 60 days after the cessation.
+
+Moreover, your license from a particular copyright holder is reinstated
+permanently if the copyright holder notifies you of the violation by some
+reasonable means, this is the first time you have received notice of violation
+of this License (for any work) from that copyright holder, and you cure the
+violation prior to 30 days after your receipt of the notice.
+
+Termination of your rights under this section does not terminate the licenses
+of parties who have received copies or rights from you under this License. If
+your rights have been terminated and not permanently reinstated, receipt of a
+copy of some or all of the same material does not give you any rights to use it.
+
+=== 10. FUTURE REVISIONS OF THIS LICENSE
+
+The Free Software Foundation may publish new, revised versions of the GNU Free
+Documentation License from time to time. Such new versions will be similar in
+spirit to the present version, but may differ in detail to address new problems
+or concerns. See http://www.gnu.org/copyleft/.
+
+Each version of the License is given a distinguishing version number. If the
+Document specifies that a particular numbered version of this License "or any
+later version" applies to it, you have the option of following the terms and
+conditions either of that specified version or of any later version that has
+been published (not as a draft) by the Free Software Foundation. If the
+Document does not specify a version number of this License, you may choose any
+version ever published (not as a draft) by the Free Software Foundation. If the
+Document specifies that a proxy can decide which future versions of this
+License can be used, that proxy's public statement of acceptance of a version
+permanently authorizes you to choose that version for the Document.
+
+=== 11. RELICENSING
+
+"Massive Multiauthor Collaboration Site" (or "MMC Site") means any World Wide
+Web server that publishes copyrightable works and also provides prominent
+facilities for anybody to edit those works. A public wiki that anybody can edit
+is an example of such a server. A "Massive Multiauthor Collaboration" (or
+"MMC") contained in the site means any set of copyrightable works thus
+published on the MMC site.
+
+"CC-BY-SA" means the Creative Commons Attribution-Share Alike 3.0 license
+published by Creative Commons Corporation, a not-for-profit corporation with a
+principal place of business in San Francisco, California, as well as future
+copyleft versions of that license published by that same organization.
+
+"Incorporate" means to publish or republish a Document, in whole or in part, as
+part of another Document.
+
+An MMC is "eligible for relicensing" if it is licensed under this License, and
+if all works that were first published under this License somewhere other than
+this MMC, and subsequently incorporated in whole or in part into the MMC, (1)
+had no cover texts or invariant sections, and (2) were thus incorporated prior
+to November 1, 2008.
+
+The operator of an MMC Site may republish an MMC contained in the site under
+CC-BY-SA on the same site at any time before August 1, 2009, provided the MMC
+is eligible for relicensing.
+

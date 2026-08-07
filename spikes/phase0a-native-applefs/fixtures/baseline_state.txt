@@ -1,0 +1,48 @@
+--- Baseline for apfs.dmg ---
+8970533a0479090eeaa26bf20b8ad71d23f3caa82471e72bab4256ec88c48468  apfs.dmg
+-rw-r--r--@ 1 cenvu  staff  52428800 Jul 25 18:18 apfs.dmg
+  File: "apfs.dmg"
+  Size: 52428800     FileType: Regular File
+  Mode: (0644/-rw-r--r--)         Uid: (  501/   cenvu)  Gid: (   20/   staff)
+Device: 1,13   Inode: 55491507    Links: 1
+Access: Sat Jul 25 18:18:11 2026
+Modify: Sat Jul 25 18:18:08 2026
+Change: Sat Jul 25 18:18:08 2026
+ Birth: Sat Jul 25 18:18:07 2026
+
+--- Baseline for apfsx.dmg ---
+cd42013c9d3fda64ebcb91bb400e231caad5ada263f656c91f28d3cf9b58793d  apfsx.dmg
+-rw-r--r--@ 1 cenvu  staff  52428800 Jul 25 18:18 apfsx.dmg
+  File: "apfsx.dmg"
+  Size: 52428800     FileType: Regular File
+  Mode: (0644/-rw-r--r--)         Uid: (  501/   cenvu)  Gid: (   20/   staff)
+Device: 1,13   Inode: 55491526    Links: 1
+Access: Sat Jul 25 18:18:13 2026
+Modify: Sat Jul 25 18:18:12 2026
+Change: Sat Jul 25 18:18:12 2026
+ Birth: Sat Jul 25 18:18:11 2026
+
+--- Baseline for hfs.dmg ---
+58b6294acc24b93df9750fa4f392e4c311086bb69d5c411c0bf7ca1cf8c30b44  hfs.dmg
+-rw-r--r--@ 1 cenvu  staff  52428800 Jul 25 18:18 hfs.dmg
+  File: "hfs.dmg"
+  Size: 52428800     FileType: Regular File
+  Mode: (0644/-rw-r--r--)         Uid: (  501/   cenvu)  Gid: (   20/   staff)
+Device: 1,13   Inode: 55491581    Links: 1
+Access: Sat Jul 25 18:18:14 2026
+Modify: Sat Jul 25 18:18:14 2026
+Change: Sat Jul 25 18:18:14 2026
+ Birth: Sat Jul 25 18:18:13 2026
+
+--- Baseline for hfsx.dmg ---
+8215d097cd1152b537b11437d244e5605261ed050b7fcb297e4ac3644fe5e15f  hfsx.dmg
+-rw-r--r--@ 1 cenvu  staff  52428800 Jul 25 18:18 hfsx.dmg
+  File: "hfsx.dmg"
+  Size: 52428800     FileType: Regular File
+  Mode: (0644/-rw-r--r--)         Uid: (  501/   cenvu)  Gid: (   20/   staff)
+Device: 1,13   Inode: 55491602    Links: 1
+Access: Sat Jul 25 18:18:16 2026
+Modify: Sat Jul 25 18:18:16 2026
+Change: Sat Jul 25 18:18:16 2026
+ Birth: Sat Jul 25 18:18:15 2026
+

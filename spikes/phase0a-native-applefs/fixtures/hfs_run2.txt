@@ -1,0 +1,208 @@
+--- VOLUME METADATA ---
+Identifier: Optional(<11869b00 00000000>)
+Format: Optional("Mac OS Extended")
+Case Sensitive: Optional(false)
+Read Only: Optional(true)
+-----------------------
+--- ENUMERATION ---
+Path: .fseventsd
+  Name: .fseventsd
+  Name Hex: 2e 66 73 65 76 65 6e 74 73 64
+  isDir: true, isFile: false, isSymlink: false, isPackage: false
+  Logical Size: -1
+  Allocated Size: -1
+  Creation: Optional(2026-07-25 11:18:14 +0000)
+  Modification: Optional(2026-07-25 11:18:14 +0000)
+  Hidden: true
+  ContentType: Optional("public.folder")
+Path: .fseventsd/ffba0106c84afe5b
+  Name: ffba0106c84afe5b
+  Name Hex: 66 66 62 61 30 31 30 36 63 38 34 61 66 65 35 62
+  isDir: false, isFile: true, isSymlink: false, isPackage: false
+  Logical Size: 294
+  Allocated Size: 4096
+  Creation: Optional(2026-07-25 11:18:14 +0000)
+  Modification: Optional(2026-07-25 11:18:14 +0000)
+  Hidden: false
+  ContentType: Optional("public.data")
+Path: .fseventsd/ffba0106c84afe5c
+  Name: ffba0106c84afe5c
+  Name Hex: 66 66 62 61 30 31 30 36 63 38 34 61 66 65 35 63
+  isDir: false, isFile: true, isSymlink: false, isPackage: false
+  Logical Size: 75
+  Allocated Size: 4096
+  Creation: Optional(2026-07-25 11:18:14 +0000)
+  Modification: Optional(2026-07-25 11:18:14 +0000)
+  Hidden: false
+  ContentType: Optional("public.data")
+Path: .fseventsd/fseventsd-uuid
+  Name: fseventsd-uuid
+  Name Hex: 66 73 65 76 65 6e 74 73 64 2d 75 75 69 64
+  isDir: false, isFile: true, isSymlink: false, isPackage: false
+  Logical Size: 36
+  Allocated Size: 4096
+  Creation: Optional(2026-07-25 11:18:14 +0000)
+  Modification: Optional(2026-07-25 11:18:14 +0000)
+  Hidden: false
+  ContentType: Optional("public.data")
+Path: .hidden_file
+  Name: .hidden_file
+  Name Hex: 2e 68 69 64 64 65 6e 5f 66 69 6c 65
+  isDir: false, isFile: true, isSymlink: false, isPackage: false
+  Logical Size: 7
+  Allocated Size: 4096
+  Creation: Optional(2026-07-25 11:18:14 +0000)
+  Modification: Optional(2026-07-25 11:18:14 +0000)
+  Hidden: true
+  ContentType: Optional("public.data")
+Path: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.txt
+  Name: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.txt
+  Name Hex: 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 2e 74 78 74
+  isDir: false, isFile: true, isSymlink: false, isPackage: false
+  Logical Size: 0
+  Allocated Size: 0
+  Creation: Optional(2026-07-25 11:18:14 +0000)
+  Modification: Optional(2026-07-25 11:18:14 +0000)
+  Hidden: false
+  ContentType: Optional("public.plain-text")
+Path: app.app
+  Name: app.app
+  Name Hex: 61 70 70 2e 61 70 70
+  isDir: true, isFile: false, isSymlink: false, isPackage: true
+  Logical Size: -1
+  Allocated Size: -1
+  Creation: Optional(2026-07-25 11:18:14 +0000)
+  Modification: Optional(2026-07-25 11:18:14 +0000)
+  Hidden: false
+  ContentType: Optional("com.apple.application-bundle")
+Path: app.app/Contents
+  Name: Contents
+  Name Hex: 43 6f 6e 74 65 6e 74 73
+  isDir: false, isFile: true, isSymlink: false, isPackage: false
+  Logical Size: 0
+  Allocated Size: 0
+  Creation: Optional(2026-07-25 11:18:14 +0000)
+  Modification: Optional(2026-07-25 11:18:14 +0000)
+  Hidden: false
+  ContentType: Optional("public.data")
+Path: café_NFC.txt
+  Name: café_NFC.txt
+  Name Hex: 63 61 66 65 cc 81 5f 4e 46 43 2e 74 78 74
+  isDir: false, isFile: true, isSymlink: false, isPackage: false
+  Logical Size: 3
+  Allocated Size: 4096
+  Creation: Optional(2026-07-25 11:18:14 +0000)
+  Modification: Optional(2026-07-25 11:18:14 +0000)
+  Hidden: false
+  ContentType: Optional("public.plain-text")
+Path: café_NFD.txt
+  Name: café_NFD.txt
+  Name Hex: 63 61 66 65 cc 81 5f 4e 46 44 2e 74 78 74
+  isDir: false, isFile: true, isSymlink: false, isPackage: false
+  Logical Size: 3
+  Allocated Size: 4096
+  Creation: Optional(2026-07-25 11:18:14 +0000)
+  Modification: Optional(2026-07-25 11:18:14 +0000)
+  Hidden: false
+  ContentType: Optional("public.plain-text")
+Path: deep
+  Name: deep
+  Name Hex: 64 65 65 70
+  isDir: true, isFile: false, isSymlink: false, isPackage: false
+  Logical Size: -1
+  Allocated Size: -1
+  Creation: Optional(2026-07-25 11:18:14 +0000)
+  Modification: Optional(2026-07-25 11:18:14 +0000)
+  Hidden: false
+  ContentType: Optional("public.folder")
+Path: deep/a
+  Name: a
+  Name Hex: 61
+  isDir: true, isFile: false, isSymlink: false, isPackage: false
+  Logical Size: -1
+  Allocated Size: -1
+  Creation: Optional(2026-07-25 11:18:14 +0000)
+  Modification: Optional(2026-07-25 11:18:14 +0000)
+  Hidden: false
+  ContentType: Optional("public.folder")
+Path: deep/a/b
+  Name: b
+  Name Hex: 62
+  isDir: true, isFile: false, isSymlink: false, isPackage: false
+  Logical Size: -1
+  Allocated Size: -1
+  Creation: Optional(2026-07-25 11:18:14 +0000)
+  Modification: Optional(2026-07-25 11:18:14 +0000)
+  Hidden: false
+  ContentType: Optional("public.folder")
+Path: deep/a/b/c
+  Name: c
+  Name Hex: 63
+  isDir: true, isFile: false, isSymlink: false, isPackage: false
+  Logical Size: -1
+  Allocated Size: -1
+  Creation: Optional(2026-07-25 11:18:14 +0000)
+  Modification: Optional(2026-07-25 11:18:14 +0000)
+  Hidden: false
+  ContentType: Optional("public.folder")
+Path: empty_dir
+  Name: empty_dir
+  Name Hex: 65 6d 70 74 79 5f 64 69 72
+  isDir: true, isFile: false, isSymlink: false, isPackage: false
+  Logical Size: -1
+  Allocated Size: -1
+  Creation: Optional(2026-07-25 11:18:14 +0000)
+  Modification: Optional(2026-07-25 11:18:14 +0000)
+  Hidden: false
+  ContentType: Optional("public.folder")
+Path: empty_file
+  Name: empty_file
+  Name Hex: 65 6d 70 74 79 5f 66 69 6c 65
+  isDir: false, isFile: true, isSymlink: false, isPackage: false
+  Logical Size: 0
+  Allocated Size: 0
+  Creation: Optional(2026-07-25 11:18:14 +0000)
+  Modification: Optional(2026-07-25 11:18:14 +0000)
+  Hidden: false
+  ContentType: Optional("public.data")
+Path: regular_file.txt
+  Name: regular_file.txt
+  Name Hex: 72 65 67 75 6c 61 72 5f 66 69 6c 65 2e 74 78 74
+  isDir: false, isFile: true, isSymlink: false, isPackage: false
+  Logical Size: 12
+  Allocated Size: 4096
+  Creation: Optional(2026-07-25 05:00:00 +0000)
+  Modification: Optional(2026-07-25 05:00:00 +0000)
+  Hidden: false
+  ContentType: Optional("public.plain-text")
+Path: sparse.bin
+  Name: sparse.bin
+  Name Hex: 73 70 61 72 73 65 2e 62 69 6e
+  isDir: false, isFile: true, isSymlink: false, isPackage: false
+  Logical Size: 1048576
+  Allocated Size: 1048576
+  Creation: Optional(2026-07-25 11:18:14 +0000)
+  Modification: Optional(2026-07-25 11:18:14 +0000)
+  Hidden: false
+  ContentType: Optional("com.apple.macbinary-archive")
+Path: symlink_broken
+  Name: symlink_broken
+  Name Hex: 73 79 6d 6c 69 6e 6b 5f 62 72 6f 6b 65 6e
+  isDir: false, isFile: false, isSymlink: true, isPackage: false
+  Logical Size: 14
+  Allocated Size: 4096
+  Creation: Optional(2026-07-25 11:18:14 +0000)
+  Modification: Optional(2026-07-25 11:18:14 +0000)
+  Hidden: false
+  ContentType: Optional("public.symlink")
+Path: symlink_valid
+  Name: symlink_valid
+  Name Hex: 73 79 6d 6c 69 6e 6b 5f 76 61 6c 69 64
+  isDir: false, isFile: false, isSymlink: true, isPackage: false
+  Logical Size: 16
+  Allocated Size: 4096
+  Creation: Optional(2026-07-25 11:18:14 +0000)
+  Modification: Optional(2026-07-25 11:18:14 +0000)
+  Hidden: false
+  ContentType: Optional("public.symlink")
+Total entries: 20

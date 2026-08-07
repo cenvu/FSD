@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "product": "FSD — FishSock Differ",
+  "exportType": "snapshot",
+  "volume": {
+    "persistentUUID": "3F13208B-5706-4FF1-861D-82AA773E21B0",
+    "displayName": "CAMERA_MASTER",
+    "userLabel": "KN_SSD_014",
+    "filesystemType": "exFAT",
+    "capacityBytes": 7680000000000
+  },
+  "snapshot": {
+    "sessionNumber": 8,
+    "status": "complete",
+    "startedAt": "2026-07-24T17:39:13+07:00",
+    "completedAt": "2026-07-24T17:42:31+07:00",
+    "fileCount": 248129,
+    "folderCount": 6442,
+    "logicalBytes": 4821000000000,
+    "allocatedBytes": 4832400000000,
+    "contentVerified": false
+  },
+  "entries": [
+    {
+      "relativePath": "PROJECT_A",
+      "type": "directory",
+      "subtreeFileCount": 248129,
+      "subtreeFolderCount": 6441,
+      "subtreeLogicalBytes": 4821000000000
+    },
+    {
+      "relativePath": "PROJECT_A/CAMERA/A001C001_240724.mxf",
+      "type": "file",
+      "logicalBytes": 109951162777,
+      "allocatedBytes": 109951164416,
+      "modifiedAt": "2026-07-24T08:14:31+07:00"
+    }
+  ]
+}

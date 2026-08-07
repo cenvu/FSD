@@ -1,0 +1,2 @@
+Failed to open volume.
+Error: libfsext_volume_open: unable to open volume: fixtures/truncated_ext4.img.

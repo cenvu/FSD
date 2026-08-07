@@ -1,0 +1,219 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A10000000000000000000501 /* ComparisonWorkspaceModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000501 /* ComparisonWorkspaceModel.swift */; };
+		A10000000000000000000502 /* ComparisonBrowserModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000502 /* ComparisonBrowserModel.swift */; };
+		A10000000000000000000503 /* ComparisonDestinationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000503 /* ComparisonDestinationView.swift */; };
+		A10000000000000000000504 /* ComparisonCreationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000504 /* ComparisonCreationView.swift */; };
+		A10000000000000000000505 /* ComparisonWorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000505 /* ComparisonWorkspaceView.swift */; };
+		A10000000000000000000506 /* ComparisonSharedViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000506 /* ComparisonSharedViews.swift */; };
+		A10000000000000000000601 /* ComparisonWorkspaceModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000601 /* ComparisonWorkspaceModelTests.swift */; };
+		A10000000000000000000602 /* ComparisonBrowserModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000602 /* ComparisonBrowserModelTests.swift */; };
+		A10000000000000000000603 /* ComparisonGUIValidationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000603 /* ComparisonGUIValidationTests.swift */; };
+		A10000000000000000000604 /* ComparisonGUISourceBoundaryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000604 /* ComparisonGUISourceBoundaryTests.swift */; };
+		A10000000000000000000605 /* FSDProbeSeedTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000605 /* FSDProbeSeedTests.swift */; };
+		A10000000000000000000001 /* FSDApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* FSDApp.swift */; };
+		A10000000000000000000002 /* CatalogDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* CatalogDatabase.swift */; };
+		A10000000000000000000003 /* SnapshotModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000003 /* SnapshotModels.swift */; };
+		A10000000000000000000004 /* schema.sql in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000004 /* schema.sql */; };
+		A10000000000000000000005 /* CatalogDatabaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000005 /* CatalogDatabaseTests.swift */; };
+		A10000000000000000000006 /* SnapshotLifecycleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000006 /* SnapshotLifecycleTests.swift */; };
+		A10000000000000000000007 /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = A20000000000000000000007 /* libsqlite3.tbd */; };
+		A10000000000000000000008 /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = A20000000000000000000007 /* libsqlite3.tbd */; };
+		A10000000000000000000009 /* FilesystemProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000109 /* FilesystemProvider.swift */; };
+		A10000000000000000000010 /* FilesystemDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000110 /* FilesystemDetector.swift */; };
+		A10000000000000000000011 /* NativeMountedProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000111 /* NativeMountedProvider.swift */; };
+		A10000000000000000000012 /* SnapshotWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000112 /* SnapshotWriter.swift */; };
+		A10000000000000000000013 /* RecoveryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000113 /* RecoveryService.swift */; };
+		A10000000000000000000014 /* SnapshotScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000114 /* SnapshotScanner.swift */; };
+		A10000000000000000000015 /* Milestone2CaptureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000115 /* Milestone2CaptureTests.swift */; };
+		A10000000000000000000201 /* CatalogMigrations.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000201 /* CatalogMigrations.swift */; };
+		A10000000000000000000202 /* CatalogLocation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000202 /* CatalogLocation.swift */; };
+		A10000000000000000000203 /* CatalogProcessLock.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000203 /* CatalogProcessLock.swift */; };
+		A10000000000000000000204 /* SnapshotHistoryRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000204 /* SnapshotHistoryRepository.swift */; };
+		A10000000000000000000205 /* SnapshotTreeDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000205 /* SnapshotTreeDataSource.swift */; };
+		A10000000000000000000206 /* MetadataSearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000206 /* MetadataSearchService.swift */; };
+		A10000000000000000000207 /* JSONSnapshotExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000207 /* JSONSnapshotExporter.swift */; };
+		A10000000000000000000208 /* SnapshotBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000208 /* SnapshotBrowserView.swift */; };
+		A10000000000000000000320 /* EntryClassificationRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000320 /* EntryClassificationRepository.swift */; };
+		A10000000000000000000221 /* SchemaMigrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000221 /* SchemaMigrationTests.swift */; };
+		A10000000000000000000222 /* SnapshotHistoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000222 /* SnapshotHistoryTests.swift */; };
+		A10000000000000000000223 /* LazyTreeBrowsingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000223 /* LazyTreeBrowsingTests.swift */; };
+		A10000000000000000000224 /* MetadataSearchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000224 /* MetadataSearchTests.swift */; };
+		A10000000000000000000225 /* MilestoneConditionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000225 /* MilestoneConditionTests.swift */; };
+		A10000000000000000000226 /* JSONExportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000226 /* JSONExportTests.swift */; };
+		A10000000000000000000227 /* ManualSessionASubstituteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000227 /* ManualSessionASubstituteTests.swift */; };
+		A10000000000000000000228 /* FilesystemMatrixTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000228 /* FilesystemMatrixTests.swift */; };
+		A10000000000000000000301 /* ComparisonModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000301 /* ComparisonModels.swift */; };
+		A10000000000000000000302 /* ComparisonProfileRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000302 /* ComparisonProfileRepository.swift */; };
+		A10000000000000000000303 /* ComparisonEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000303 /* ComparisonEngine.swift */; };
+		A10000000000000000000304 /* ComparisonResultRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000304 /* ComparisonResultRepository.swift */; };
+		A10000000000000000000305 /* ComparisonService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000305 /* ComparisonService.swift */; };
+		A10000000000000000000306 /* TransientSnapshotLifecycle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000306 /* TransientSnapshotLifecycle.swift */; };
+		A10000000000000000000311 /* TestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000311 /* TestSupport.swift */; };
+		A10000000000000000000312 /* ComparisonSemanticsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000312 /* ComparisonSemanticsTests.swift */; };
+		A10000000000000000000313 /* ComparisonIdentityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000313 /* ComparisonIdentityTests.swift */; };
+		A10000000000000000000314 /* ComparisonSnapshotStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000314 /* ComparisonSnapshotStateTests.swift */; };
+		A10000000000000000000315 /* ComparisonModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000315 /* ComparisonModeTests.swift */; };
+		A10000000000000000000316 /* ComparisonPersistenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000316 /* ComparisonPersistenceTests.swift */; };
+		A10000000000000000000317 /* ComparisonScaleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000317 /* ComparisonScaleTests.swift */; };
+		A10000000000000000000318 /* ComparisonEndToEndProbeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000318 /* ComparisonEndToEndProbeTests.swift */; };
+		A10000000000000000000319 /* SchemaSafetyCorrectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000319 /* SchemaSafetyCorrectionTests.swift */; };
+		A10000000000000000000613 /* ClassificationEnrichmentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000613 /* ClassificationEnrichmentTests.swift */; };
+		A10000000000000000000307 /* CaptureErrorDescription.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000307 /* CaptureErrorDescription.swift */; };
+		A10000000000000000000606 /* FinalScaleFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000606 /* FinalScaleFixtures.swift */; };
+		A10000000000000000000607 /* FinalScaleSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000607 /* FinalScaleSnapshotTests.swift */; };
+		A10000000000000000000608 /* FinalScaleComparisonTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000608 /* FinalScaleComparisonTests.swift */; };
+		A10000000000000000000609 /* FinalScaleMemoryProbeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000609 /* FinalScaleMemoryProbeTests.swift */; };
+		A10000000000000000000610 /* CancellationRaceStressTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000610 /* CancellationRaceStressTests.swift */; };
+		A10000000000000000000611 /* CaptureErrorBoundaryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000611 /* CaptureErrorBoundaryTests.swift */; };
+		A10000000000000000000612 /* M5ReliabilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000612 /* M5ReliabilityTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		A20000000000000000000501 /* ComparisonWorkspaceModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ComparisonWorkspaceModel.swift; sourceTree = "<group>"; };
+		A20000000000000000000502 /* ComparisonBrowserModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ComparisonBrowserModel.swift; sourceTree = "<group>"; };
+		A20000000000000000000503 /* ComparisonDestinationView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ComparisonDestinationView.swift; sourceTree = "<group>"; };
+		A20000000000000000000504 /* ComparisonCreationView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ComparisonCreationView.swift; sourceTree = "<group>"; };
+		A20000000000000000000505 /* ComparisonWorkspaceView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ComparisonWorkspaceView.swift; sourceTree = "<group>"; };
+		A20000000000000000000506 /* ComparisonSharedViews.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ComparisonSharedViews.swift; sourceTree = "<group>"; };
+		A20000000000000000000601 /* ComparisonWorkspaceModelTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ComparisonWorkspaceModelTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000602 /* ComparisonBrowserModelTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ComparisonBrowserModelTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000603 /* ComparisonGUIValidationTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ComparisonGUIValidationTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000604 /* ComparisonGUISourceBoundaryTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ComparisonGUISourceBoundaryTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000605 /* FSDProbeSeedTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FSDProbeSeedTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000001 /* FSDApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FSDApp.swift; sourceTree = "<group>"; };
+		A20000000000000000000002 /* CatalogDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogDatabase.swift; sourceTree = "<group>"; };
+		A20000000000000000000003 /* SnapshotModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotModels.swift; sourceTree = "<group>"; };
+		A20000000000000000000004 /* schema.sql */ = {isa = PBXFileReference; lastKnownFileType = text; name = schema.sql; path = docs/database/schema.sql; sourceTree = SOURCE_ROOT; };
+		A20000000000000000000005 /* CatalogDatabaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogDatabaseTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000006 /* SnapshotLifecycleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotLifecycleTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000007 /* libsqlite3.tbd */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.text-based-dylib; name = libsqlite3.tbd; path = usr/lib/libsqlite3.tbd; sourceTree = SDKROOT; };
+		A20000000000000000000008 /* FSD.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FSD.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A20000000000000000000009 /* FSDTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FSDTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A20000000000000000000109 /* FilesystemProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilesystemProvider.swift; sourceTree = "<group>"; };
+		A20000000000000000000110 /* FilesystemDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilesystemDetector.swift; sourceTree = "<group>"; };
+		A20000000000000000000111 /* NativeMountedProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeMountedProvider.swift; sourceTree = "<group>"; };
+		A20000000000000000000112 /* SnapshotWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotWriter.swift; sourceTree = "<group>"; };
+		A20000000000000000000113 /* RecoveryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoveryService.swift; sourceTree = "<group>"; };
+		A20000000000000000000114 /* SnapshotScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotScanner.swift; sourceTree = "<group>"; };
+		A20000000000000000000115 /* Milestone2CaptureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Milestone2CaptureTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000201 /* CatalogMigrations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogMigrations.swift; sourceTree = "<group>"; };
+		A20000000000000000000202 /* CatalogLocation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogLocation.swift; sourceTree = "<group>"; };
+		A20000000000000000000203 /* CatalogProcessLock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogProcessLock.swift; sourceTree = "<group>"; };
+		A20000000000000000000204 /* SnapshotHistoryRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotHistoryRepository.swift; sourceTree = "<group>"; };
+		A20000000000000000000205 /* SnapshotTreeDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotTreeDataSource.swift; sourceTree = "<group>"; };
+		A20000000000000000000206 /* MetadataSearchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetadataSearchService.swift; sourceTree = "<group>"; };
+		A20000000000000000000207 /* JSONSnapshotExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSONSnapshotExporter.swift; sourceTree = "<group>"; };
+		A20000000000000000000208 /* SnapshotBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotBrowserView.swift; sourceTree = "<group>"; };
+		A20000000000000000000320 /* EntryClassificationRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryClassificationRepository.swift; sourceTree = "<group>"; };
+		A20000000000000000000221 /* SchemaMigrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchemaMigrationTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000222 /* SnapshotHistoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotHistoryTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000223 /* LazyTreeBrowsingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LazyTreeBrowsingTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000224 /* MetadataSearchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetadataSearchTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000225 /* MilestoneConditionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MilestoneConditionTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000226 /* JSONExportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSONExportTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000227 /* ManualSessionASubstituteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualSessionASubstituteTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000228 /* FilesystemMatrixTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilesystemMatrixTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000301 /* ComparisonModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComparisonModels.swift; sourceTree = "<group>"; };
+		A20000000000000000000302 /* ComparisonProfileRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComparisonProfileRepository.swift; sourceTree = "<group>"; };
+		A20000000000000000000303 /* ComparisonEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComparisonEngine.swift; sourceTree = "<group>"; };
+		A20000000000000000000304 /* ComparisonResultRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComparisonResultRepository.swift; sourceTree = "<group>"; };
+		A20000000000000000000305 /* ComparisonService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComparisonService.swift; sourceTree = "<group>"; };
+		A20000000000000000000306 /* TransientSnapshotLifecycle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransientSnapshotLifecycle.swift; sourceTree = "<group>"; };
+		A20000000000000000000311 /* TestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestSupport.swift; sourceTree = "<group>"; };
+		A20000000000000000000312 /* ComparisonSemanticsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComparisonSemanticsTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000313 /* ComparisonIdentityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComparisonIdentityTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000314 /* ComparisonSnapshotStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComparisonSnapshotStateTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000315 /* ComparisonModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComparisonModeTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000316 /* ComparisonPersistenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComparisonPersistenceTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000317 /* ComparisonScaleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComparisonScaleTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000318 /* ComparisonEndToEndProbeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComparisonEndToEndProbeTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000319 /* SchemaSafetyCorrectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchemaSafetyCorrectionTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000613 /* ClassificationEnrichmentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClassificationEnrichmentTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000307 /* CaptureErrorDescription.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureErrorDescription.swift; sourceTree = "<group>"; };
+		A20000000000000000000606 /* FinalScaleFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinalScaleFixtures.swift; sourceTree = "<group>"; };
+		A20000000000000000000607 /* FinalScaleSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinalScaleSnapshotTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000608 /* FinalScaleComparisonTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinalScaleComparisonTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000609 /* FinalScaleMemoryProbeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinalScaleMemoryProbeTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000610 /* CancellationRaceStressTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CancellationRaceStressTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000611 /* CaptureErrorBoundaryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureErrorBoundaryTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000612 /* M5ReliabilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = M5ReliabilityTests.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A30000000000000000000001 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000007 /* libsqlite3.tbd in Frameworks */,); runOnlyForDeploymentPostprocessing = 0; };
+		A30000000000000000000002 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000008 /* libsqlite3.tbd in Frameworks */,); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A40000000000000000000001 = {isa = PBXGroup; children = (A40000000000000000000002, A40000000000000000000003, A40000000000000000000004, A40000000000000000000005,); sourceTree = "<group>"; };
+		A40000000000000000000002 /* FSD */ = {isa = PBXGroup; children = (A40000000000000000000006, A40000000000000000000007, A40000000000000000000008, A40000000000000000000009, A40000000000000000000010, A40000000000000000000011, A40000000000000000000012, A40000000000000000000013, A40000000000000000000014, A40000000000000000000015,); path = FSD; sourceTree = "<group>"; };
+		A40000000000000000000003 /* FSDTests */ = {isa = PBXGroup; children = (A20000000000000000000601 /* ComparisonWorkspaceModelTests.swift */, A20000000000000000000602 /* ComparisonBrowserModelTests.swift */, A20000000000000000000603 /* ComparisonGUIValidationTests.swift */, A20000000000000000000604 /* ComparisonGUISourceBoundaryTests.swift */, A20000000000000000000605 /* FSDProbeSeedTests.swift */, A20000000000000000000005 /* CatalogDatabaseTests.swift */, A20000000000000000000006 /* SnapshotLifecycleTests.swift */, A20000000000000000000115 /* Milestone2CaptureTests.swift */, A20000000000000000000221 /* SchemaMigrationTests.swift */, A20000000000000000000222 /* SnapshotHistoryTests.swift */, A20000000000000000000223 /* LazyTreeBrowsingTests.swift */, A20000000000000000000224 /* MetadataSearchTests.swift */, A20000000000000000000225 /* MilestoneConditionTests.swift */, A20000000000000000000226 /* JSONExportTests.swift */, A20000000000000000000227 /* ManualSessionASubstituteTests.swift */, A20000000000000000000228 /* FilesystemMatrixTests.swift */, A20000000000000000000311 /* TestSupport.swift */, A20000000000000000000312 /* ComparisonSemanticsTests.swift */, A20000000000000000000313 /* ComparisonIdentityTests.swift */, A20000000000000000000314 /* ComparisonSnapshotStateTests.swift */, A20000000000000000000315 /* ComparisonModeTests.swift */, A20000000000000000000316 /* ComparisonPersistenceTests.swift */, A20000000000000000000317 /* ComparisonScaleTests.swift */, A20000000000000000000318 /* ComparisonEndToEndProbeTests.swift */, A20000000000000000000319 /* SchemaSafetyCorrectionTests.swift */, A20000000000000000000606 /* FinalScaleFixtures.swift */, A20000000000000000000607 /* FinalScaleSnapshotTests.swift */, A20000000000000000000608 /* FinalScaleComparisonTests.swift */, A20000000000000000000609 /* FinalScaleMemoryProbeTests.swift */, A20000000000000000000610 /* CancellationRaceStressTests.swift */, A20000000000000000000611 /* CaptureErrorBoundaryTests.swift */, A20000000000000000000612 /* M5ReliabilityTests.swift */, A20000000000000000000613 /* ClassificationEnrichmentTests.swift */,); path = FSDTests; sourceTree = "<group>"; };
+		A40000000000000000000004 /* Products */ = {isa = PBXGroup; children = (A20000000000000000000008 /* FSD.app */, A20000000000000000000009 /* FSDTests.xctest */,); name = Products; sourceTree = "<group>"; };
+		A40000000000000000000005 /* Frameworks */ = {isa = PBXGroup; children = (A20000000000000000000007 /* libsqlite3.tbd */,); name = Frameworks; sourceTree = "<group>"; };
+		A40000000000000000000006 /* App */ = {isa = PBXGroup; children = (A20000000000000000000001 /* FSDApp.swift */, A20000000000000000000307 /* CaptureErrorDescription.swift */,); path = App; sourceTree = "<group>"; };
+		A40000000000000000000007 /* Catalog */ = {isa = PBXGroup; children = (A20000000000000000000002 /* CatalogDatabase.swift */, A20000000000000000000201 /* CatalogMigrations.swift */, A20000000000000000000202 /* CatalogLocation.swift */, A20000000000000000000203 /* CatalogProcessLock.swift */, A20000000000000000000204 /* SnapshotHistoryRepository.swift */, A20000000000000000000112 /* SnapshotWriter.swift */, A20000000000000000000113 /* RecoveryService.swift */, A20000000000000000000306 /* TransientSnapshotLifecycle.swift */, A20000000000000000000320 /* EntryClassificationRepository.swift */,); path = Catalog; sourceTree = "<group>"; };
+		A40000000000000000000008 /* Model */ = {isa = PBXGroup; children = (A20000000000000000000003 /* SnapshotModels.swift */,); path = Model; sourceTree = "<group>"; };
+		A40000000000000000000009 /* Provider */ = {isa = PBXGroup; children = (A20000000000000000000109 /* FilesystemProvider.swift */, A20000000000000000000110 /* FilesystemDetector.swift */, A20000000000000000000111 /* NativeMountedProvider.swift */,); path = Provider; sourceTree = "<group>"; };
+		A40000000000000000000010 /* Scanner and Capture */ = {isa = PBXGroup; children = (A20000000000000000000114 /* SnapshotScanner.swift */,); path = Scanner; sourceTree = "<group>"; };
+		A40000000000000000000011 /* Browser */ = {isa = PBXGroup; children = (A20000000000000000000205 /* SnapshotTreeDataSource.swift */,); path = Browser; sourceTree = "<group>"; };
+		A40000000000000000000012 /* Search */ = {isa = PBXGroup; children = (A20000000000000000000206 /* MetadataSearchService.swift */,); path = Search; sourceTree = "<group>"; };
+		A40000000000000000000013 /* Export */ = {isa = PBXGroup; children = (A20000000000000000000207 /* JSONSnapshotExporter.swift */,); path = Export; sourceTree = "<group>"; };
+		A40000000000000000000015 /* Diff */ = {isa = PBXGroup; children = (A20000000000000000000301 /* ComparisonModels.swift */, A20000000000000000000302 /* ComparisonProfileRepository.swift */, A20000000000000000000303 /* ComparisonEngine.swift */, A20000000000000000000304 /* ComparisonResultRepository.swift */, A20000000000000000000305 /* ComparisonService.swift */,); path = Diff; sourceTree = "<group>"; };
+		A40000000000000000000014 /* UI */ = {isa = PBXGroup; children = (A20000000000000000000501 /* ComparisonWorkspaceModel.swift */, A20000000000000000000502 /* ComparisonBrowserModel.swift */, A20000000000000000000503 /* ComparisonDestinationView.swift */, A20000000000000000000504 /* ComparisonCreationView.swift */, A20000000000000000000505 /* ComparisonWorkspaceView.swift */, A20000000000000000000506 /* ComparisonSharedViews.swift */, A20000000000000000000208 /* SnapshotBrowserView.swift */,); path = UI; sourceTree = "<group>"; };
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A50000000000000000000001 /* FSD */ = {isa = PBXNativeTarget; buildConfigurationList = A60000000000000000000001 /* Build configuration list for PBXNativeTarget "FSD" */; buildPhases = (A30000000000000000000003, A30000000000000000000001, A30000000000000000000004,); buildRules = (); dependencies = (); name = FSD; productName = FSD; productReference = A20000000000000000000008 /* FSD.app */; productType = "com.apple.product-type.application"; };
+		A50000000000000000000002 /* FSDTests */ = {isa = PBXNativeTarget; buildConfigurationList = A60000000000000000000002 /* Build configuration list for PBXNativeTarget "FSDTests" */; buildPhases = (A30000000000000000000005, A30000000000000000000002, A30000000000000000000006,); buildRules = (); dependencies = (A70000000000000000000001,); name = FSDTests; productName = FSDTests; productReference = A20000000000000000000009 /* FSDTests.xctest */; productType = "com.apple.product-type.bundle.unit-test"; };
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A80000000000000000000001 /* Project object */ = {isa = PBXProject; attributes = {LastUpgradeCheck = 2630; TargetAttributes = {A50000000000000000000001 = {CreatedOnToolsVersion = 26.3;}; A50000000000000000000002 = {CreatedOnToolsVersion = 26.3; TestTargetID = A50000000000000000000001;};};}; buildConfigurationList = A60000000000000000000003 /* Build configuration list for PBXProject "FSD" */; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en,); mainGroup = A40000000000000000000001; productRefGroup = A40000000000000000000004 /* Products */; projectDirPath = ""; projectRoot = ""; targets = (A50000000000000000000001, A50000000000000000000002,); };
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A30000000000000000000004 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000004 /* schema.sql in Resources */,); runOnlyForDeploymentPostprocessing = 0; };
+		A30000000000000000000006 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A30000000000000000000003 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000501 /* ComparisonWorkspaceModel.swift in Sources */, A10000000000000000000502 /* ComparisonBrowserModel.swift in Sources */, A10000000000000000000503 /* ComparisonDestinationView.swift in Sources */, A10000000000000000000504 /* ComparisonCreationView.swift in Sources */, A10000000000000000000505 /* ComparisonWorkspaceView.swift in Sources */, A10000000000000000000506 /* ComparisonSharedViews.swift in Sources */, A10000000000000000000001 /* FSDApp.swift in Sources */, A10000000000000000000002 /* CatalogDatabase.swift in Sources */, A10000000000000000000003 /* SnapshotModels.swift in Sources */, A10000000000000000000009 /* FilesystemProvider.swift in Sources */, A10000000000000000000010 /* FilesystemDetector.swift in Sources */, A10000000000000000000011 /* NativeMountedProvider.swift in Sources */, A10000000000000000000012 /* SnapshotWriter.swift in Sources */, A10000000000000000000013 /* RecoveryService.swift in Sources */, A10000000000000000000014 /* SnapshotScanner.swift in Sources */, A10000000000000000000201 /* CatalogMigrations.swift in Sources */, A10000000000000000000202 /* CatalogLocation.swift in Sources */, A10000000000000000000203 /* CatalogProcessLock.swift in Sources */, A10000000000000000000204 /* SnapshotHistoryRepository.swift in Sources */, A10000000000000000000205 /* SnapshotTreeDataSource.swift in Sources */, A10000000000000000000206 /* MetadataSearchService.swift in Sources */, A10000000000000000000207 /* JSONSnapshotExporter.swift in Sources */, A10000000000000000000208 /* SnapshotBrowserView.swift in Sources */, A10000000000000000000301 /* ComparisonModels.swift in Sources */, A10000000000000000000302 /* ComparisonProfileRepository.swift in Sources */, A10000000000000000000303 /* ComparisonEngine.swift in Sources */, A10000000000000000000304 /* ComparisonResultRepository.swift in Sources */, A10000000000000000000305 /* ComparisonService.swift in Sources */, A10000000000000000000306 /* TransientSnapshotLifecycle.swift in Sources */, A10000000000000000000307 /* CaptureErrorDescription.swift in Sources */, A10000000000000000000320 /* EntryClassificationRepository.swift in Sources */,); runOnlyForDeploymentPostprocessing = 0; };
+		A30000000000000000000005 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000601 /* ComparisonWorkspaceModelTests.swift in Sources */, A10000000000000000000602 /* ComparisonBrowserModelTests.swift in Sources */, A10000000000000000000603 /* ComparisonGUIValidationTests.swift in Sources */, A10000000000000000000604 /* ComparisonGUISourceBoundaryTests.swift in Sources */, A10000000000000000000605 /* FSDProbeSeedTests.swift in Sources */, A10000000000000000000005 /* CatalogDatabaseTests.swift in Sources */, A10000000000000000000006 /* SnapshotLifecycleTests.swift in Sources */, A10000000000000000000015 /* Milestone2CaptureTests.swift in Sources */, A10000000000000000000221 /* SchemaMigrationTests.swift in Sources */, A10000000000000000000222 /* SnapshotHistoryTests.swift in Sources */, A10000000000000000000223 /* LazyTreeBrowsingTests.swift in Sources */, A10000000000000000000224 /* MetadataSearchTests.swift in Sources */, A10000000000000000000225 /* MilestoneConditionTests.swift in Sources */, A10000000000000000000226 /* JSONExportTests.swift in Sources */, A10000000000000000000227 /* ManualSessionASubstituteTests.swift in Sources */, A10000000000000000000228 /* FilesystemMatrixTests.swift in Sources */, A10000000000000000000311 /* TestSupport.swift in Sources */, A10000000000000000000312 /* ComparisonSemanticsTests.swift in Sources */, A10000000000000000000313 /* ComparisonIdentityTests.swift in Sources */, A10000000000000000000314 /* ComparisonSnapshotStateTests.swift in Sources */, A10000000000000000000315 /* ComparisonModeTests.swift in Sources */, A10000000000000000000316 /* ComparisonPersistenceTests.swift in Sources */, A10000000000000000000317 /* ComparisonScaleTests.swift in Sources */, A10000000000000000000318 /* ComparisonEndToEndProbeTests.swift in Sources */, A10000000000000000000319 /* SchemaSafetyCorrectionTests.swift in Sources */, A10000000000000000000606 /* FinalScaleFixtures.swift in Sources */, A10000000000000000000607 /* FinalScaleSnapshotTests.swift in Sources */, A10000000000000000000608 /* FinalScaleComparisonTests.swift in Sources */, A10000000000000000000609 /* FinalScaleMemoryProbeTests.swift in Sources */, A10000000000000000000610 /* CancellationRaceStressTests.swift in Sources */, A10000000000000000000611 /* CaptureErrorBoundaryTests.swift in Sources */, A10000000000000000000612 /* M5ReliabilityTests.swift in Sources */, A10000000000000000000613 /* ClassificationEnrichmentTests.swift in Sources */,); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A70000000000000000000001 /* PBXTargetDependency */ = {isa = PBXTargetDependency; target = A50000000000000000000001 /* FSD */; targetProxy = A90000000000000000000001 /* PBXContainerItemProxy */; };
+/* End PBXTargetDependency section */
+
+/* Begin PBXContainerItemProxy section */
+		A90000000000000000000001 /* PBXContainerItemProxy */ = {isa = PBXContainerItemProxy; containerPortal = A80000000000000000000001 /* Project object */; proxyType = 1; remoteGlobalIDString = A50000000000000000000001; remoteInfo = FSD; };
+/* End PBXContainerItemProxy section */
+
+/* Begin XCBuildConfiguration section */
+		AA0000000000000000000001 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; ARCHS = arm64; CODE_SIGNING_ALLOWED = NO; CODE_SIGN_IDENTITY = ""; DEBUG_INFORMATION_FORMAT = dwarf; DEVELOPMENT_TEAM = ""; ENABLE_HARDENED_RUNTIME = NO; ENABLE_TESTABILITY = YES; GCC_C_LANGUAGE_STANDARD = gnu17; GENERATE_INFOPLIST_FILE = YES; SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG; INFOPLIST_KEY_CFBundleDisplayName = "FishSock Differ"; INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities"; MACOSX_DEPLOYMENT_TARGET = 13.0; ONLY_ACTIVE_ARCH = YES; PRODUCT_BUNDLE_IDENTIFIER = com.fsd.FSD; PRODUCT_MODULE_NAME = FSD; PRODUCT_NAME = FSD; SWIFT_OPTIMIZATION_LEVEL = "-Onone"; SWIFT_VERSION = 5.9; }; name = Debug; };
+		AA0000000000000000000002 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; ARCHS = arm64; CODE_SIGNING_ALLOWED = NO; CODE_SIGN_IDENTITY = ""; DEVELOPMENT_TEAM = ""; ENABLE_HARDENED_RUNTIME = NO; GCC_C_LANGUAGE_STANDARD = gnu17; GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_CFBundleDisplayName = "FishSock Differ"; INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities"; MACOSX_DEPLOYMENT_TARGET = 13.0; ONLY_ACTIVE_ARCH = YES; PRODUCT_BUNDLE_IDENTIFIER = com.fsd.FSD; PRODUCT_MODULE_NAME = FSD; PRODUCT_NAME = FSD; SWIFT_VERSION = 5.9; }; name = Release; };
+		AA0000000000000000000003 /* Debug Tests */ = {isa = XCBuildConfiguration; buildSettings = {ARCHS = arm64; CODE_SIGNING_ALLOWED = NO; CODE_SIGN_IDENTITY = ""; DEVELOPMENT_TEAM = ""; GENERATE_INFOPLIST_FILE = YES; SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG; MACOSX_DEPLOYMENT_TARGET = 13.0; PRODUCT_BUNDLE_IDENTIFIER = com.fsd.FSDTests; PRODUCT_NAME = FSDTests; SWIFT_OPTIMIZATION_LEVEL = "-Onone"; SWIFT_VERSION = 5.9; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FSD.app/Contents/MacOS/FSD"; BUNDLE_LOADER = "$(TEST_HOST)"; }; name = Debug; };
+		AA0000000000000000000004 /* Release Tests */ = {isa = XCBuildConfiguration; buildSettings = {ARCHS = arm64; CODE_SIGNING_ALLOWED = NO; CODE_SIGN_IDENTITY = ""; DEVELOPMENT_TEAM = ""; GENERATE_INFOPLIST_FILE = YES; MACOSX_DEPLOYMENT_TARGET = 13.0; PRODUCT_BUNDLE_IDENTIFIER = com.fsd.FSDTests; PRODUCT_NAME = FSDTests; SWIFT_VERSION = 5.9; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FSD.app/Contents/MacOS/FSD"; BUNDLE_LOADER = "$(TEST_HOST)"; }; name = Release; };
+		AA0000000000000000000005 /* Project Debug */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; ARCHS = arm64; CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; MACOSX_DEPLOYMENT_TARGET = 13.0; SWIFT_VERSION = 5.9; }; name = Debug; };
+		AA0000000000000000000006 /* Project Release */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; ARCHS = arm64; CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; MACOSX_DEPLOYMENT_TARGET = 13.0; SWIFT_VERSION = 5.9; }; name = Release; };
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A60000000000000000000001 /* Build configuration list for PBXNativeTarget "FSD" */ = {isa = XCConfigurationList; buildConfigurations = (AA0000000000000000000001, AA0000000000000000000002,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		A60000000000000000000002 /* Build configuration list for PBXNativeTarget "FSDTests" */ = {isa = XCConfigurationList; buildConfigurations = (AA0000000000000000000003, AA0000000000000000000004,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		A60000000000000000000003 /* Build configuration list for PBXProject "FSD" */ = {isa = XCConfigurationList; buildConfigurations = (AA0000000000000000000005, AA0000000000000000000006,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+/* End XCConfigurationList section */
+	};
+	rootObject = A80000000000000000000001 /* Project object */;
+}

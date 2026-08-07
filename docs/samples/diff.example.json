@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "product": "FSD — FishSock Differ",
+  "exportType": "comparison",
+  "profile": "Fast Metadata",
+  "contentVerified": false,
+  "left": {
+    "label": "KN_SSD_014 Session 007",
+    "fileCount": 248127,
+    "logicalBytes": 4819000000000
+  },
+  "right": {
+    "label": "KN_SSD_014 Session 008",
+    "fileCount": 248129,
+    "logicalBytes": 4821000000000
+  },
+  "summary": {
+    "matched": 248124,
+    "added": 3,
+    "removed": 1,
+    "changed": 2,
+    "uncertain": 0
+  },
+  "differences": [
+    {
+      "relativePath": "PROJECT_A/CAMERA/A003",
+      "result": "removed"
+    },
+    {
+      "relativePath": "PROJECT_A/CAMERA/A004",
+      "result": "added"
+    },
+    {
+      "relativePath": "PROJECT_A/AUDIO",
+      "result": "changed",
+      "leftLogicalBytes": 84900000000,
+      "rightLogicalBytes": 85400000000
+    }
+  ]
+}
