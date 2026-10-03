@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-04T02:01:33+07:00
-
 # FSD Stage C — STATE plane and canonical handoff finalization
 
 ## HOT

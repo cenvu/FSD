@@ -1,6 +1,6 @@
 # FSD BRAIN Operator Compact
 
-VERSION=1.0.0
+VERSION=1.1.0
 PROJECT=FSD
 POLICY_SCOPE=STABLE_GOVERNANCE_ONLY
 CANONICAL_KERNEL=AGENTS.md
@@ -75,6 +75,8 @@ CURRENT_HANDOFF=handoffs/CURRENT_HANDOFF.md
 TIMESTAMPED_HANDOFF=handoffs/FSD_<CASE>_<ROLE>_<YYYYMMDD-HHMMSS>.md
 TIMESTAMPED_HISTORY=IMMUTABLE
 CURRENT_MODE=FULL_SOURCE_MIRROR
+HANDOFF_FINALIZER=.agents/skills/fsd-handoff-finalizer/SKILL.md
+CONTROL_PLANE_CHECKER=scripts/check_control_plane.py
 
 Exactly one historical handoff per task. CURRENT = `UPDATED_AT: <machine-local
 ISO 8601 timestamp with timezone>` + LF + blank line + complete historical bytes.
@@ -127,6 +129,38 @@ BRAIN_WRITES=REVIEW|CLASSIFICATION|ACCEPTED_STATE|ACTIVE_NEXT
 Worker results/HOT observations are evidence, never BRAIN acceptance or authorized
 next. Preserve prior BRAIN-owned fields as dated prior state pending re-anchor.
 BRAIN alone accepts/rejects proposed state deltas.
+
+## STATE_PLANE
+
+STATE_PLANE=STATE/PROJECT_STATE.md|STATE/EVENTS.jsonl|STATE/TASK_LEDGER.tsv|STATE/RULE_PROMOTION_LEDGER.tsv
+BRAIN_DIRECT_STATE_WRITE_ALLOWED=YES
+
+PROJECT_STATE contains only compact BRAIN-accepted live control state. Existing
+scoped product documents remain product authority; STATE points to them and does
+not redefine product contracts. EVENTS is append-only transition evidence, one
+JSON object per line; record actor and authorization provenance, not command logs.
+TASK_LEDGER has one row per task: Worker owns STATUS, SCOPE, EXECUTOR,
+TECHNICAL_SHA, WORKER_RESULT, HANDOFF and evidence NOTE; BRAIN owns
+BRAIN_CLASSIFICATION and accepted state/active-next projection. A Worker return
+leaves classification PENDING_BRAIN. Existing accepted classifications are
+preserved. RULE_PROMOTION_LEDGER records only accepted promotions with provenance.
+Worker may project explicitly supplied BRAIN decisions without inventing acceptance.
+
+BRAIN may write STATE/** directly only for tiny deterministic post-adjudication
+projection of its verified decision. This grants no product/source/schema/test
+or substantive-document mutation. Delegate semantic repair to a bounded Worker.
+Keep exactly one accepted next decision in PROJECT_STATE; Worker next is a
+proposal in its handoff, not a replacement. Preserve append-only events and
+accepted fields across Worker finalization. These schemas prove field mechanics,
+not the authenticity or semantic validity of BRAIN decisions.
+
+## REMOTE_BOOTSTRAP
+
+Verify canonical HEAD → read AGENTS.md → read docs/BRAIN_OPERATOR.md → read
+STATE/PROJECT_STATE.md → read CURRENT HOT → read the relevant/tail TASK_LEDGER
+row → expand handoff/evidence only for a demonstrated need. Reconcile physical
+Git and freshness with accepted-state provenance before acting; LAST_ACCEPTED_HEAD
+is the accepted snapshot, not a claim that every newer commit is accepted.
 
 ## DETERMINISTIC_VS_SEMANTIC
 
