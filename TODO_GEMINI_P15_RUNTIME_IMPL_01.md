@@ -4,7 +4,7 @@ Prepared by: Tech Lead / Architect (planning only)
 Sequence: 1 of 8  
 Major TODO count: **4**  
 Risk: **HIGH**  
-Recommended Writer: **DeepSeek benchmark candidate** (run in parallel against Gemini under `P15_RUNTIME_MULTI_MODEL_BENCHMARK.md`; do not merge either result before comparison and independent audit)
+Execution status: **PLANNING ONLY — separately authorized implementation task required**. Current schema remains v8; this task does not authorize migration or runtime implementation.
 
 ## Purpose
 
@@ -13,8 +13,7 @@ Introduce the one approved persistence prerequisite for the runtime: schema vers
 ## Prerequisites
 
 - Start from the exact Phase 1.5 audited-design base state and read `handoffs/CURRENT_HANDOFF.md`, `docs/ARCHITECTURE.md` §9/§9a, ADR-031/032, and this file completely.
-- For the A/B run, satisfy every setup rule in `P15_RUNTIME_MULTI_MODEL_BENCHMARK.md`.
-- Confirm the working tree has no unrelated changes. If the environment is not a Git worktree, stop; benchmark provenance requires a recorded base commit.
+- Record the freshly verified canonical base commit and confirm the working tree has no unrelated changes. If the environment is not a Git worktree, stop.
 
 ## Locked implementation decisions
 
@@ -71,7 +70,7 @@ Prove legacy v8 classification rows migrate with `provider_identifier == nil`; f
 
 ## Required build/test commands
 
-Use an isolated DerivedData directory (for benchmark runs use the worktree-specific paths in the benchmark file):
+Use an isolated DerivedData directory:
 
 ```bash
 xcodebuild -project FSD.xcodeproj -scheme FSD -configuration Debug \
@@ -106,5 +105,5 @@ Stop immediately if adding the single nullable column cannot preserve existing r
 
 ## Audit gate
 
-**Independent audit is required before Slice 02.** This is both the schema/persistent-data boundary and the Gemini-vs-DeepSeek comparison boundary. Neither benchmark branch may be merged until the auditor selects or rejects an implementation.
+**Independent audit is required before Slice 02.** This is the schema/persistent-data boundary. Model or harness comparisons, scoring, winner selection and benchmark patch selection are removed by the owner's 2026-10-03 directive; they are not prerequisites for this product audit.
 

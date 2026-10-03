@@ -220,7 +220,7 @@ Do not:
 - Recommend a model solely from benchmark reputation.
 - Ignore context and token cost.
 - Suggest reading the full A4C library.
-- Turn model selection into a benchmark project unless Cen requests it.
+- Turn model selection into a benchmark project. FSD's owner directive of 2026-10-03 removes all AI model/harness benchmarking; this generic routing skill cannot authorize it.
 - Promise that different models will produce identical results.
 
 ## Consistency Target

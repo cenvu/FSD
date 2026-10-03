@@ -1,6 +1,6 @@
 # Product State
 
-Last updated: **2026-10-03**, authority-state reconciliation against accepted audits; no product implementation or new audit.
+Last updated: **2026-10-03**, owner-directed model-benchmark removal and fresh automated readiness validation; no product implementation or owner manual acceptance.
 Current Handoff: `handoffs/FSD_AUTHORITY_STATE_RECONCILIATION_D_20261003-210517.md`.
 Prior entry: Phase 1.5 nullable classification enrichment audit (`handoffs/FSD_P15_MAGIKA_NULLABLE_ENRICHMENT_AUDIT_R_20260807-142313.md`).
 Prior entry: Phase 1.5 nullable classification enrichment (`handoffs/FSD_P15_MAGIKA_NULLABLE_ENRICHMENT_C_20260806-004158.md`).
@@ -177,8 +177,12 @@ FSD's test bundle is hosted by the FSD application, so every `xcodebuild test` r
 M5 and the Phase 1.5 nullable enrichment boundary have completed their accepted
 independent audits. Runtime design is complete; runtime implementation has not
 started and requires a separately authorized schema change before runtime.
-Return this authority reconciliation to BRAIN for adjudication; no further
-product work is authorized by this documentation task.
+AI model/harness benchmarking is removed by the owner's 2026-10-03 directive;
+no scoring, winner selection or benchmark patch selection remains an active or
+future gate. Product performance validation remains required and unchanged.
+Return the cleanup and fresh readiness evidence to BRAIN for adjudication;
+no further product work is authorized by this task. Any separately authorized
+runtime implementation must begin with ADR-032's schema prerequisite.
 Manual acceptance remains **NOT PERFORMED — DEFERRED BY OWNER**; stock-macOS
 NTFS and the separate legacy startup-error wording finding remain separately
 tracked. The `.gemini-derived-data` hygiene observation is preserved.

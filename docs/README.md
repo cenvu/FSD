@@ -14,6 +14,11 @@ FSD — FishSock Differ is a read-only native macOS application for capturing me
 
 > Scan metadata once. Browse offline forever. Compare structure instantly. Never modify source files.
 
+Owner directive (2026-10-03): AI model/harness benchmarking is removed from
+FSD and is not a current or future gate. Historical mentions remain evidence
+only. Scanner/database performance, lazy-tree bounds, memory, comparison scale,
+10k/100k/1M fixtures and cancellation/reliability tests remain product validation.
+
 ## Target platform
 
 - macOS 13+

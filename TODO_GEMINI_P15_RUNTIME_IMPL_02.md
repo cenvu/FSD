@@ -12,7 +12,7 @@ Establish the security boundary FSD must own: reliable source-root capture for n
 
 ## Prerequisites
 
-- Slice 01 is merged and its independent schema/benchmark audit is approved.
+- Slice 01 is merged and its independent schema/persistent-data audit is approved. A separately authorized implementation task is required; no model-benchmark gate applies.
 - Read the approved design, `SECURITY_AND_READ_ONLY_POLICY.md` §2.1, `TEST_PLAN.md` §9, `FilesystemDetector`, `SnapshotWriter`, `SnapshotTreeDataSource`, and current classification types/tests.
 
 ## Locked implementation decisions

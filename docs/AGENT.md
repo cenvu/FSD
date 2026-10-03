@@ -129,6 +129,16 @@ The consolidated acceptance backlog lives in [`TEST_PLAN.md`](TEST_PLAN.md) §8.
 
 ## Project Skills
 
+**Owner directive (2026-10-03): no AI model or harness benchmarking in FSD.**
+Do not start model-vs-model or harness-vs-harness runs, score models, select
+winners, or choose benchmark patches. Historical handoffs and completed
+design/correction task packets remain evidence only; their old next actions do not
+authorize execution. Runtime TODOs are planning contracts and require a
+separately authorized task, starting at ADR-032's schema prerequisite.
+Product performance validation remains required: scanner/database throughput,
+lazy-tree bounds, memory probes, comparison scale, 10k/100k/1M fixtures and
+cancellation/reliability stress tests. Ordinary model routing is not a benchmark.
+
 Two generic A4C Skills are installed for reference:
 
 - [`docs/skills/HANDOFF_SKILL.md`](skills/HANDOFF_SKILL.md) — generic AI-to-AI handoff format and discipline.
