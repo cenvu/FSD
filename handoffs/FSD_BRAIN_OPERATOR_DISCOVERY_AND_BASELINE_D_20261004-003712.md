@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-04T00:37:12+07:00
-
 # FSD Stage A — BRAIN Operator discovery and baseline
 
 ## HOT orientation
