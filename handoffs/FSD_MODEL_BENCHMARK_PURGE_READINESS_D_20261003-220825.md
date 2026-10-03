@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-03T22:08:25+07:00
-
 # FSD model-benchmark purge and final readiness
 
 ## Identity

@@ -1,7 +1,7 @@
 # Product State
 
 Last updated: **2026-10-03**, owner-directed model-benchmark removal and fresh automated readiness validation; no product implementation or owner manual acceptance.
-Current Handoff: `handoffs/FSD_AUTHORITY_STATE_RECONCILIATION_D_20261003-210517.md`.
+Current Handoff: `handoffs/FSD_MODEL_BENCHMARK_PURGE_READINESS_D_20261003-220825.md`.
 Prior entry: Phase 1.5 nullable classification enrichment audit (`handoffs/FSD_P15_MAGIKA_NULLABLE_ENRICHMENT_AUDIT_R_20260807-142313.md`).
 Prior entry: Phase 1.5 nullable classification enrichment (`handoffs/FSD_P15_MAGIKA_NULLABLE_ENRICHMENT_C_20260806-004158.md`).
 Prior entry: Milestone 5 performance/closeout (`handoffs/FSD_M5_PERFORMANCE_PREMVP_C_20260805-034539.md`).
@@ -173,6 +173,13 @@ supersedes historical task-selection wording.
 
 FSD's test bundle is hosted by the FSD application, so every `xcodebuild test` run started a real `ApplicationModel` against `~/Library/Application Support/FSD/catalog.sqlite3`. Before this was noticed, one test run in this session migrated that catalog from version 4 to version 5 and held the process lock on it. The migration is the intended forward migration and the catalog verified clean afterwards (1 snapshot, 45 entries, `complete`, `integrity_check` = `ok`, 0 classification rows), but it happened as a side effect rather than by the owner's action. It cannot recur: a test host now always resolves its own catalog under the temporary directory, verified by comparing the real catalog's SHA-256 across a full test run.
 ## Current control-plane gate
+
+Fresh readiness validation (2026-10-03): clean Debug build and unfiltered
+automated suite PASS — 293 executed, 290 passed, 0 failures, 3 intentionally
+inert external probe skips. Bootstrap/migration, read-only boundaries and
+the 1M comparison/memory/snapshot gates pass. This supports beginning a
+separately authorized ADR-032 schema prerequisite; it does not authorize
+implementation or claim owner manual acceptance. See the current Handoff.
 
 M5 and the Phase 1.5 nullable enrichment boundary have completed their accepted
 independent audits. Runtime design is complete; runtime implementation has not
