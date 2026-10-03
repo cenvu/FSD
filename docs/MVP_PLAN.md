@@ -4,7 +4,7 @@
 
 This is the single canonical implementation sequence for FSD. Restructured 2026-08-04 by independent audit (`handoffs/FSD_MVP_DEEP_AUDIT_R_20260804-003039.md`) from eight small phases into **five large milestones**, so that one Writer can implement a coherent slice without repeatedly reopening the same architecture.
 
-**Status (2026-08-07): Phase 1.5 Magika runtime adapter design is complete; implementation is pending.** Milestones 1–5 are technically approved; Phase 1.5
+**Current status (authority reconciliation 2026-10-03; accepted evidence through 2026-08-07): Magika runtime design COMPLETE; runtime implementation NOT STARTED / INACTIVE.** Milestones 1–5 technical core is closed with known limitations; Phase 1.5
 nullable enrichment preparation is implemented and its focused independent
 boundary audit is closed with `APPROVE WITH CONDITIONS` (`handoffs/FSD_P15_MAGIKA_NULLABLE_ENRICHMENT_AUDIT_R_20260807-142313.md`). KI-024
 is fixed by an additive `comparison_results(parent_result_id)` index, one
@@ -13,11 +13,20 @@ one-million-result explicit/automatic disposal regressions. Release timings
 are 9.930 s explicit disposal and 10.018 s canonical live-workspace close,
 both below the 120-second threshold. No other Milestone 5 gate failed. Manual
 acceptance remains **NOT PERFORMED — DEFERRED BY OWNER**; MVP approval is not
-claimed.
+claimed. The M5 focused schema-v8/disposal re-audit is **CLOSED — APPROVE WITH
+CONDITIONS** (`handoffs/FSD_M5_SCHEMA_V8_DISPOSAL_REAUDIT_A_20260805-223211.md`).
+Schema remains **v8**. The accepted runtime design
+(`handoffs/FSD_P15_MAGIKA_RUNTIME_DESIGN_A_20260807-155630.md`, ADR-032)
+requires **SCHEMA CHANGE REQUIRED BEFORE RUNTIME**, under separate
+authorization. This reconciliation does not authorize schema or runtime work.
 
 [`FILESYSTEM_FEASIBILITY_PLAN.md`](FILESYSTEM_FEASIBILITY_PLAN.md) supplies feasibility methodology and current per-filesystem status; [`SNAPSHOT_COLLECTIONS.md`](SNAPSHOT_COLLECTIONS.md) supplies the full Collection specification; [`TEST_PLAN.md`](TEST_PLAN.md) §8 supplies the consolidated manual acceptance sessions. None is duplicated here.
 
-## Gate status — implementation is authorized
+## Historical foundation entry gates (2026-08-04)
+
+The milestone requirements below retain their original planning context.
+Current closure notes supersede historical pending and then-next actions.
+The foundation authorization in this section is not a current runtime authorization.
 
 Both historical gates in front of Phase 0 have been resolved against actual evidence:
 
@@ -25,6 +34,10 @@ Both historical gates in front of Phase 0 have been resolved against actual evid
 2. **Filesystem feasibility — no longer a blanket gate.** ext2/3/4 and native APFS/HFS+ feasibility passed. FAT/exFAT/NTFS/UDF are untested but are **provider-specific**, not foundational: they are gated at Milestone 3, not in front of Milestone 1.
 
 **Two carried-forward defects must be closed inside Milestone 1** (they block trustworthy snapshot completion, not project setup):
+
+**Closure amendment:** both defects below were closed by Milestone 1
+(`handoffs/FSD_M1_FOUNDATION_C_20260804-010259.md`); the original entry
+requirements are retained as history, not open blockers.
 
 - **FSD-FINAL-REAUDIT-001** — the `normalization_version` completion guard is a two-clause literal blacklist (`= '' OR LIKE '%UNRECORDED_PLACEHOLDER%'`), not a positive format check. Re-verified 2026-08-04: `'   '`, `'UNKNOWN'`, `'PLACEHOLDER'`, `'NOT_SET'`, `'PENDING'` all reach `complete`. Replace with a positive check against ADR-009's documented shape `fsd-normalizer-<algorithm-version>_app-<implementation-version>_os-<ProductBuildVersion>`.
 - **FSD-FINAL-REAUDIT-002** — `database/verify.sql` has two `INSERT INTO snapshots` statements (the embedded-raw disk-image and raw-physical-device fixtures) that omit `normalization_version`, so they fail on an incidental `NOT NULL` violation before the provider constraints they claim to test are ever exercised. Re-confirmed still present 2026-08-04.
@@ -95,6 +108,10 @@ Known limitations carried forward:
 
 **Milestone 4 implementation status (2026-08-04): COMPLETE_WITH_KNOWN_LIMITATIONS; focused bounded-error re-audit APPROVE WITH CONDITIONS.** The correction slice (`handoffs/FSD_M4_COMPARISON_GUI_FIX_C_20260804-172438.md`) and bounded-error fix (`handoffs/FSD_M4_GUI_BOUNDED_ERROR_FIX_C_20260804-180141.md`) are independently verified for clean arm64 compilation, canonical orientation, no GUI raw SQL, bounded paging, cross-page navigation, lifecycle, details and accessibility. The fixed mapper is production-tested against two hostile arbitrary messages and the live-capture wrapper; typed distinctions remain bounded. Full clean-build evidence after the fix is 242 total / 239 passed / 0 failed / 3 skipped with schema v7 unchanged. Milestone 4 is closed with deferred manual GUI/VoiceOver observation and a separate legacy capture-surface error wording issue tracked for Milestone 5. Milestone 5 is the next implementation phase.
 
+**Supersession note:** Milestone 5 has since closed technically with known
+limitations. The dated Milestone 4 next-phase wording above is historical;
+the current status and M5 closure amendment govern task selection.
+
 ## Milestone 5 — Performance, consolidated acceptance, and pre-MVP audit
 
 - **Outcome:** FSD meets its stated performance targets, passes one consolidated human acceptance session, and clears a mandatory pre-MVP independent audit.
@@ -107,7 +124,15 @@ Known limitations carried forward:
 - **Explicitly deferred:** automatic mount-triggered capture and login-item support, unless the project owner pulls them into MVP scope; notarization and any distribution channel (ADR-006).
 
 **Milestone 5 implementation status (2026-08-05): COMPLETE_WITH_KNOWN_LIMITATIONS;
-schema-v8 correction complete, independent re-audit pending.**
+schema-v8 correction complete; the correction-stage re-audit requirement is
+closed by the amendment below.**
+
+**Closure amendment (2026-08-05): focused schema-v8/disposal re-audit CLOSED —
+APPROVE WITH CONDITIONS**, per
+`handoffs/FSD_M5_SCHEMA_V8_DISPOSAL_REAUDIT_A_20260805-223211.md`.
+The reporting-only condition is already corrected in `TEST_PLAN.md`
+(284 executed, 281 passed, 0 failed, 3 skipped). Manual acceptance remains
+**NOT PERFORMED — DEFERRED BY OWNER**; overall MVP approval is **NOT CLAIMED**.
 
 Delivered within the M5 slice (no new product features, no schema change):
 
@@ -162,8 +187,9 @@ deferred; HTML export remains deferred (out of M5 scope per the task).
 **Independent pre-MVP audit (2026-08-05): REJECT**
 (`handoffs/FSD_M5_FINAL_PREMVP_AUDIT_R_20260805-093249.md`) and corrected in
 schema version 8. KI-024 is fixed (see `KNOWN_ISSUES.md`); every other gate
-reproduced exactly. **The MVP is not approved — the next action is the focused
-independent Codex re-audit of schema v8 and one-million comparison disposal.**
+reproduced exactly. At the correction stage, the focused independent re-audit
+was the next action; the closure amendment above supersedes that gate.
+**Overall MVP approval remains NOT CLAIMED.**
 
 ## Deferred beyond the MVP milestones
 
@@ -172,10 +198,16 @@ independent Codex re-audit of schema v8 and one-million comparison disposal.**
 - Automatic mount detection and capture; login-at-start support.
 - LGPL-3.0 compliance review (libfsext Condition C) — triggered only by distribution, not by local builds.
 
-## Phase 1.5 — Nullable Magika enrichment preparation (runtime deferred)
+## Phase 1.5 — Nullable Magika enrichment preparation (implemented and audited; runtime deferred)
+
+**Audit closure (2026-08-07): APPROVE WITH CONDITIONS** —
+`handoffs/FSD_P15_MAGIKA_NULLABLE_ENRICHMENT_AUDIT_R_20260807-142313.md`.
+The boundary audit is closed. Runtime design subsequently completed under
+ADR-032; runtime remains not started/inactive and its separately authorized
+schema-change gate remains in force. Owner manual acceptance is deferred.
 
 - **Current slice:** a typed `LocalFileClassificationProvider` boundary, disabled/no-op provider, explicit `ClassificationEnrichmentService`, append-only `EntryClassificationRepository`, nullable model round-trip, bounded selected-entry browser presentation, and comparison/safety regression tests.
-- **Schema:** reuse schema version 8's existing nullable `entry_classifications` table; no schema version 9 and no speculative provider column. Persisted provenance is limited to the supported detector/model version fields.
+- **Preparation-slice schema:** reuse schema version 8's existing nullable `entry_classifications` table; no schema version 9 and no speculative provider column were introduced by this slice. Persisted provenance is limited to the supported detector/model version fields. ADR-032 separately requires a schema change before future runtime implementation.
 - **Runtime status:** Magika is not installed, not a dependency, not downloaded and not active. The disabled provider never reads a source URL, bytes or payload. A future provider requires a separate approved task and bounded local policy.
 - **Dependencies / entry gate:** the MVP core gate has passed technically, so this preparation slice may proceed. Actual runtime inference remains optional and does not block MVP criteria.
 - **Export:** JSON export remains format version 1 and excludes classification because the canonical export contract does not require nullable enrichment.

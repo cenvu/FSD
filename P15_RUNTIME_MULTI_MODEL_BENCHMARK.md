@@ -15,7 +15,16 @@ The slice's schema risk is controlled by isolated worktrees, identical contracts
 
 ### Base-state requirement
 
-The current planning directory does not contain `.git`, so it cannot itself prove a base commit. CONTROL must run this benchmark from the canonical Git repository and record:
+**Base-state amendment (2026-10-03):** the canonical repository is now
+`/Users/cenvu/DEV/FSD`, `origin = https://github.com/cenvu/FSD.git`. Its
+2026-08-07 bootstrap commit is `2cd26901f405a9065e38ae21ada19f2d5f780784`.
+The pre-bootstrap observation below is historical and superseded; any future
+benchmark must freshly verify its actual Git base. This remains a prospective
+benchmark plan, not evidence of schema-v9 implementation or benchmark execution.
+
+**Historical pre-bootstrap observation (superseded):** the planning directory
+did not contain `.git`, so it could not itself prove a base commit.
+CONTROL must run any benchmark from the canonical Git repository and record:
 
 - full base commit SHA;
 - branch/worktree creation commands;

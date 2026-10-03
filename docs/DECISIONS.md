@@ -128,6 +128,12 @@ Snapshot Collections are a purely logical, user-defined grouping stored in `coll
 
 **Status:** Accepted
 
+**Supersession note:** this ADR retains its original pre-implementation context.
+ADR-031 and the accepted 2026-08-07 nullable-boundary audit record the now
+implemented and audited preparation seam; ADR-032 records the completed
+runtime design. Current schema is v8; runtime implementation remains not
+started/inactive and requires a separately authorized schema change.
+
 Magika-based file content classification is explicitly excluded from the MVP runtime and deferred to Phase 1.5 (`MVP_PLAN.md`), which may start only after the MVP core passes its acceptance gates (snapshot capture, offline browsing, snapshot history, metadata diff, interruption safety, performance tests). This ADR prepares the seam for that future phase without building it now:
 
 - a `FileClassificationService` abstraction and a `DisabledFileClassificationService` default are defined as an architecture contract only (`ARCHITECTURE.md` §9) — no Swift target exists yet in this repository, so neither is implemented code;
@@ -380,8 +386,16 @@ disposal and ADR-012 workspace-close semantics remain unchanged. Release
 synthetic one-million-result regressions measured 9.930 s for explicit
 disposal and 10.018 s for automatic live-workspace close, both below the
 120-second threshold, with clean integrity/foreign-key checks and a successful
-subsequent write. The focused independent re-audit remains required; MVP
-approval and manual acceptance are not claimed.
+subsequent write. At the correction stage, the focused independent re-audit
+remained required; MVP approval and manual acceptance were not claimed.
+
+**Closure amendment (2026-08-05): focused schema-v8/disposal re-audit CLOSED —
+APPROVE WITH CONDITIONS**, per
+`handoffs/FSD_M5_SCHEMA_V8_DISPOSAL_REAUDIT_A_20260805-223211.md`.
+This supersedes the original pending gate. The test-count wording condition
+is already corrected in `TEST_PLAN.md` (284 executed, 281 passed, 0 failed,
+3 skipped). Manual acceptance remains **NOT PERFORMED — DEFERRED BY OWNER**;
+overall MVP approval remains **NOT CLAIMED**.
 
 ## ADR-031 — Nullable classification enrichment boundary uses schema version 8
 
@@ -409,11 +423,24 @@ The JSON export remains format version 1 and excludes classification.
 Magika inference is not active, not installed and not a dependency. Any future
 byte-reading provider requires a separate approved bounded policy and must not
 backfill old snapshots. Manual acceptance remains **NOT PERFORMED — DEFERRED BY
-OWNER**; the next action is an independent focused audit of this boundary.
+OWNER**. The original preparation-stage next action was an independent focused
+audit of this boundary.
+
+**Closure amendment (2026-08-07): nullable enrichment boundary audit CLOSED —
+APPROVE WITH CONDITIONS**, per
+`handoffs/FSD_P15_MAGIKA_NULLABLE_ENRICHMENT_AUDIT_R_20260807-142313.md`.
+This supersedes the original audit-next gate. Its deferred manual acceptance,
+inactive runtime and separately tracked limitations remain unchanged.
 
 ## ADR-032 — Magika Runtime Adapter Design
 
 **Status:** Accepted (Design Phase)
+
+**Completion amendment (2026-08-07): runtime design COMPLETE**, per
+`handoffs/FSD_P15_MAGIKA_RUNTIME_DESIGN_A_20260807-155630.md`.
+Runtime implementation is **NOT STARTED / INACTIVE**, current schema remains
+**v8**, and the schema change required below needs separate authorization
+before runtime implementation. No migration or runtime is implemented by this ADR.
 
 The Magika file-type enrichment adapter packaging was evaluated across four shapes:
 

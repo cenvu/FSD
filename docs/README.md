@@ -94,12 +94,18 @@ The canonical, current phase sequence is [`MVP_PLAN.md`](MVP_PLAN.md) — this R
 
 ## Status
 
-**Milestones 1-3 are implemented; Milestone 4 (comparison) is next.** FSD captures metadata snapshots, keeps them browsable and searchable offline, and exports them — it does not compare them yet.
+**Milestones 1–5 technical core is closed with known limitations.** FSD captures metadata snapshots, browses and searches them offline, compares snapshot/live trees, and exports JSON. Phase 1.5 nullable enrichment preparation is implemented and audited; Magika runtime design is complete, while runtime implementation is not started/inactive.
 
 - Foundational R0 schema issues are **closed** (final independent audit APPROVE, `handoffs/FSD_PLAN_GATE_FINAL_REAUDIT_A_20260725-154907.md`).
 - Milestone 2 was audited **APPROVE WITH CONDITIONS**. Milestone 3 closed its five technical conditions; the sixth, Manual Session A, is **NOT PERFORMED — DEFERRED BY OWNER** and is the only thing holding Milestone 2 acceptance sign-off.
-- Catalog schema is at **version 5**, reached by an explicit transactional migration (ADR-024).
+- The M5 focused schema-v8/disposal re-audit is **CLOSED — APPROVE WITH CONDITIONS** (`handoffs/FSD_M5_SCHEMA_V8_DISPOSAL_REAUDIT_A_20260805-223211.md`). The nullable enrichment boundary audit is also **CLOSED — APPROVE WITH CONDITIONS** (`handoffs/FSD_P15_MAGIKA_NULLABLE_ENRICHMENT_AUDIT_R_20260807-142313.md`).
+- Catalog schema is currently **version 8**, reached by explicit transactional migrations (ADR-024/ADR-028/ADR-030).
 - FAT16, FAT32, exFAT and UDF are **Supported** (seven-step proof, generated read-only disk images, 2026-08-04). NTFS captured correctly but only through a third-party driver, so its stock-macOS proof is environment-blocked. ext2/3/4 feasibility passed and remains deferred beyond the MVP.
-- Clean arm64 build; 99 tests, 0 failures, 2 skipped.
+- Runtime design is **COMPLETE** (`handoffs/FSD_P15_MAGIKA_RUNTIME_DESIGN_A_20260807-155630.md`, ADR-032); **SCHEMA CHANGE REQUIRED BEFORE RUNTIME**, under separate authorization. No schema v9 or runtime implementation is included in the current state.
+- Owner manual acceptance remains **NOT PERFORMED — DEFERRED BY OWNER**; overall MVP approval is **NOT CLAIMED**. Historical build/test evidence is recorded in `TEST_PLAN.md` and the accepted audits; this summary does not report a new test run.
 
 Current state of record: [`PRODUCT_STATE.md`](PRODUCT_STATE.md). Current implementation sequence: [`MVP_PLAN.md`](MVP_PLAN.md).
+
+The original `PROJECT_MANIFEST.md` schema-v5 bundle annotation is historical
+and superseded by the current v8 state here and in `PRODUCT_STATE.md`; it is
+not a current schema gate.

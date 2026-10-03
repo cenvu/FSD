@@ -9,7 +9,10 @@ and no ordinary workflow reads payload bytes or backfills old snapshots.
 Classification is inferred, optional and non-authoritative; comparison
 semantics and canonical JSON export ignore it. Schema v8 has detector/model
 provenance fields but no separate provider-identifier column, so the adapter
-identifier remains runtime-only until a separately approved schema decision.
+identifier remains runtime-only. The completed runtime design (ADR-032,
+`handoffs/FSD_P15_MAGIKA_RUNTIME_DESIGN_A_20260807-155630.md`) requires a
+separately authorized schema change before runtime; schema remains v8 and
+runtime implementation is not started/inactive.
 Manual acceptance remains **NOT PERFORMED — DEFERRED BY OWNER**.
 
 ## KI-001 — Metadata equality is not content verification
@@ -179,6 +182,13 @@ internally; no raw SQLite message or private path is displayed.
 
 ## KI-024 — Whole-comparison disposal at final scale — RE-AUDIT CLOSED 2026-08-05 (`handoffs/FSD_M5_SCHEMA_V8_DISPOSAL_REAUDIT_A_20260805-223211.md`, APPROVE WITH CONDITIONS)
 
+**Current closure amendment:** the accepted re-audit closes the technical
+schema-v8/disposal gate. Its reporting-only test-count condition is already
+corrected in `TEST_PLAN.md` (284 executed, 281 passed, 0 failed, 3 skipped).
+Manual acceptance remains **NOT PERFORMED — DEFERRED BY OWNER** and overall
+MVP approval is **NOT CLAIMED**. The diagnoses and correction-stage next
+action below are retained as historical context, not current blockers.
+
 **Independent pre-MVP audit finding (2026-08-05,
 `handoffs/FSD_M5_FINAL_PREMVP_AUDIT_R_20260805-093249.md`):** the root cause
 below is confirmed exactly (independently reproduced via a scratch SQLite
@@ -200,8 +210,8 @@ version 8 (a dedicated index on `comparison_results(parent_result_id)`) is now
 implemented; see the correction Handoff for the exact evidence and next
 action.
 
-Original diagnosis (2026-08-04), superseded in classification only —
-the technical description below remains accurate: 
+Original diagnosis (2026-08-04), superseded by the schema-v8 correction —
+the technical description below describes the pre-v8 schema and measurements:
 
 Deleting a whole comparison (`ComparisonResultRepository.deleteComparison`,
 the explicit disposal API) cascades to `comparison_results`,
@@ -230,8 +240,9 @@ exactly 1,000,000 result rows complete explicit disposal in 9.930 s and
 canonical live workspace close in 10.018 s, both under the 120-second
 threshold. Both paths preserve ordinary snapshots, clean transient snapshots
 according to policy, allow a subsequent write, and finish with clean
-integrity/foreign-key checks. The focused independent re-audit is the only
-next action; MVP approval is not claimed. Manual acceptance remains
+integrity/foreign-key checks. At the correction stage, the focused independent
+re-audit was the only next action; the closure amendment above supersedes it.
+MVP approval is not claimed. Manual acceptance remains
 **NOT PERFORMED — DEFERRED BY OWNER**.
 
 ## KI-023 — A pathological equal-key collision group is a typed failure, not a memory hazard — CLOSED 2026-08-04

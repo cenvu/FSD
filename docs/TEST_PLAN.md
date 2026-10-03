@@ -1,5 +1,19 @@
 # Test Plan
 
+## Current acceptance gates (authority reconciliation 2026-10-03)
+
+M1–M5 technical core is closed with known limitations. The M5 schema-v8/disposal
+re-audit is **CLOSED — APPROVE WITH CONDITIONS**
+(`handoffs/FSD_M5_SCHEMA_V8_DISPOSAL_REAUDIT_A_20260805-223211.md`); the
+nullable enrichment boundary audit is **CLOSED — APPROVE WITH CONDITIONS**
+(`handoffs/FSD_P15_MAGIKA_NULLABLE_ENRICHMENT_AUDIT_R_20260807-142313.md`).
+Manual acceptance remains **NOT PERFORMED — DEFERRED BY OWNER**; overall
+MVP approval is **NOT CLAIMED**. Runtime design is complete
+(`handoffs/FSD_P15_MAGIKA_RUNTIME_DESIGN_A_20260807-155630.md`); runtime
+implementation is not started/inactive. Schema remains v8 and a separately
+authorized schema change is required before runtime. Existing execution counts
+below are historical evidence; this reconciliation did not rerun product tests.
+
 ## 1. Critical tests
 
 ### CT-001 — No source writes
@@ -504,8 +518,16 @@ slice did not change comparison, schema or lifecycle behavior, so no separate
 Release one-million campaign was rerun.
 
 Manual-only visual and owner acceptance remains **NOT PERFORMED — DEFERRED BY
-OWNER**. The next action is one independent Codex focused audit of the Phase
-1.5 nullable Magika enrichment boundary.
+OWNER**. The preparation-stage next action was one independent Codex focused
+audit of the Phase 1.5 nullable Magika enrichment boundary.
+
+**Closure amendment (2026-08-07): that audit is CLOSED — APPROVE WITH CONDITIONS**
+(`handoffs/FSD_P15_MAGIKA_NULLABLE_ENRICHMENT_AUDIT_R_20260807-142313.md`).
+It independently reproduced the full Debug suite (293 executed, 290 passed,
+0 failed, 3 skipped) and its selected focused Release suites (59 executed,
+59 passed, 0 failed, 0 skipped). The Writer's 60-test Release selection above
+and the Auditor's 59-test selection are distinct historical runs, not counts
+to merge. Deferred manual acceptance and inactive runtime remain unchanged.
 
 ## 9. Future Magika runtime adapter test plan (not yet implemented)
 

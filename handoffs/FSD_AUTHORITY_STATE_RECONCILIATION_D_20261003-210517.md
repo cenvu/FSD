@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-03T21:05:17+07:00
-
 # Handoff — FSD Authority State Reconciliation
 
 ## Identity

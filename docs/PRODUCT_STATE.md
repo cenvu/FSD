@@ -1,23 +1,32 @@
 # Product State
 
-Last updated: **2026-08-07**, Phase 1.5 Magika runtime adapter design is complete; implementation is pending.
-Current Handoff: `handoffs/FSD_P15_MAGIKA_RUNTIME_CORRECTION_B_C_20260807-154325.md`.
+Last updated: **2026-10-03**, authority-state reconciliation against accepted audits; no product implementation or new audit.
+Current Handoff: `handoffs/FSD_AUTHORITY_STATE_RECONCILIATION_D_20261003-210517.md`.
 Prior entry: Phase 1.5 nullable classification enrichment audit (`handoffs/FSD_P15_MAGIKA_NULLABLE_ENRICHMENT_AUDIT_R_20260807-142313.md`).
 Prior entry: Phase 1.5 nullable classification enrichment (`handoffs/FSD_P15_MAGIKA_NULLABLE_ENRICHMENT_C_20260806-004158.md`).
 Prior entry: Milestone 5 performance/closeout (`handoffs/FSD_M5_PERFORMANCE_PREMVP_C_20260805-034539.md`).
-Last established by independent audit: 2026-08-04 (`handoffs/FSD_M2_ACCEPTANCE_AUDIT_R_20260804-112704.md`).
+Latest accepted audit evidence: M5 schema-v8/disposal re-audit (2026-08-05), nullable enrichment boundary audit (2026-08-07), and runtime design completion (2026-08-07), referenced below.
 
 ## Current phase
 
-**Milestone 5 schema-v8 correction status (2026-08-05): implementation
-complete; independent focused re-audit pending.** KI-024 is fixed by the
+**Milestones 1–5 technical core: CLOSED WITH KNOWN LIMITATIONS.** Owner
+manual acceptance remains **NOT PERFORMED — DEFERRED BY OWNER**; overall
+MVP approval is **NOT CLAIMED**. Current schema remains **v8**.
+
+**Milestone 5 schema-v8/disposal re-audit: CLOSED — APPROVE WITH CONDITIONS
+(2026-08-05)**, per
+`handoffs/FSD_M5_SCHEMA_V8_DISPOSAL_REAUDIT_A_20260805-223211.md`.
+This supersedes the correction-stage pending gate. The non-safety test-count
+wording condition is already corrected in `TEST_PLAN.md`: 284 executed,
+281 passed, 0 failed, 3 skipped. KI-024 is fixed by the
 dedicated `comparison_results(parent_result_id)` index, explicit transactional
 v7-to-v8 migration, complete ExpectedState drift protection, and focused
 one-million-result disposal regressions. Release evidence is below the
 120-second threshold for both explicit disposal (9.930 s) and canonical live
 workspace close (10.018 s), with clean integrity/foreign-key checks and a
-successful post-disposal write. The MVP is not approved until the focused
-independent re-audit completes. No other M5 gate failed.
+successful post-disposal write. These are historical correction-run measurements;
+the accepted re-audit independently reproduced both disposal gates. Technical
+closure does not claim manual acceptance or overall MVP approval.
 
 **Phase 1.5 nullable enrichment preparation (2026-08-05): implemented without
 Magika inference.** FSD now has a typed local-only provider boundary, an
@@ -30,6 +39,24 @@ does not affect snapshot identity, counts, completion, comparison outcomes or
 immutable entry metadata. No old-snapshot backfill occurs. The JSON export
 contract remains unchanged and excludes classification. Magika is not
 installed, not a dependency and never executed.
+
+**Nullable enrichment boundary audit: CLOSED — APPROVE WITH CONDITIONS
+(2026-08-07)**, per
+`handoffs/FSD_P15_MAGIKA_NULLABLE_ENRICHMENT_AUDIT_R_20260807-142313.md`.
+Manual/UI acceptance and the separately tracked limitations remain deferred.
+
+**Magika runtime design: COMPLETE (2026-08-07)**, per
+`handoffs/FSD_P15_MAGIKA_RUNTIME_DESIGN_A_20260807-155630.md` and ADR-032.
+Runtime implementation is **NOT STARTED / INACTIVE**. The design requires
+**SCHEMA CHANGE REQUIRED BEFORE RUNTIME**; schema v8 remains current and any
+runtime schema change requires separate authorization. This reconciliation
+authorizes neither a schema migration nor runtime implementation.
+
+### Historical milestone context (superseded gate selection)
+
+The following milestone-era reports preserve their original scope, dates,
+measurements and then-next actions. The accepted closures above supersede
+their pending/next-gate wording; they are not current task instructions.
 
 Prior status (Milestone 5 performance/closeout,
 COMPLETE_WITH_KNOWN_LIMITATIONS, deferred manual acceptance and stock-NTFS
@@ -100,6 +127,10 @@ Consequence for existing data: any snapshot captured by Milestone 2 code may be 
 
 ## Completed
 
+Milestone-specific schema versions, test counts and then-next actions below
+describe their dated closeouts. The current accepted gate summary above
+supersedes historical task-selection wording.
+
 - Product purpose, MVP boundary, and core user stories defined.
 - SQLite schema at **version 8** (`database/schema.sql`, ADR-027 + ADR-028 + ADR-030). Fresh and migrated catalogs converge; `PRAGMA integrity_check` = `ok`, `PRAGMA foreign_key_check` = clean. A fresh database records only version 8; a migrated one records 4, 5, 6, 7 and 8. `schema.sql` creates a catalog and is never replayed against an existing one — forward movement is the job of `CatalogMigrations` alone (ADR-024).
 - Initial UX wireframes drafted.
@@ -141,11 +172,13 @@ Consequence for existing data: any snapshot captured by Milestone 2 code may be 
 ### What the C6 work uncovered
 
 FSD's test bundle is hosted by the FSD application, so every `xcodebuild test` run started a real `ApplicationModel` against `~/Library/Application Support/FSD/catalog.sqlite3`. Before this was noticed, one test run in this session migrated that catalog from version 4 to version 5 and held the process lock on it. The migration is the intended forward migration and the catalog verified clean afterwards (1 snapshot, 45 entries, `complete`, `integrity_check` = `ok`, 0 classification rows), but it happened as a side effect rather than by the owner's action. It cannot recur: a test host now always resolves its own catalog under the temporary directory, verified by comparing the real catalog's SHA-256 across a full test run.
-## Next milestone
+## Current control-plane gate
 
-**Phase 1.5 nullable enrichment preparation implemented 2026-08-05.** Magika
-inference remains inactive; the next action is exactly one focused independent
-Codex audit of the Phase 1.5 nullable Magika enrichment boundary.
+M5 and the Phase 1.5 nullable enrichment boundary have completed their accepted
+independent audits. Runtime design is complete; runtime implementation has not
+started and requires a separately authorized schema change before runtime.
+Return this authority reconciliation to BRAIN for adjudication; no further
+product work is authorized by this documentation task.
 Manual acceptance remains **NOT PERFORMED — DEFERRED BY OWNER**; stock-macOS
 NTFS and the separate legacy startup-error wording finding remain separately
 tracked. The `.gemini-derived-data` hygiene observation is preserved.
