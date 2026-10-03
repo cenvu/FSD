@@ -53,6 +53,8 @@ Responsibilities:
 - sidebar volume list;
 - toolbar actions;
 - settings and comparison profiles;
+- expose user settings through native UI, never require JSON/config editing;
+  persist runtime preferences in macOS preferences or the local application database;
 - presentation of notifications and warnings.
 
 ### VolumeService

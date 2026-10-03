@@ -1,5 +1,13 @@
 # FSD Snapshot Collections Review
 
+> Historical reference only. Original schema/status/findings/then-next language
+> below is dated evidence, not live control authority. Use `STATE/PROJECT_STATE.md`
+> for control, `PRODUCT_STATE.md` for implementation and `MVP_PLAN.md` for roadmap.
+> Retired paths in the original body are historical citations: retrieve exact
+> bytes with `git show 041d2af2076ff4418f9ea5d98b124c435ea8db43:<repo-relative-path>`.
+> Former known-issue IDs resolve in `docs/PRODUCT_STATE.md`; bundle/manifest/support
+> citations have Git-history-only recovery. Original body is preserved verbatim.
+
 - **Task:** FSD-COLLECTIONS-REPLAN-0724-05
 - **Date:** 2026-07-24
 - **Scope:** documentation, data model, UX, and review only. No production Swift code, no Xcode project, no filesystem feasibility testing, no physical disk access, no Git initialization.

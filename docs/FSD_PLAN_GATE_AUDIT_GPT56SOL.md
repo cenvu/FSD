@@ -1,5 +1,13 @@
 # FSD Consolidated Plan Gate Audit
 
+> Historical reference only. Original schema/status/findings/then-next language
+> below is dated evidence, not live control authority. Use `STATE/PROJECT_STATE.md`
+> for control, `PRODUCT_STATE.md` for implementation and `MVP_PLAN.md` for roadmap.
+> Retired paths in the original body are historical citations: retrieve exact
+> bytes with `git show 041d2af2076ff4418f9ea5d98b124c435ea8db43:<repo-relative-path>`.
+> Former known-issue IDs resolve in `docs/PRODUCT_STATE.md`; bundle/manifest/support
+> citations have Git-history-only recovery. Original body is preserved verbatim.
+
 **Audit date:** 2026-07-24
 **Task:** FSD-PLAN-GATE-AUDIT-0724-06
 **Scope:** Planning/schema audit only. No application code, canonical-document, or schema changes were made.

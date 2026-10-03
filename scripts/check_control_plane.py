@@ -36,7 +36,7 @@ REQUIRED = [
     "AGENTS.md", "docs/BRAIN_OPERATOR.md", "docs/AGENT.md",
     "STATE/PROJECT_STATE.md", "STATE/EVENTS.jsonl", "STATE/TASK_LEDGER.tsv",
     "STATE/RULE_PROMOTION_LEDGER.tsv", "handoffs/CURRENT_HANDOFF.md",
-    ".agents/skills/fsd-handoff-finalizer/SKILL.md", "docs/skills/HANDOFF_SKILL.md",
+    ".agents/skills/fsd-handoff-finalizer/SKILL.md",
     "scripts/check_control_plane.py",
 ]
 

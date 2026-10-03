@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-04T02:34:14+07:00
-
 # FSD Stage D — documentation consolidation
 
 ## HOT

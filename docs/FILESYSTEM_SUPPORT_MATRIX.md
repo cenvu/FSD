@@ -115,7 +115,7 @@ What the run does establish: `NativeMountedProvider` is genuinely generic. It ca
 - Symbolic-link behavior: native symlinks; recorded, not followed, per the existing default.
 - Hard-link behavior: supported by APFS; recorded as ordinary distinct entries (per the existing product decision that a metadata catalog shows the tree as it is, not deduplicated).
 - Sparse-file behavior: supported; logical vs. allocated size diverges — logical remains the default equality field.
-- Allocated-size reliability: reliable for APFS's own allocation model, but not portable across the comparison boundary to other filesystems (`KNOWN_ISSUES.md` KI-004 already covers this).
+- Allocated-size reliability: reliable for APFS's own allocation model, but not portable across the comparison boundary to other filesystems (`PRODUCT_STATE.md` KI-004 already covers this).
 - Encryption: FileVault-encrypted APFS volumes present as an ordinary mounted, decrypted volume to a process running as the unlocked user — no additional handling needed; an **unmounted, still-encrypted** APFS volume is out of scope (FSD does not prompt for or handle unlock secrets).
 - Corruption behavior: a corrupt APFS container generally fails to mount at all; if it does mount, treat any read error as a per-entry `scan_issue`, never as a `complete` snapshot with silently-omitted regions.
 - Read-only guarantee: absolute — normal mount access grants no write capability FSD would use.
@@ -220,4 +220,4 @@ What the run does establish: `NativeMountedProvider` is genuinely generic. It ca
 
 ## 4. Filesystems and features explicitly out of scope
 
-Network filesystems (SMB, NFS, AFP) remain experimental/deferred per `KNOWN_ISSUES.md` KI-007, unchanged by this replan — they are a transport/latency problem orthogonal to the provider architecture, not a new filesystem-family problem. ZFS and Btrfs were considered during dependency research (`DEPENDENCY_AND_LICENSE_REVIEW.md` §3.5) and are not part of the required list — no work is planned for them.
+Network filesystems (SMB, NFS, AFP) remain experimental/deferred per `PRODUCT_STATE.md` KI-007, unchanged by this replan — they are a transport/latency problem orthogonal to the provider architecture, not a new filesystem-family problem. ZFS and Btrfs were considered during dependency research (`DEPENDENCY_AND_LICENSE_REVIEW.md` §3.5) and are not part of the required list — no work is planned for them.

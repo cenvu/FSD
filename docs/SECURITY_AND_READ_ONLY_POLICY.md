@@ -76,7 +76,13 @@ Everything in Sections 3–4 applies identically whether the source is a macOS-m
 - code review must reject source-volume mutation APIs, including any raw-block write syscall;
 - a lint/CI deny-list on write-capable filesystem APIs (`copyItem`, `moveItem`, `removeItem`, `createFile`, `setAttributes`, `replaceItem`, `trashItem`) applies to every target that can reach a `FilesystemProvider`;
 - integration tests compare source filesystem state before and after capture, for both a mounted volume and a raw device;
-- export destinations are selected independently from scanned paths.
+- export destinations are selected independently from scanned paths;
+- development scripts must not modify scanned media; only explicitly designated
+  fixture generators may write inside their disposable fixture directory.
+
+Unsigned ad-hoc builds must never be represented as official releases. Internal
+release artifacts are prepared only under explicit distribution authorization
+(ADR-006); template release directories do not establish a release requirement.
 
 ## 6. Privacy
 

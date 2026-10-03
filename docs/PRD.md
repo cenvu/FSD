@@ -37,7 +37,7 @@ Secondary:
 - Apple Silicon arm64;
 - delivered as a single self-contained `.app` — no Homebrew, macFUSE, ntfs-3g, kernel extension, or app extension install required of the user;
 - removable HDD, SSD, USB and Thunderbolt storage;
-- network volumes may be supported later with explicit limitations (`KNOWN_ISSUES.md` KI-007, unchanged by filesystem scope).
+- network volumes may be supported later with explicit limitations (`PRODUCT_STATE.md` KI-007, unchanged by filesystem scope).
 
 ### 4.1 Filesystem scope
 
