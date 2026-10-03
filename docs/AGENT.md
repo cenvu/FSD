@@ -1,4 +1,13 @@
-# Agent Instructions — FSD (FishSock Differ)
+# Full FSD Governance Reference — FSD (FishSock Differ)
+
+## Reference loading
+
+This is the FULL/deep FSD governance reference, loaded on demand; it is not
+the default startup context. The omission-critical always-on kernel is
+[`AGENTS.md`](../AGENTS.md), and stable BRAIN/Worker operation is canonical in
+[`BRAIN_OPERATOR.md`](BRAIN_OPERATOR.md). Read relevant sections here when an
+exact task needs detailed policy, an audit, policy ambiguity, governance conflict,
+operator repair, rule promotion or high-risk adjudication requires them.
 
 ## Product invariant
 
@@ -91,8 +100,7 @@ When a task requires a Handoff:
   `UPDATED_AT: <machine-local ISO 8601 timestamp with timezone>`
 - Add one blank line, then copy the complete historical Handoff.
 - `CURRENT_HANDOFF.md` is a full report, not a pointer.
-- The final Agent response contains exactly 10 summary lines followed by:
-  `NEW HANDOFF!!!`
+- The final Worker response follows the compact Worker terminal return contract below.
 
 Do not create:
 
@@ -107,6 +115,24 @@ Do not create:
 - multiple Handoffs for one task.
 
 Historical Handoffs are immutable after creation. Do not rename or overwrite them.
+
+## Worker terminal return
+
+The permanent Worker terminal return contract is:
+
+```text
+TASK=<id>
+RESULT=<worker-local-result>
+WHAT=<dense verifiable delta>
+BRAIN=SEND FILE=/Users/cenvu/Desktop/04_FSD_BRAIN.md
+```
+
+Optionally add at most five short machine-dense evidence lines, only when
+materially required. End exactly `NEW HANDOFF!!!`.
+
+RESULT is Worker evidence, not BRAIN classification or acceptance. Human
+explanation is BRAIN's responsibility. Historical handoffs using the old
+10-line format remain valid immutable history; do not rewrite them.
 
 ## Deferred Manual Testing Rule
 

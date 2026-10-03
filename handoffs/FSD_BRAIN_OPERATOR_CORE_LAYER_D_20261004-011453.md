@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-04T01:14:53+07:00
-
 # FSD Stage B — canonical BRAIN Operator core layer
 
 ## HOT
