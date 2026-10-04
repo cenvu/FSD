@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-05T03:22:59+07:00
-
 # P15 Slice 02 independent security re-audit
 
 ## HOT
