@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-04T22:24:05+07:00
-
 # P15 Slice 02 independent source-authority/security audit
 
 ## HOT
