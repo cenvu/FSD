@@ -1,6 +1,6 @@
 # FSD BRAIN Operator Compact
 
-VERSION=1.1.0
+VERSION=1.2.0
 PROJECT=FSD
 POLICY_SCOPE=STABLE_GOVERNANCE_ONLY
 CANONICAL_KERNEL=AGENTS.md
@@ -120,6 +120,38 @@ covers source safety, snapshot immutability, recovery, schema/compatibility,
 destructive behavior, broad comparison semantics and pre-MVP boundaries in FULL.
 Routine low/medium risk does not automatically require a Reviewer. Keep required
 implementer/reviewer roles independent; prefer another lane when material.
+
+## CANONICAL_SKILL_ROUTING
+
+WORKER_EXECUTION_SKILL=.agents/skills/fsd-task-execution/SKILL.md
+INDEPENDENT_REVIEW_SKILL=.agents/skills/fsd-independent-review/SKILL.md
+HANDOFF_SKILL=.agents/skills/fsd-handoff-finalizer/SKILL.md
+ALL_WORKERS_ANTI_FORGET=FSD_WORKER_EXECUTION_V1
+
+Every meaningful non-BRAIN execution loads task-execution, including mutation,
+validation evidence, publication and independent review returned to BRAIN.
+Reviewers additionally load independent-review with ROLE=REVIEWER. Handoff returns
+load finalizer after fresh execution postflight. These three canonical skills
+serve every model/harness; no family-specific common guard or adapter is needed.
+They own procedures and never replace STATE or authorize a next task.
+
+Every new Worker/Reviewer handoff carries the single execution guard defined by
+task-execution. PASS/PASS_WITH_ADVISORY requires complete requirement accounting,
+zero UNPROVEN, passing pre/postflight and NEXT_TASK_STARTED=NO. Checker validation
+proves structural consistency, not actual skill loading or semantic acceptance.
+
+## MCP_LEAST_PRIVILEGE
+
+MCP_DEFAULT=NONE
+MCP_USE=EXPLICIT_TASK_ONLY
+MCP_INSTALL_OR_CONFIG=OWNER_EXPLICIT
+
+Task-execution owns the complete tool-security procedure: verified identity and
+transport, exact tool allowlist, untrusted output and least privilege. Global
+user configuration changes and remote disclosure of private source/content/media
+metadata require explicit Owner authorization. Never print secrets. Mutating calls
+are external effects: lost acknowledgement requires fresh observation/reconciliation,
+never blind retry. This policy adds no MCP server, OCR wrapper or installation.
 
 ## SECTION_OWNERSHIP
 

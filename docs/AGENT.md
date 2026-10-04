@@ -58,6 +58,9 @@ FSD — FishSock Differ is a metadata-only, read-only catalog and comparison app
 
 ## Development workflow
 
+- Load [task-execution](../.agents/skills/fsd-task-execution/SKILL.md) for every
+  meaningful Worker execution; independent review also loads
+  [independent-review](../.agents/skills/fsd-independent-review/SKILL.md).
 - Keep implementation changes small and reviewable.
 - Record architecture decisions in `DECISIONS.md`.
 - Update `PRODUCT_STATE.md` after meaningful milestones.

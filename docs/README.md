@@ -26,6 +26,9 @@ Expand only for the question being answered; [AGENT.md](AGENT.md) is deep govern
 
 | Task | Product/control authority to read |
 |---|---|
+| Worker execution | [task-execution](../.agents/skills/fsd-task-execution/SKILL.md) — mandatory provider-neutral preflight, bounded execution and fresh requirement postflight |
+| Independent review | [independent-review](../.agents/skills/fsd-independent-review/SKILL.md) plus task-execution with ROLE=REVIEWER — risk-first, read-only review |
+| Finalization | [finalizer](../.agents/skills/fsd-handoff-finalizer/SKILL.md) — guarded candidate, STATE projection, recovery parity and verified publication |
 | Low-risk control | Accepted STATE, relevant ledger row, Operator applicable rules; [finalizer](../.agents/skills/fsd-handoff-finalizer/SKILL.md) for a Worker return |
 | Product requirement | [PRD.md](PRD.md) — user promise, scope and exclusions |
 | Product implementation or limitation | [PRODUCT_STATE.md](PRODUCT_STATE.md) — capabilities, gaps and limitation pointers |

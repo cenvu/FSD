@@ -11,6 +11,14 @@ Git root. This is the sole current FSD handoff procedure; historical procedures
 and references remain immutable evidence. Finalization does not authorize scope
 expansion, product work, semantic repair or BRAIN acceptance.
 
+Prerequisite: [fsd-task-execution](../fsd-task-execution/SKILL.md) has completed
+fresh execution postflight on the already-reviewed candidate. Load that skill for
+the provider-neutral execution discipline and exact Worker guard contract; do not
+duplicate or bypass it here. The finalizer only validates, projects and publishes
+that candidate. It must not repair execution scope. A discovered execution defect
+returns to task-execution within the existing authorization and retry budget, or
+to BRAIN if unresolved. Finalization never supplies missing semantic evidence.
+
 ## Re-anchor and prepare
 
 1. Fetch the configured canonical upstream non-destructively. Record root,
@@ -37,7 +45,11 @@ expansion, product work, semantic repair or BRAIN acceptance.
    complete technical record in that single historical handoff: HOT identity,
    Git/freshness snapshot, scope, input refs, concrete delta, verified commands,
    validation limits, ownership, remaining issues, proposed state delta and
-   exactly one PROPOSED_NEXT. Never author BRAIN review/classification/accepted
+   exactly one PROPOSED_NEXT. Include exactly one contiguous Worker execution guard
+   from task-execution, truthful requirement counts and NEXT_TASK_STARTED=NO.
+   PASS/PASS_WITH_ADVISORY cannot finalize with material UNPROVEN requirements:
+   the guard must have UNPROVEN=0, PREFLIGHT=PASS and POSTFLIGHT=PASS. Never author
+   BRAIN review/classification/accepted
    state/active-next. Check the complete content before creating the immutable
    file; a validation failure after creation is a blocker to report, not license
    to rewrite history. Use actual prepublication HEAD/time in HOT. Its own future
@@ -92,6 +104,11 @@ expansion, product work, semantic repair or BRAIN acceptance.
     preserving the immutable historical record. Re-run checker with
     --require-clean --require-synced for clean publication tasks. On a failed
     push/fetch/parity/scope check, report the truthful blocker; never claim success.
+    Final verification must freshly inspect physical HEAD/upstream, diff/status,
+    exact artifacts and Desktop parity after push/fetch. A timeout or lost network
+    acknowledgement is AMBIGUOUS_RECOVERY: fetch and reconcile the actual remote
+    branch before considering a retry. Never issue a blind second push; unresolved
+    delivery or material drift returns evidence to BRAIN. Confirm NEXT_TASK_STARTED=NO.
 
 Return only TASK, worker-local RESULT, one dense verifiable WHAT, and
 `BRAIN=SEND FILE=/Users/cenvu/Desktop/04_FSD_BRAIN.md`; optionally at most five short

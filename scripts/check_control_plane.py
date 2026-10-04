@@ -23,6 +23,11 @@ HANDOFF = re.compile(r"handoffs/FSD_[A-Z0-9_-]+_[FARCTDL]_[0-9]{8}-[0-9]{6}\.md"
 TASK = re.compile(r"[A-Z0-9_]+")
 RESULTS = {"PASS", "PASS_WITH_ADVISORY", "REPAIR", "STOP"}
 CLASSIFICATIONS = RESULTS | {"OWNER_DECISION", "PENDING_BRAIN"}
+GUARD_KEYS = (
+    "WORKER_EXECUTION_GUARD", "WORKER_PREFLIGHT", "WORKER_REQUIREMENTS_TOTAL",
+    "WORKER_REQUIREMENTS_EVIDENCED", "WORKER_REQUIREMENTS_NOT_APPLICABLE",
+    "WORKER_REQUIREMENTS_UNPROVEN", "WORKER_POSTFLIGHT", "NEXT_TASK_STARTED",
+)
 BEGIN = b"# BRAIN OPERATOR BEGIN\n"
 END = b"# BRAIN OPERATOR END\n"
 BOOTSTRAP_TASK = "FSD_STATE_PLANE_AND_FINALIZER_003"
@@ -36,6 +41,8 @@ REQUIRED = [
     "AGENTS.md", "docs/BRAIN_OPERATOR.md", "docs/AGENT.md",
     "STATE/PROJECT_STATE.md", "STATE/EVENTS.jsonl", "STATE/TASK_LEDGER.tsv",
     "STATE/RULE_PROMOTION_LEDGER.tsv", "handoffs/CURRENT_HANDOFF.md",
+    ".agents/skills/fsd-task-execution/SKILL.md",
+    ".agents/skills/fsd-independent-review/SKILL.md",
     ".agents/skills/fsd-handoff-finalizer/SKILL.md",
     "scripts/check_control_plane.py",
 ]
@@ -333,6 +340,39 @@ class Checker:
         for name in ("BRAIN_REVIEW", "BRAIN_CLASSIFICATION", "BRAIN_ACCEPTED_STATE", "BRAIN_ACTIVE_NEXT"):
             require(not re.search(rf"^{name}=", payload.decode(), re.M), "Worker handoff authors BRAIN-owned fields")
         self.receipt["checks"].append("current_updated_at_exact_source_hot")
+        self.worker_execution_guard(payload.decode())
+
+    def worker_execution_guard(self, source):
+        # Only the new handoff is checked. Declarations prove structure, not
+        # skill loading, performed reasoning, or BRAIN acceptance.
+        guard = {}
+        for key in GUARD_KEYS:
+            matches = re.findall(rf"^{key}=(.*)$", source, re.M)
+            require(len(matches) == 1, f"missing/duplicate Worker guard field: {key}")
+            guard[key] = matches[0]
+        block = "\n".join(f"{key}={guard[key]}" for key in GUARD_KEYS)
+        require(block in source, "Worker guard must be one contiguous ordered block")
+        require(guard["WORKER_EXECUTION_GUARD"] == "FSD_WORKER_EXECUTION_V1",
+                "invalid Worker guard version")
+        require(guard["WORKER_PREFLIGHT"] in {"PASS", "FAIL"}, "invalid Worker preflight")
+        require(guard["WORKER_POSTFLIGHT"] in {"PASS", "FAIL"}, "invalid Worker postflight")
+        require(guard["NEXT_TASK_STARTED"] == "NO", "NEXT_TASK_STARTED must be NO")
+        counts = {}
+        for key in GUARD_KEYS[2:6]:
+            require(re.fullmatch(r"[0-9]+", guard[key]),
+                    f"Worker guard requires non-negative integer: {key}")
+            counts[key] = int(guard[key])
+        total, evidenced, not_applicable, unproven = (counts[key] for key in GUARD_KEYS[2:6])
+        require(total == evidenced + not_applicable + unproven,
+                "Worker guard requirement arithmetic mismatch")
+        result = self.ledger[self.args.task_id]["WORKER_RESULT"]
+        if result in {"PASS", "PASS_WITH_ADVISORY"}:
+            require(unproven == 0, "PASS Worker guard has UNPROVEN requirements")
+            require(guard["WORKER_PREFLIGHT"] == "PASS", "PASS requires passing preflight")
+            require(guard["WORKER_POSTFLIGHT"] == "PASS", "PASS requires passing postflight")
+            require(total == evidenced + not_applicable, "PASS requirement arithmetic mismatch")
+        self.receipt["worker_execution_guard"] = guard
+        self.receipt["checks"].append("worker_execution_guard_structure_only")
 
     def operator_and_desktop(self):
         operator = self.ref("docs/BRAIN_OPERATOR.md").read_bytes()

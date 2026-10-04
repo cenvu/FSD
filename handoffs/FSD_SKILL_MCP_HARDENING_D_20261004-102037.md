@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-04T14:59:22+07:00
-
 # FSD skill and MCP hardening — Worker evidence
 
 ## HOT

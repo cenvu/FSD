@@ -29,6 +29,9 @@ CURRENT_HANDOFF=handoffs/CURRENT_HANDOFF.md
 COMPACT_OPERATOR=docs/BRAIN_OPERATOR.md
 FULL_REFERENCE=docs/AGENT.md
 ACCEPTED_LIVE_STATE=STATE/PROJECT_STATE.md
+WORKER_EXECUTION_SKILL=.agents/skills/fsd-task-execution/SKILL.md
+INDEPENDENT_REVIEW_SKILL=.agents/skills/fsd-independent-review/SKILL.md
+ALL_WORKERS_ANTI_FORGET=FSD_WORKER_EXECUTION_V1
 CONTEXT_DEFAULT=HOT+EXACT_TASK+DIRECT_AUTHORITY_REFS
 DO_NOT_PRELOAD_ALL_HISTORY=YES
 HANDOFF=ONE_FLAT_IMMUTABLE_HISTORY;CURRENT_FULL_COPY_WITH_UPDATED_AT
@@ -36,5 +39,7 @@ HIGH_RISK_REVIEW=SOURCE_SAFETY|SNAPSHOT_IMMUTABILITY|RECOVERY|SCHEMA_COMPATIBILI
 
 Use the exact task to resolve your role and authorized scope. Read CURRENT's
 HOT first. BRAIN loads the Compact; Workers load its directly applicable rules.
+Meaningful non-BRAIN execution must load WORKER_EXECUTION_SKILL; independent
+review additionally loads INDEPENDENT_REVIEW_SKILL, regardless of model/harness.
 Load relevant FULL sections on demand for audits, policy ambiguity, governance
 conflicts, operator repair, rule promotion or high-risk adjudication.
