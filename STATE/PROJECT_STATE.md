@@ -4,17 +4,18 @@ STATE_VERSION=1.0.0
 PROJECT=FSD
 CURRENT_PHASE=DEMO_SPRINT
 ACTIVE_WORKSTREAM=FSD_DEMO_CRITICAL_PATH
-STATUS=RUSH_SPRINT_LEAN;P15_SLICE_01_AUDIT_ACCEPTED;ROUTING_POOL_ALIGNMENT_AUTHORIZED
-CURRENT_GATE=FSD_BRAIN_ROUTING_MODEL_POOL_ALIGNMENT_011
+STATUS=RUSH_SPRINT_LEAN;ROUTING_POOL_ALIGNED;P15_SLICE_02_AUTHORIZED
+CURRENT_GATE=FSD_P15_RUNTIME_SLICE_02_BOUNDED_SOURCE_AUTHORITY_012
 BLOCKERS=NONE
-LAST_ACCEPTED_TASK=FSD_P15_RUNTIME_SLICE_01_SCHEMA_V9_AUDIT_010
-LAST_ACCEPTED_HEAD=98d55f456b429e5175661e011394080be2033629
+LAST_ACCEPTED_TASK=FSD_BRAIN_ROUTING_MODEL_POOL_ALIGNMENT_011
+LAST_ACCEPTED_HEAD=f984ea2d63a8ffddf141fdbcbd86bbc5994b0370
 AUTHORITY_PTRS=AGENTS.md|docs/BRAIN_OPERATOR.md|docs/UX_UI_SPEC.md|docs/PRD.md|docs/PRODUCT_STATE.md|docs/MVP_PLAN.md|docs/ARCHITECTURE.md|docs/TEST_PLAN.md|docs/P15_RUNTIME_PLAN.md
 PARKED_PRODUCT_WORKSTREAM=NONE
-EXACTLY_ONE_NEXT_DECISION=ACTION(FSD_BRAIN_ROUTING_MODEL_POOL_ALIGNMENT_011)
+EXACTLY_ONE_NEXT_DECISION=ACTION(FSD_P15_RUNTIME_SLICE_02_BOUNDED_SOURCE_AUTHORITY_012)
 
-Accepted-state provenance: BRAIN adjudication and Owner routing-pool directive at 2026-10-04T18:28:47+07:00.
-Independent Slice-01 schema/persistent-data audit accepted PASS_WITH_ADVISORY; the single LOW whitespace-normalization advisory is nonblocking and remains unresolved.
-Owner supplied the current routing pool for Codex CLI, AGY CLI and OpenCode and authorized the BRAIN Operator routing guidance to be aligned before further demo-sprint routing.
-Worker prompts remain harness/model/effort agnostic; the routing pool is BRAIN-side mutable operational guidance, not task content and not a benchmark.
-Owner-authorized RUSH/SPRINT/LEAN progression remains active; after routing-pool alignment BRAIN returns to the accepted demo dependency map.
+Accepted-state provenance: BRAIN adjudication and routing at 2026-10-04T18:42:14+07:00.
+Operator 1.3.0 routing-pool alignment accepted PASS_WITH_ADVISORY; Owner-supplied model inventory is mutable and current at capture, with conditional FREE-first routing and model-agnostic Worker prompts.
+P15 Slice 01 implementation and its independent schema/persistent-data audit remain accepted; the LOW provider-identifier whitespace-normalization advisory remains nonblocking.
+P15 Runtime Slice 02 bounded source authority and Data-only provider contract is the only active next action.
+Independent source read-authority/read-only-security audit is mandatory after Slice 02 before Slice 03.
+Owner-authorized RUSH/SPRINT/LEAN progression remains active.
