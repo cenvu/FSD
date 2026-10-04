@@ -4,17 +4,17 @@ STATE_VERSION=1.0.0
 PROJECT=FSD
 CURRENT_PHASE=DEMO_SPRINT
 ACTIVE_WORKSTREAM=FSD_DEMO_CRITICAL_PATH
-STATUS=RUSH_SPRINT_LEAN;P15_SLICE_02_ACCEPTED;SOURCE_AUTHORITY_AUDIT_REQUIRED_BEFORE_SLICE_03
-CURRENT_GATE=FSD_P15_RUNTIME_SLICE_02_SOURCE_AUTHORITY_AUDIT_013
+STATUS=RUSH_SPRINT_LEAN;P15_SLICE_02_REPAIR_REQUIRED;SECURITY_FINDINGS_ACCEPTED
+CURRENT_GATE=FSD_P15_RUNTIME_SLICE_02_SECURITY_REPAIR_014
 BLOCKERS=NONE
-LAST_ACCEPTED_TASK=FSD_P15_RUNTIME_SLICE_02_BOUNDED_SOURCE_AUTHORITY_012
-LAST_ACCEPTED_HEAD=965df74ee3e249ed26986dc3ddf512d73e9278da
+LAST_ACCEPTED_TASK=FSD_P15_RUNTIME_SLICE_02_SOURCE_AUTHORITY_AUDIT_013
+LAST_ACCEPTED_HEAD=73ec848b69b13ca253f3748f16c96be801f97c4a
 AUTHORITY_PTRS=AGENTS.md|docs/BRAIN_OPERATOR.md|docs/UX_UI_SPEC.md|docs/PRD.md|docs/PRODUCT_STATE.md|docs/MVP_PLAN.md|docs/ARCHITECTURE.md|docs/SECURITY_AND_READ_ONLY_POLICY.md|docs/TEST_PLAN.md|docs/P15_RUNTIME_PLAN.md
 PARKED_PRODUCT_WORKSTREAM=NONE
-EXACTLY_ONE_NEXT_DECISION=ACTION(FSD_P15_RUNTIME_SLICE_02_SOURCE_AUTHORITY_AUDIT_013)
+EXACTLY_ONE_NEXT_DECISION=ACTION(FSD_P15_RUNTIME_SLICE_02_SECURITY_REPAIR_014)
 
-Accepted-state provenance: BRAIN adjudication at 2026-10-04T21:56:20+07:00.
-P15 Runtime Slice 02 bounded source authority and Data-only provider contract accepted PASS_WITH_ADVISORY at publication 965df74ee3e249ed26986dc3ddf512d73e9278da.
-Accepted implementation includes the final root-locator contract, exact source identity checks, POSIX no-follow bounded single-prefix read, cancellation precedence, and provider Data-only capability boundary.
-Advisories: three environment-dependent external probes remained skipped; independent source read-authority/read-only-security audit is mandatory before Slice 03.
+Accepted-state provenance: BRAIN adjudication at 2026-10-04T22:35:11+07:00.
+Independent Slice-02 source-authority/security audit accepted with classification REPAIR.
+Accepted findings: HIGH acquired-parent rename can cause one outside-root payload read before rejection; MEDIUM alias-root proof/use TOCTOU at capture admission; MEDIUM cancellation can lose precedence during late post-read validation.
+Slice 03 is blocked until the bounded repair and a fresh independent re-audit pass.
 Owner-authorized RUSH/SPRINT/LEAN progression remains active.
