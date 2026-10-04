@@ -136,7 +136,7 @@ final class ManualSessionASubstituteTests: XCTestCase {
         XCTAssertEqual(history.count, 2)
         XCTAssertEqual(history.first { $0.id == cancelledID }?.status, .cancelled)
         XCTAssertEqual(history.first { $0.id == completeID }?.status, .complete)
-        XCTAssertEqual(try reopened.schemaVersion, 8)
+        XCTAssertEqual(try reopened.schemaVersion, 9)
     }
 
     /// A6 — force-quit recovery. An orphaned `scanning` snapshot, exactly what a

@@ -25,11 +25,11 @@ final class M5ReliabilityTests: XCTestCase {
 
     private var catalogURL: URL { directory.appendingPathComponent("catalog.sqlite3") }
 
-    func testFreshStartupCreatesV8CatalogCleanIntegrityAndHoldsTheLock() throws {
+    func testFreshStartupCreatesV9CatalogCleanIntegrityAndHoldsTheLock() throws {
         database = try CatalogDatabase(url: catalogURL, schemaURL: CatalogSchemaFixture.canonicalSchemaURL)
         let lock = try CatalogProcessLock(catalogURL: catalogURL)
         XCTAssertTrue(lock.isHeld)
-        XCTAssertEqual(try database.scalar("SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1")?.int64Value, 8)
+        XCTAssertEqual(try database.scalar("SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1")?.int64Value, 9)
         XCTAssertEqual(try database.scalar("PRAGMA integrity_check")?.stringValue, "ok")
         XCTAssertTrue(try database.query("PRAGMA foreign_key_check").isEmpty)
         XCTAssertEqual(try EntrySnapshotProbe.classificationRowCount(database: database), 0)
@@ -132,7 +132,7 @@ final class M5ReliabilityTests: XCTestCase {
 
     func testDamagedCurrentSchemaIsRejectedOnReopen() throws {
         database = try CatalogDatabase(url: catalogURL, schemaURL: CatalogSchemaFixture.canonicalSchemaURL)
-        XCTAssertEqual(try database.scalar("SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1")?.int64Value, 8)
+        XCTAssertEqual(try database.scalar("SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1")?.int64Value, 9)
         // Damage the current schema by dropping a canonical trigger.
         try database.execute("DROP TRIGGER trg_snapshots_capture_facts_immutable")
         database.close()

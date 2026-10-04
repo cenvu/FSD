@@ -333,7 +333,8 @@ public final class CatalogDatabase: @unchecked Sendable {
         for (table, columns) in [
             ("snapshots", CatalogMigrations.ExpectedState.snapshotColumns),
             ("comparisons", CatalogMigrations.ExpectedState.comparisonColumns),
-            ("comparison_profiles", CatalogMigrations.ExpectedState.profileColumns)
+            ("comparison_profiles", CatalogMigrations.ExpectedState.profileColumns),
+            ("entry_classifications", CatalogMigrations.ExpectedState.classificationColumns)
         ] {
             for column in columns {
                 let present = try scalarUnlocked(

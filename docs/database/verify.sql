@@ -411,7 +411,7 @@ SELECT count(*) AS blank_collections FROM collections WHERE trim(name) = '';
 
 SELECT count(*) AS blank_snapshots FROM snapshots WHERE trim(display_name) = '';
 
--- === Magika nullable-enrichment checks (schema version 8, entry_classifications) ===
+-- === Magika nullable-enrichment checks (schema version 9, entry_classifications) ===
 -- Phase 1.5 preparation only. Ordinary workflows write ZERO rows to this
 -- table; explicit enrichment may write bounded typed rows. These
 -- fixtures exist so the seam's constraints are proven now and cannot silently
@@ -463,6 +463,22 @@ VALUES
 SELECT count(*) AS versioned_runs_for_entry_1
 FROM entry_classifications
 WHERE entry_id = 1 AND classification_run_id IN ('verify-run-v1', 'verify-run-v2');
+
+-- C7a. Provider identity is a separate nullable TEXT with no default, appended
+-- after all v8 columns. Repository classified writes require 1-256 characters;
+-- legacy NULL remains representable at the schema boundary.
+SELECT cid, name, type, "notnull", dflt_value
+FROM pragma_table_info('entry_classifications') ORDER BY cid;
+SELECT provider_identifier IS NULL AS nullable_provider_is_not_fabricated
+FROM entry_classifications WHERE classification_run_id = 'verify-run-null';
+INSERT INTO entry_classifications (
+    entry_id, classification_run_id, detection_status, detector_version,
+    model_version, created_at, provider_identifier
+) VALUES (1, 'verify-provider-A', 'classified', 'detector-A', 'model-A', datetime('now'), 'provider-A'),
+         (1, 'verify-provider-B', 'classified', 'detector-A', 'model-A', datetime('now'), 'provider-B');
+SELECT detector_version, model_version, provider_identifier
+FROM entry_classifications WHERE classification_run_id IN ('verify-provider-A', 'verify-provider-B')
+ORDER BY id;
 
 -- C8. An exact duplicate run identity (entry_id + classification_run_id) is rejected.
 INSERT INTO entry_classifications (entry_id, classification_run_id, created_at)
@@ -633,8 +649,8 @@ SELECT id, name, version, is_builtin FROM comparison_profiles ORDER BY id;
 -- mutation aborts, while whole-comparison disposal (X14) cascades because the
 -- comparison row is already gone when the cascade fires.
 
--- X1. A fresh database records exactly version 8.
-SELECT max(version) AS schema_version_is_8 FROM schema_migrations;
+-- X1. A fresh database records exactly version 9.
+SELECT max(version) AS schema_version_is_9 FROM schema_migrations;
 
 -- === Disposal cascade lookup performance and schema version 8 ===
 -- Added 2026-08-05 for docs/DECISIONS.md ADR-030. The dedicated index is
@@ -650,8 +666,8 @@ WHERE type = 'index' AND name = 'idx_comparison_results_parent_result_id';
 EXPLAIN QUERY PLAN
 SELECT id FROM comparison_results WHERE parent_result_id = 1;
 
--- Y3. A fresh or fully migrated catalog records version 8.
-SELECT max(version) AS schema_version_is_8 FROM schema_migrations;
+-- Y3. A fresh or fully migrated catalog records version 9.
+SELECT max(version) AS schema_version_is_9 FROM schema_migrations;
 
 -- X2. The version-7 objects exist: the seven terminal evidence guards.
 SELECT count(*) AS version7_objects_present

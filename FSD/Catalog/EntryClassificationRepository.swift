@@ -30,6 +30,7 @@ public struct EntryClassification: Identifiable, Hashable, Sendable {
     public let detectionStatus: ClassificationDetectionStatus?
     public let detectorVersion: String?
     public let modelVersion: String?
+    public let providerIdentifier: String?
     public let classifiedAt: String?
     public let createdAt: String
 
@@ -43,9 +44,9 @@ public struct EntryClassification: Identifiable, Hashable, Sendable {
     }
 }
 
-/// Input accepted by the explicit enrichment writer. The v8 schema has no
-/// separate provider column, so detector/model versions are the persisted
-/// provenance fields; the adapter identifier remains runtime-only.
+/// Input accepted by the explicit enrichment writer. Detector, model and
+/// provider provenance are independent. Provider identity is optional at the
+/// type level, but required for a classified write.
 public struct EntryClassificationInput: Sendable, Hashable {
     public let entryID: Int64
     public let classificationRunID: String
@@ -55,6 +56,7 @@ public struct EntryClassificationInput: Sendable, Hashable {
     public let detectionStatus: ClassificationDetectionStatus?
     public let detectorVersion: String?
     public let modelVersion: String?
+    public let providerIdentifier: String?
     public let classifiedAt: String?
 
     public init(
@@ -66,6 +68,7 @@ public struct EntryClassificationInput: Sendable, Hashable {
         detectionStatus: ClassificationDetectionStatus? = .classified,
         detectorVersion: String? = nil,
         modelVersion: String? = nil,
+        providerIdentifier: String? = nil,
         classifiedAt: String? = nil
     ) {
         self.entryID = entryID
@@ -76,6 +79,7 @@ public struct EntryClassificationInput: Sendable, Hashable {
         self.detectionStatus = detectionStatus
         self.detectorVersion = detectorVersion
         self.modelVersion = modelVersion
+        self.providerIdentifier = providerIdentifier
         self.classifiedAt = classifiedAt
     }
 }
@@ -129,8 +133,8 @@ public final class EntryClassificationRepository {
                         INSERT INTO entry_classifications (
                             entry_id, classification_run_id, detected_type, mime_type,
                             confidence, detection_status, detector_version, model_version,
-                            classified_at, created_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                            classified_at, created_at, provider_identifier
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
                         """,
                         bindings: [
                             .integer(input.entryID), .text(input.classificationRunID),
@@ -140,7 +144,8 @@ public final class EntryClassificationRepository {
                             input.detectionStatus.map { .text($0.rawValue) } ?? .null,
                             input.detectorVersion.map(DatabaseValue.text) ?? .null,
                             input.modelVersion.map(DatabaseValue.text) ?? .null,
-                            input.classifiedAt.map(DatabaseValue.text) ?? .null
+                            input.classifiedAt.map(DatabaseValue.text) ?? .null,
+                            input.providerIdentifier.map(DatabaseValue.text) ?? .null
                         ]
                     )
                 } catch let error as CatalogDatabaseError {
@@ -192,7 +197,7 @@ public final class EntryClassificationRepository {
                 """
                 SELECT c.id, c.entry_id, c.classification_run_id, c.detected_type,
                        c.mime_type, c.confidence, c.detection_status, c.detector_version,
-                       c.model_version, c.classified_at, c.created_at
+                       c.model_version, c.classified_at, c.created_at, c.provider_identifier
                 FROM entry_classifications c
                 JOIN (
                     SELECT entry_id, MAX(id) AS latest_id
@@ -222,7 +227,7 @@ public final class EntryClassificationRepository {
                 """
                 SELECT id, entry_id, classification_run_id, detected_type, mime_type,
                        confidence, detection_status, detector_version, model_version,
-                       classified_at, created_at
+                       classified_at, created_at, provider_identifier
                 FROM entry_classifications
                 WHERE entry_id = ?
                 ORDER BY id DESC LIMIT ?
@@ -247,7 +252,7 @@ public final class EntryClassificationRepository {
             """
             SELECT id, entry_id, classification_run_id, detected_type, mime_type,
                    confidence, detection_status, detector_version, model_version,
-                   classified_at, created_at
+                   classified_at, created_at, provider_identifier
             FROM entry_classifications WHERE id = ? LIMIT 1
             """,
             bindings: [.integer(id)]
@@ -260,10 +265,16 @@ public final class EntryClassificationRepository {
         guard !input.classificationRunID.isEmpty, input.classificationRunID.count <= 256 else {
             throw EntryClassificationRepositoryError.invalidInput("classification run ID must contain 1–256 characters")
         }
+        if input.detectionStatus == .classified {
+            guard let providerIdentifier = input.providerIdentifier,
+                  !providerIdentifier.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                throw EntryClassificationRepositoryError.invalidInput("classified rows require a non-empty provider identifier")
+            }
+        }
         if let confidence = input.confidence, !(0.0...1.0).contains(confidence) {
             throw EntryClassificationRepositoryError.invalidInput("confidence must be between 0 and 1")
         }
-        for value in [input.detectedType, input.mimeType, input.detectorVersion, input.modelVersion, input.classifiedAt].compactMap({ $0 }) {
+        for value in [input.detectedType, input.mimeType, input.detectorVersion, input.modelVersion, input.providerIdentifier, input.classifiedAt].compactMap({ $0 }) {
             guard value.count <= 256 else {
                 throw EntryClassificationRepositoryError.invalidInput("classification metadata values must be at most 256 characters")
             }
@@ -302,6 +313,7 @@ public final class EntryClassificationRepository {
             detectionStatus: status,
             detectorVersion: row["detector_version"]?.stringValue,
             modelVersion: row["model_version"]?.stringValue,
+            providerIdentifier: row["provider_identifier"]?.stringValue,
             classifiedAt: row["classified_at"]?.stringValue,
             createdAt: createdAt
         )
@@ -422,6 +434,7 @@ public final class ClassificationEnrichmentService {
                 detectionStatus: .classified,
                 detectorVersion: observation.detectorVersion ?? provider.detectorVersion,
                 modelVersion: observation.modelVersion ?? provider.modelVersion,
+                providerIdentifier: provider.providerIdentifier,
                 classifiedAt: observation.classifiedAt
             ))
         }

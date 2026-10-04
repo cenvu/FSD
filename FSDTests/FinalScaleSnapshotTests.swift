@@ -182,7 +182,7 @@ final class FinalScaleSnapshotTests: XCTestCase {
         )
         let reopenSeconds = Date().timeIntervalSince(reopenStart)
 
-        XCTAssertEqual(try database.scalar("SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1")?.int64Value, 8)
+        XCTAssertEqual(try database.scalar("SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1")?.int64Value, 9)
         XCTAssertEqual(try database.scalar("PRAGMA integrity_check")?.stringValue, "ok")
         XCTAssertTrue(try database.query("PRAGMA foreign_key_check").isEmpty)
         XCTAssertEqual(try EntrySnapshotProbe.classificationRowCount(database: database), 0)
@@ -194,6 +194,6 @@ final class FinalScaleSnapshotTests: XCTestCase {
         let root = try XCTUnwrap(try tree.root())
         XCTAssertEqual(try tree.children(ofParent: root.id).count, 200)
 
-        print("[FSD-M5-Scale:reopen] reopen \(String(format: "%.3f", reopenSeconds)) s; schema version 8; integrity ok; fk clean; classification rows 0")
+        print("[FSD-M5-Scale:reopen] reopen \(String(format: "%.3f", reopenSeconds)) s; schema version 9; integrity ok; fk clean; classification rows 0")
     }
 }

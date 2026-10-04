@@ -10,7 +10,10 @@ final class CatalogDatabaseTests: XCTestCase {
         let database = try CatalogDatabase(url: databaseURL, schemaURL: canonicalSchemaURL)
         defer { database.close() }
 
-        XCTAssertEqual(try database.schemaVersion, 8)
+        XCTAssertEqual(try database.schemaVersion, 9)
+        XCTAssertEqual(try database.scalar(
+            "SELECT COUNT(*) FROM pragma_table_info('entry_classifications') WHERE name = 'provider_identifier' AND type = 'TEXT' AND \"notnull\" = 0 AND dflt_value IS NULL"
+        )?.int64Value, 1)
         XCTAssertEqual(try database.scalar("PRAGMA foreign_keys")?.int64Value, 1)
         XCTAssertEqual(try database.scalar("PRAGMA integrity_check")?.stringValue, "ok")
         XCTAssertTrue(try database.query("PRAGMA foreign_key_check").isEmpty)

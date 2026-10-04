@@ -12,7 +12,7 @@ import XCTest
 ///
 /// `ExpectedStateInventoryTests` keeps `CatalogMigrations.ExpectedState` in
 /// lockstep with `docs/database/schema.sql` and proves that a catalog
-/// reporting version 8 is rejected when any required object is missing or
+/// reporting version 9 is rejected when any required object is missing or
 /// when a safety-critical trigger keeps its name but loses its definition.
 final class TerminalCollisionEvidenceTests: XCTestCase {
     private var directory: URL!
@@ -390,9 +390,9 @@ final class ExpectedStateInventoryTests: XCTestCase {
         }
     }
 
-    // MARK: - Damaged v8 catalogs are rejected
+    // MARK: - Damaged v9 catalogs are rejected
 
-    private func makeFreshV8Catalog(named name: String) throws -> URL {
+    private func makeFreshV9Catalog(named name: String) throws -> URL {
         let url = directory.appendingPathComponent("\(name).sqlite3")
         let database = try CatalogDatabase(url: url, schemaURL: CatalogSchemaFixture.canonicalSchemaURL)
         database.close()
@@ -408,26 +408,26 @@ final class ExpectedStateInventoryTests: XCTestCase {
         }
     }
 
-    func testDamagedV8CatalogRejectsMissingBaselineIndex() throws {
-        let url = try makeFreshV8Catalog(named: "drift-missing-index")
+    func testDamagedV9CatalogRejectsMissingBaselineIndex() throws {
+        let url = try makeFreshV9Catalog(named: "drift-missing-index")
         try CatalogSchemaFixture.createDatabase(at: url, sql: "DROP INDEX idx_entries_snapshot_parent_sort;")
         try assertReopenFails(at: url, mentioning: "idx_entries_snapshot_parent_sort")
     }
 
-    func testDamagedV8CatalogRejectsMissingBaselineTrigger() throws {
-        let url = try makeFreshV8Catalog(named: "drift-missing-trigger")
+    func testDamagedV9CatalogRejectsMissingBaselineTrigger() throws {
+        let url = try makeFreshV9Catalog(named: "drift-missing-trigger")
         try CatalogSchemaFixture.createDatabase(at: url, sql: "DROP TRIGGER trg_snapshots_terminal_status_check;")
         try assertReopenFails(at: url, mentioning: "trg_snapshots_terminal_status_check")
     }
 
-    func testDamagedV8CatalogRejectsMissingV7CollisionGuard() throws {
-        let url = try makeFreshV8Catalog(named: "drift-missing-v7-guard")
+    func testDamagedV9CatalogRejectsMissingV7CollisionGuard() throws {
+        let url = try makeFreshV9Catalog(named: "drift-missing-v7-guard")
         try CatalogSchemaFixture.createDatabase(at: url, sql: "DROP TRIGGER trg_comparison_collision_groups_insert_guard;")
         try assertReopenFails(at: url, mentioning: "trg_comparison_collision_groups_insert_guard")
     }
 
-    func testDamagedV8CatalogRejectsSameNameSubstitutedSafetyTrigger() throws {
-        let url = try makeFreshV8Catalog(named: "drift-substituted-trigger")
+    func testDamagedV9CatalogRejectsSameNameSubstitutedSafetyTrigger() throws {
+        let url = try makeFreshV9Catalog(named: "drift-substituted-trigger")
         try CatalogSchemaFixture.createDatabase(at: url, sql: """
         DROP TRIGGER trg_comparisons_terminal_immutable;
         CREATE TRIGGER trg_comparisons_terminal_immutable
@@ -439,8 +439,8 @@ final class ExpectedStateInventoryTests: XCTestCase {
         try assertReopenFails(at: url, mentioning: "trg_comparisons_terminal_immutable")
     }
 
-    func testDamagedV8CatalogRejectsSameNameSubstitutedV7Guard() throws {
-        let url = try makeFreshV8Catalog(named: "drift-substituted-v7-guard")
+    func testDamagedV9CatalogRejectsSameNameSubstitutedV7Guard() throws {
+        let url = try makeFreshV9Catalog(named: "drift-substituted-v7-guard")
         try CatalogSchemaFixture.createDatabase(at: url, sql: """
         DROP TRIGGER trg_comparison_collision_groups_delete_guard;
         CREATE TRIGGER trg_comparison_collision_groups_delete_guard
@@ -452,14 +452,14 @@ final class ExpectedStateInventoryTests: XCTestCase {
         try assertReopenFails(at: url, mentioning: "trg_comparison_collision_groups_delete_guard")
     }
 
-    func testDamagedV8CatalogRejectsMissingParentResultCascadeIndex() throws {
-        let url = try makeFreshV8Catalog(named: "drift-missing-parent-result-index")
+    func testDamagedV9CatalogRejectsMissingParentResultCascadeIndex() throws {
+        let url = try makeFreshV9Catalog(named: "drift-missing-parent-result-index")
         try CatalogSchemaFixture.createDatabase(at: url, sql: "DROP INDEX idx_comparison_results_parent_result_id;")
         try assertReopenFails(at: url, mentioning: "idx_comparison_results_parent_result_id")
     }
 
-    func testDamagedV8CatalogRejectsSameNameParentResultIndexWithWrongColumns() throws {
-        let url = try makeFreshV8Catalog(named: "drift-wrong-parent-result-columns")
+    func testDamagedV9CatalogRejectsSameNameParentResultIndexWithWrongColumns() throws {
+        let url = try makeFreshV9Catalog(named: "drift-wrong-parent-result-columns")
         try CatalogSchemaFixture.createDatabase(at: url, sql: """
         DROP INDEX idx_comparison_results_parent_result_id;
         CREATE INDEX idx_comparison_results_parent_result_id ON comparison_results(comparison_id);
@@ -467,8 +467,8 @@ final class ExpectedStateInventoryTests: XCTestCase {
         try assertReopenFails(at: url, mentioning: "idx_comparison_results_parent_result_id")
     }
 
-    func testDamagedV8CatalogRejectsSameNameParentResultIndexWithWrongOrdering() throws {
-        let url = try makeFreshV8Catalog(named: "drift-wrong-parent-result-order")
+    func testDamagedV9CatalogRejectsSameNameParentResultIndexWithWrongOrdering() throws {
+        let url = try makeFreshV9Catalog(named: "drift-wrong-parent-result-order")
         try CatalogSchemaFixture.createDatabase(at: url, sql: """
         DROP INDEX idx_comparison_results_parent_result_id;
         CREATE INDEX idx_comparison_results_parent_result_id ON comparison_results(parent_result_id DESC);

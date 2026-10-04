@@ -78,8 +78,16 @@ enum CatalogSchemaFixture {
     /// A schema-version-7 catalog, as a version-7 catalog really exists after
     /// ADR-028 and before the ADR-030 index correction.
     static func version7SQL() throws -> String {
-        var sql = try String(contentsOf: canonicalSchemaURL, encoding: .utf8)
+        var sql = try version8SQL()
         try removeVersion8Additions(from: &sql)
+        return sql
+    }
+
+    /// The real v8 schema: remove only the v9 column and version-row bump.
+    static func version8SQL() throws -> String {
+        var sql = try String(contentsOf: canonicalSchemaURL, encoding: .utf8)
+        try remove(exactly: "    provider_identifier TEXT,\n", from: &sql)
+        try remove(exactly: "VALUES (9, CURRENT_TIMESTAMP);", from: &sql, replacement: "VALUES (8, CURRENT_TIMESTAMP);")
         return sql
     }
 
@@ -190,8 +198,8 @@ final class SchemaMigrationTests: XCTestCase {
     func testFreshDatabaseReachesCurrentVersionWithCleanIntegrity() throws {
         let database = try open(named: "fresh")
 
-        XCTAssertEqual(try database.schemaVersion, 8)
-        XCTAssertEqual(CatalogDatabase.currentSchemaVersion, 8)
+        XCTAssertEqual(try database.schemaVersion, 9)
+        XCTAssertEqual(CatalogDatabase.currentSchemaVersion, 9)
         XCTAssertEqual(try database.scalar("PRAGMA integrity_check")?.stringValue, "ok")
         XCTAssertTrue(try database.query("PRAGMA foreign_key_check").isEmpty)
         XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM schema_migrations")?.int64Value, 1)
@@ -206,7 +214,7 @@ final class SchemaMigrationTests: XCTestCase {
 
         let database = try CatalogDatabase(url: url)
 
-        XCTAssertEqual(try database.schemaVersion, 8)
+        XCTAssertEqual(try database.schemaVersion, 9)
         XCTAssertEqual(try triggerCount(database, name: "trg_completed_entries_insert_guard"), 1)
         XCTAssertEqual(try triggerCount(database, name: "trg_snapshots_capture_facts_immutable"), 1)
         XCTAssertEqual(try triggerCount(database, name: "trg_comparisons_terminal_immutable"), 1)
@@ -222,7 +230,7 @@ final class SchemaMigrationTests: XCTestCase {
 
         let database = try CatalogDatabase(url: url)
 
-        XCTAssertEqual(try database.schemaVersion, 8)
+        XCTAssertEqual(try database.schemaVersion, 9)
         XCTAssertEqual(try triggerCount(database, name: "trg_snapshots_capture_facts_immutable"), 1)
         XCTAssertEqual(try triggerCount(database, name: "trg_comparison_results_delete_guard"), 1)
         XCTAssertEqual(try database.scalar("PRAGMA integrity_check")?.stringValue, "ok")
@@ -234,7 +242,7 @@ final class SchemaMigrationTests: XCTestCase {
 
         let database = try CatalogDatabase(url: url)
 
-        XCTAssertEqual(try database.schemaVersion, 8)
+        XCTAssertEqual(try database.schemaVersion, 9)
         XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM snapshots")?.int64Value, 1)
         XCTAssertEqual(try database.scalar("SELECT status FROM snapshots")?.stringValue, "complete")
         XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM entries")?.int64Value, 1)
@@ -260,7 +268,7 @@ final class SchemaMigrationTests: XCTestCase {
 
         let database = try CatalogDatabase(url: url)
 
-        XCTAssertEqual(try database.schemaVersion, 8)
+        XCTAssertEqual(try database.schemaVersion, 9)
         XCTAssertEqual(try triggerCount(database, name: "trg_comparisons_terminal_immutable"), 1)
         XCTAssertEqual(try triggerCount(database, name: "trg_comparison_results_insert_guard"), 1)
         XCTAssertEqual(try triggerCount(database, name: "trg_comparison_results_update_guard"), 1)
@@ -291,7 +299,7 @@ final class SchemaMigrationTests: XCTestCase {
 
         let database = try CatalogDatabase(url: url)
 
-        XCTAssertEqual(try database.schemaVersion, 8)
+        XCTAssertEqual(try database.schemaVersion, 9)
         let stored = try XCTUnwrap(try database.scalar(
             "SELECT profile_version FROM comparisons WHERE id = 1"
         )?.int64Value)
@@ -311,7 +319,7 @@ final class SchemaMigrationTests: XCTestCase {
 
         let database = try CatalogDatabase(url: url)
 
-        XCTAssertEqual(try database.schemaVersion, 8)
+        XCTAssertEqual(try database.schemaVersion, 9)
         XCTAssertEqual(try triggerCount(database, name: "trg_comparison_results_delete_guard"), 1)
         XCTAssertEqual(try triggerCount(database, name: "trg_comparison_collision_groups_insert_guard"), 1)
         XCTAssertEqual(try triggerCount(database, name: "trg_comparison_collision_groups_update_guard"), 1)
@@ -329,7 +337,7 @@ final class SchemaMigrationTests: XCTestCase {
 
         let database = try CatalogDatabase(url: url)
 
-        XCTAssertEqual(try database.schemaVersion, 8)
+        XCTAssertEqual(try database.schemaVersion, 9)
         XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM comparison_collision_groups WHERE comparison_id = 1")?.int64Value, 1)
         XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM comparison_collision_members WHERE group_id = 1")?.int64Value, 2)
         XCTAssertEqual(try database.scalar("SELECT status FROM comparisons WHERE id = 1")?.stringValue, "complete")
@@ -349,6 +357,158 @@ final class SchemaMigrationTests: XCTestCase {
         XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM comparison_collision_groups WHERE comparison_id = 1")?.int64Value, 0)
         XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM comparison_collision_members WHERE group_id = 1")?.int64Value, 0)
         XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM comparison_results WHERE comparison_id = 1")?.int64Value, 0)
+    }
+
+    func testVersionEightMigratesLegacyRowsWithoutBackfillAndReopensWithoutReplay() throws {
+        let url = try makeVersion8(named: "legacy-v8")
+        try seedVersion4Snapshot(at: url)
+        try CatalogSchemaFixture.createDatabase(at: url, sql: """
+        INSERT INTO entry_classifications (
+            entry_id, classification_run_id, detected_type, detection_status,
+            detector_version, model_version, classified_at, created_at
+        ) VALUES (1, 'legacy-classified', 'text', 'classified', 'legacy-detector', 'legacy-model', '2026-08-01', '2026-08-01'),
+                 (1, 'legacy-failed', NULL, 'failed', NULL, NULL, NULL, '2026-08-02');
+        CREATE TABLE fixture_entries_before AS SELECT * FROM entries;
+        CREATE TABLE fixture_snapshots_before AS SELECT * FROM snapshots;
+        """)
+        XCTAssertEqual(try rawScalarInt(at: url,
+            "SELECT COUNT(*) FROM pragma_table_info('entry_classifications') WHERE name = 'provider_identifier'"), 0)
+
+        let migrated = try CatalogDatabase(url: url)
+        let repository = EntryClassificationRepository(database: migrated)
+        let history = try repository.history(for: 1)
+        XCTAssertEqual(history.map(\.classificationRunID), ["legacy-failed", "legacy-classified"])
+        XCTAssertEqual(history.count, 2)
+        XCTAssertTrue(history.allSatisfy { $0.providerIdentifier == nil })
+        XCTAssertEqual(history.last?.detectorVersion, "legacy-detector")
+        XCTAssertEqual(history.last?.modelVersion, "legacy-model")
+        XCTAssertEqual(history.last?.detectedType, "text")
+        XCTAssertEqual(history.last?.detectionStatus, .classified)
+        XCTAssertEqual(history.last?.classifiedAt, "2026-08-01")
+        XCTAssertEqual(history.last?.createdAt, "2026-08-01")
+        XCTAssertEqual(try repository.classification(for: 1), history.first)
+        XCTAssertEqual(try repository.latestClassifications(for: [1])[1], history.first)
+        for table in ["entries", "snapshots"] {
+            XCTAssertEqual(try migrated.scalar(
+                "SELECT COUNT(*) FROM (SELECT * FROM \(table) EXCEPT SELECT * FROM fixture_\(table)_before)"
+            )?.int64Value, 0)
+            XCTAssertEqual(try migrated.scalar(
+                "SELECT COUNT(*) FROM (SELECT * FROM fixture_\(table)_before EXCEPT SELECT * FROM \(table))"
+            )?.int64Value, 0)
+        }
+        XCTAssertEqual(try migrated.schemaVersion, 9)
+        let versions = try migrated.query("SELECT version, applied_at FROM schema_migrations ORDER BY version")
+        XCTAssertEqual(versions.map { $0["version"]?.int64Value }, [8, 9])
+        let fresh = try open(named: "fresh-v9-order")
+        let freshColumns = try fresh.query("PRAGMA table_info(entry_classifications)")
+        let migratedColumns = try migrated.query("PRAGMA table_info(entry_classifications)")
+        for field in ["cid", "name", "type", "notnull", "dflt_value", "pk"] {
+            XCTAssertEqual(freshColumns.map { $0[field] }, migratedColumns.map { $0[field] }, field)
+        }
+        XCTAssertEqual(migratedColumns.last?["name"]?.stringValue, "provider_identifier")
+        XCTAssertEqual(migratedColumns.last?["notnull"]?.int64Value, 0)
+        XCTAssertEqual(migratedColumns.last?["dflt_value"], .null)
+        XCTAssertEqual(try migrated.scalar("PRAGMA integrity_check")?.stringValue, "ok")
+        XCTAssertTrue(try migrated.query("PRAGMA foreign_key_check").isEmpty)
+        migrated.close()
+        // A migration that would fail immediately cannot run after success.
+        let reopened = try CatalogDatabase(url: url, migrations: [SchemaMigration(
+            version: 9, statements: ["INSERT INTO must_not_replay VALUES (1)"]
+        )])
+        XCTAssertEqual(try reopened.schemaVersion, 9)
+        let after = try reopened.query("SELECT version, applied_at FROM schema_migrations ORDER BY version")
+        for field in ["version", "applied_at"] {
+            XCTAssertEqual(versions.map { $0[field] }, after.map { $0[field] })
+        }
+        XCTAssertEqual(try EntryClassificationRepository(database: reopened).history(for: 1), history)
+    }
+
+    func testVersionNineVersionRowIsWrittenAfterEveryMigrationStatement() throws {
+        let url = try makeVersion8(named: "version-last-v9")
+        try CatalogSchemaFixture.createDatabase(at: url, sql: """
+        CREATE TABLE fixture_version_order (
+            prior_version INTEGER CHECK (prior_version = 8),
+            column_exists INTEGER CHECK (column_exists = 1)
+        );
+        CREATE TRIGGER fixture_version_last BEFORE INSERT ON schema_migrations
+        WHEN NEW.version = 9
+        BEGIN
+            SELECT CASE WHEN (SELECT COUNT(*) FROM fixture_version_order) != 1
+                THEN RAISE(ABORT, 'Version row must be written last') END;
+        END;
+        """)
+        let migration = SchemaMigration(version: 9, statements: CatalogMigrations.migrationToVersion9.statements + [
+            """
+            INSERT INTO fixture_version_order SELECT MAX(version),
+                (SELECT COUNT(*) FROM pragma_table_info('entry_classifications') WHERE name = 'provider_identifier')
+            FROM schema_migrations
+            """
+        ])
+        let database = try CatalogDatabase(url: url, migrations: [migration])
+        XCTAssertEqual(try database.schemaVersion, 9)
+        XCTAssertEqual(try database.scalar("SELECT prior_version FROM fixture_version_order")?.int64Value, 8)
+        XCTAssertEqual(try database.scalar("SELECT column_exists FROM fixture_version_order")?.int64Value, 1)
+    }
+
+    func testFailedVersionNineRollsBackDDLAndDataAtStatementOrVersionWriteFailure() throws {
+        for failAtVersionWrite in [false, true] {
+            let url = try makeVersion8(named: "rollback-v9-\(failAtVersionWrite)")
+            try seedVersion4Snapshot(at: url)
+            try CatalogSchemaFixture.createDatabase(at: url, sql: """
+            INSERT INTO entry_classifications (entry_id, classification_run_id, created_at)
+            VALUES (1, 'legacy', '2026-08-01');
+            CREATE TABLE fixture_entries_before AS SELECT * FROM entries;
+            CREATE TABLE fixture_snapshots_before AS SELECT * FROM snapshots;
+            CREATE TABLE fixture_classifications_before AS SELECT * FROM entry_classifications;
+            """)
+            if failAtVersionWrite {
+                try CatalogSchemaFixture.createDatabase(at: url, sql: """
+                CREATE TRIGGER fixture_reject_v9 BEFORE INSERT ON schema_migrations
+                WHEN NEW.version = 9 BEGIN SELECT RAISE(ABORT, 'Injected version write failure'); END;
+                """)
+            }
+            let statements = CatalogMigrations.migrationToVersion9.statements +
+                (failAtVersionWrite ? [] : ["INSERT INTO table_that_does_not_exist VALUES (1)"])
+            XCTAssertThrowsError(try CatalogDatabase(url: url, migrations: [SchemaMigration(version: 9, statements: statements)])) { error in
+                guard case let CatalogDatabaseError.migrationFailed(version, _) = error else {
+                    return XCTFail("Unexpected error: \(error)")
+                }
+                XCTAssertEqual(version, 9)
+            }
+            XCTAssertEqual(try rawScalarInt(at: url, "SELECT MAX(version) FROM schema_migrations"), 8)
+            XCTAssertEqual(try rawScalarInt(at: url, "SELECT COUNT(*) FROM schema_migrations"), 1)
+            XCTAssertEqual(try rawScalarInt(at: url,
+                "SELECT COUNT(*) FROM pragma_table_info('entry_classifications') WHERE name = 'provider_identifier'"), 0)
+            for (table, saved) in [("entries", "fixture_entries_before"), ("snapshots", "fixture_snapshots_before"),
+                                   ("entry_classifications", "fixture_classifications_before")] {
+                XCTAssertEqual(try rawScalarInt(at: url,
+                    "SELECT COUNT(*) FROM (SELECT * FROM \(table) EXCEPT SELECT * FROM \(saved))"), 0)
+                XCTAssertEqual(try rawScalarInt(at: url,
+                    "SELECT COUNT(*) FROM (SELECT * FROM \(saved) EXCEPT SELECT * FROM \(table))"), 0)
+            }
+            if failAtVersionWrite {
+                try CatalogSchemaFixture.createDatabase(at: url, sql: "DROP TRIGGER fixture_reject_v9;")
+            }
+            let repaired = try CatalogDatabase(url: url)
+            XCTAssertEqual(try repaired.schemaVersion, 9)
+            XCTAssertNil(try EntryClassificationRepository(database: repaired).classification(for: 1)?.providerIdentifier)
+            XCTAssertEqual(try repaired.scalar("PRAGMA integrity_check")?.stringValue, "ok")
+            XCTAssertTrue(try repaired.query("PRAGMA foreign_key_check").isEmpty)
+        }
+    }
+
+    func testVersionNineWithoutProviderIdentifierIsRejected() throws {
+        let url = directory.appendingPathComponent("damaged-v9.sqlite3")
+        let sql = try CatalogSchemaFixture.version8SQL().replacingOccurrences(
+            of: "VALUES (8, CURRENT_TIMESTAMP);", with: "VALUES (9, CURRENT_TIMESTAMP);"
+        )
+        try CatalogSchemaFixture.createDatabase(at: url, sql: sql)
+        XCTAssertThrowsError(try CatalogDatabase(url: url)) { error in
+            guard case let CatalogDatabaseError.schemaStateInvalid(detail) = error else {
+                return XCTFail("Unexpected error: \(error)")
+            }
+            XCTAssertTrue(detail.contains("entry_classifications column provider_identifier"), detail)
+        }
     }
 
     // MARK: - 4. Rollback
@@ -384,7 +544,7 @@ final class SchemaMigrationTests: XCTestCase {
 
         // The same catalog opens cleanly once the real migrations run.
         let repaired = try CatalogDatabase(url: url)
-        XCTAssertEqual(try repaired.schemaVersion, 8)
+        XCTAssertEqual(try repaired.schemaVersion, 9)
     }
 
     func testFailedVersionSixMigrationRollsBackAndLeavesVersionFiveStanding() throws {
@@ -416,7 +576,7 @@ final class SchemaMigrationTests: XCTestCase {
         )
 
         let repaired = try CatalogDatabase(url: url)
-        XCTAssertEqual(try repaired.schemaVersion, 8)
+        XCTAssertEqual(try repaired.schemaVersion, 9)
     }
 
     func testFailedVersionSevenMigrationRollsBackAndLeavesVersionSixStanding() throws {
@@ -448,7 +608,7 @@ final class SchemaMigrationTests: XCTestCase {
         )
 
         let repaired = try CatalogDatabase(url: url)
-        XCTAssertEqual(try repaired.schemaVersion, 8)
+        XCTAssertEqual(try repaired.schemaVersion, 9)
     }
 
     func testFailedVersionEightMigrationRollsBackAndLeavesVersionSevenStanding() throws {
@@ -476,7 +636,7 @@ final class SchemaMigrationTests: XCTestCase {
         )
 
         let repaired = try CatalogDatabase(url: url)
-        XCTAssertEqual(try repaired.schemaVersion, 8)
+        XCTAssertEqual(try repaired.schemaVersion, 9)
         XCTAssertEqual(
             try repaired.scalar("SELECT COUNT(*) FROM sqlite_master WHERE name = 'idx_comparison_results_parent_result_id'")?.int64Value,
             1
@@ -489,17 +649,17 @@ final class SchemaMigrationTests: XCTestCase {
         let url = try makeVersion4(named: "reopen", withImmutabilityGuards: false)
         let migrated = try CatalogDatabase(url: url)
         let rowsAfterMigration = try migrated.query("SELECT version, applied_at FROM schema_migrations ORDER BY version")
-        XCTAssertEqual(rowsAfterMigration.map { $0["version"]?.int64Value }, [4, 5, 6, 7, 8])
+        XCTAssertEqual(rowsAfterMigration.map { $0["version"]?.int64Value }, [4, 5, 6, 7, 8, 9])
 
         let reopened = try CatalogDatabase(url: url)
         let rowsAfterReopen = try reopened.query("SELECT version, applied_at FROM schema_migrations ORDER BY version")
 
-        XCTAssertEqual(rowsAfterReopen.count, 5)
+        XCTAssertEqual(rowsAfterReopen.count, 6)
         XCTAssertEqual(
             rowsAfterMigration.map { $0["applied_at"]?.stringValue },
             rowsAfterReopen.map { $0["applied_at"]?.stringValue }
         )
-        XCTAssertEqual(try reopened.schemaVersion, 8)
+        XCTAssertEqual(try reopened.schemaVersion, 9)
     }
 
     // MARK: - 6. Fresh and migrated are the same schema
@@ -513,6 +673,10 @@ final class SchemaMigrationTests: XCTestCase {
         XCTAssertEqual(try objectNames(fresh, type: "trigger"), try objectNames(migrated, type: "trigger"))
         XCTAssertEqual(try objectNames(fresh, type: "index"), try objectNames(migrated, type: "index"))
         XCTAssertEqual(try snapshotColumnNames(fresh), try snapshotColumnNames(migrated))
+        XCTAssertEqual(
+            try fresh.query("PRAGMA table_info(entry_classifications)").map { $0["name"] },
+            try migrated.query("PRAGMA table_info(entry_classifications)").map { $0["name"] }
+        )
         XCTAssertEqual(try tableColumnNames(fresh, table: "comparisons"), try tableColumnNames(migrated, table: "comparisons"))
         XCTAssertEqual(try tableColumnNames(fresh, table: "comparison_profiles"), try tableColumnNames(migrated, table: "comparison_profiles"))
     }
@@ -668,6 +832,13 @@ final class SchemaMigrationTests: XCTestCase {
         let url = directory.appendingPathComponent("\(name).sqlite3")
         try CatalogSchemaFixture.createDatabase(at: url, sql: try CatalogSchemaFixture.version6SQL())
         XCTAssertEqual(try rawScalarInt(at: url, "SELECT MAX(version) FROM schema_migrations"), 6)
+        return url
+    }
+
+    private func makeVersion8(named name: String) throws -> URL {
+        let url = directory.appendingPathComponent("\(name).sqlite3")
+        try CatalogSchemaFixture.createDatabase(at: url, sql: try CatalogSchemaFixture.version8SQL())
+        XCTAssertEqual(try rawScalarInt(at: url, "SELECT MAX(version) FROM schema_migrations"), 8)
         return url
     }
 

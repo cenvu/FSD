@@ -414,7 +414,7 @@ final class MilestoneConditionTests: XCTestCase {
         )
         let database = try CatalogDatabase(url: location.url, schemaURL: CatalogSchemaFixture.canonicalSchemaURL)
 
-        XCTAssertEqual(try database.schemaVersion, 8)
+        XCTAssertEqual(try database.schemaVersion, 9)
         XCTAssertTrue(FileManager.default.fileExists(atPath: location.url.path))
         let defaultURL = try CatalogLocationResolver.defaultURL()
         XCTAssertNotEqual(location.url.path, defaultURL.path)

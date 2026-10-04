@@ -37,6 +37,94 @@ final class ClassificationEnrichmentTests: XCTestCase {
         snapshotID = nil
     }
 
+    func testClassifiedInputRequiresProviderIdentity() throws {
+        let repository = EntryClassificationRepository(database: database)
+        XCTAssertThrowsError(try repository.append(EntryClassificationInput(
+            entryID: entryID, classificationRunID: "missing-provider"
+        ))) { error in
+            guard case .invalidInput = error as? EntryClassificationRepositoryError else {
+                return XCTFail("Unexpected error: \(error)")
+            }
+        }
+        XCTAssertEqual(try EntrySnapshotProbe.classificationRowCount(database: database), 0)
+    }
+
+    func testClassifiedProviderIdentityRejectsBlankAndOverlongValues() throws {
+        let repository = EntryClassificationRepository(database: database)
+        for (index, provider) in ["", " ", "\t\n", String(repeating: "é", count: 257)].enumerated() {
+            XCTAssertThrowsError(try repository.append(EntryClassificationInput(
+                entryID: entryID, classificationRunID: "invalid-provider-\(index)",
+                providerIdentifier: provider
+            ))) { error in
+                guard case .invalidInput = error as? EntryClassificationRepositoryError else {
+                    return XCTFail("Unexpected error: \(error)")
+                }
+            }
+        }
+        XCTAssertEqual(try EntrySnapshotProbe.classificationRowCount(database: database), 0)
+        let boundary = String(repeating: "é", count: 256)
+        let stored = try repository.append(EntryClassificationInput(
+            entryID: entryID, classificationRunID: "provider-length-boundary", providerIdentifier: boundary
+        ))
+        XCTAssertEqual(stored.providerIdentifier, boundary)
+        XCTAssertEqual(try repository.classification(for: entryID), stored)
+        let padded = try repository.append(EntryClassificationInput(
+            entryID: entryID, classificationRunID: "provider-with-padding", providerIdentifier: " provider "
+        ))
+        XCTAssertEqual(padded.providerIdentifier, " provider ")
+    }
+
+    func testNullableInputRoundTripsWithoutFabricatedProvenance() throws {
+        let repository = EntryClassificationRepository(database: database)
+        let stored = try repository.append(EntryClassificationInput(
+            entryID: entryID, classificationRunID: "nullable", detectionStatus: nil
+        ))
+        XCTAssertNil(stored.providerIdentifier)
+        XCTAssertNil(stored.detectorVersion)
+        XCTAssertNil(stored.modelVersion)
+        XCTAssertEqual(try repository.history(for: entryID), [stored])
+        XCTAssertEqual(try repository.latestClassifications(for: [entryID])[entryID], stored)
+    }
+
+    func testProviderHistoryRemainsAppendOnlyAndLatestUsesInsertionOrder() throws {
+        let repository = EntryClassificationRepository(database: database)
+        let first = try repository.append(EntryClassificationInput(
+            entryID: entryID, classificationRunID: "history-1", detectorVersion: "detector-A",
+            modelVersion: "model-A", providerIdentifier: "provider-A", classifiedAt: "2026-10-04"
+        ))
+        let second = try repository.append(EntryClassificationInput(
+            entryID: entryID, classificationRunID: "history-2", detectorVersion: "detector-A",
+            modelVersion: "model-A", providerIdentifier: "provider-B", classifiedAt: "2026-08-01"
+        ))
+        let other = try repository.append(EntryClassificationInput(
+            entryID: 3, classificationRunID: "history-3", detectorVersion: "detector-B",
+            modelVersion: "model-C", providerIdentifier: "provider-A"
+        ))
+        XCTAssertEqual(try repository.history(for: entryID), [second, first])
+        XCTAssertEqual(try repository.history(for: entryID, limit: 1), [second])
+        XCTAssertEqual(try repository.classification(for: entryID), second)
+        XCTAssertEqual(try repository.latestClassifications(for: [entryID, 3]), [entryID: second, 3: other])
+        XCTAssertEqual(try repository.latestClassifications(for: [entryID, entryID, 1]), [entryID: second])
+        XCTAssertTrue(try repository.latestClassifications(for: []).isEmpty)
+        XCTAssertThrowsError(try repository.append(EntryClassificationInput(
+            entryID: entryID, classificationRunID: "history-1", providerIdentifier: "replacement"
+        ))) { error in
+            XCTAssertEqual(error as? EntryClassificationRepositoryError,
+                           .duplicateRun(entryID: self.entryID, classificationRunID: "history-1"))
+        }
+        XCTAssertEqual(try repository.history(for: entryID), [second, first])
+        XCTAssertEqual(try EntrySnapshotProbe.classificationRowCount(database: database), 3)
+    }
+
+    func testExistingClassifiedServiceForwardsProviderIdentityIndependently() throws {
+        let service = ClassificationEnrichmentService(database: database, provider: ClassifiedFixtureProvider())
+        let stored = try XCTUnwrap(try service.enrich(entryID: entryID, classificationRunID: "service-provider"))
+        XCTAssertEqual(stored.providerIdentifier, "fixture-service-provider")
+        XCTAssertEqual(stored.detectorVersion, "observation-detector")
+        XCTAssertEqual(stored.modelVersion, "observation-model")
+        XCTAssertEqual(try EntryClassificationRepository(database: database).classification(for: entryID), stored)
+    }
+
     func testAbsentClassificationBrowsesWithNeutralStateAndExportsDeterministically() throws {
         let details = try XCTUnwrap(
             try SnapshotTreeDataSource(database: database, snapshotID: snapshotID).details(for: entryID)
@@ -63,11 +151,15 @@ final class ClassificationEnrichmentTests: XCTestCase {
             confidence: 0.875,
             detectorVersion: "adapter-test-1",
             modelVersion: "fixture-model-1",
+            providerIdentifier: "fixture-provider-1",
             classifiedAt: "2026-08-05T10:00:00Z"
         ))
 
         XCTAssertEqual(try repository.classification(for: entryID), stored)
         XCTAssertEqual(try repository.latestClassifications(for: [1, entryID]).count, 1)
+        XCTAssertEqual(stored.detectorVersion, "adapter-test-1")
+        XCTAssertEqual(stored.modelVersion, "fixture-model-1")
+        XCTAssertEqual(stored.providerIdentifier, "fixture-provider-1")
         XCTAssertEqual(stored.statusLabel, "Inferred file type")
         XCTAssertEqual(stored.confidenceLabel, "87.5%")
 
@@ -82,7 +174,7 @@ final class ClassificationEnrichmentTests: XCTestCase {
     func testVisiblePageClassificationReadUsesOneBoundedQuery() throws {
         let repository = EntryClassificationRepository(database: database)
         _ = try repository.append(EntryClassificationInput(
-            entryID: entryID, classificationRunID: "page-run", detectedType: "text"
+            entryID: entryID, classificationRunID: "page-run", detectedType: "text", providerIdentifier: "fixture-provider"
         ))
         XCTAssertEqual(try repository.latestClassifications(for: [entryID]).count, 1)
         XCTAssertThrowsError(try repository.latestClassifications(
@@ -97,13 +189,13 @@ final class ClassificationEnrichmentTests: XCTestCase {
     func testWriterRejectsUnknownAndDuplicateRuns() throws {
         let repository = EntryClassificationRepository(database: database)
         XCTAssertThrowsError(try repository.append(EntryClassificationInput(
-            entryID: 9999, classificationRunID: "missing"
+            entryID: 9999, classificationRunID: "missing", providerIdentifier: "fixture-provider"
         ))) { error in
             XCTAssertEqual(error as? EntryClassificationRepositoryError, .entryNotFound(9999))
         }
 
-        _ = try repository.append(EntryClassificationInput(entryID: entryID, classificationRunID: "same-run"))
-        XCTAssertThrowsError(try repository.append(EntryClassificationInput(entryID: entryID, classificationRunID: "same-run"))) { error in
+        _ = try repository.append(EntryClassificationInput(entryID: entryID, classificationRunID: "same-run", providerIdentifier: "fixture-provider"))
+        XCTAssertThrowsError(try repository.append(EntryClassificationInput(entryID: entryID, classificationRunID: "same-run", providerIdentifier: "fixture-provider"))) { error in
             XCTAssertEqual(
                 error as? EntryClassificationRepositoryError,
                 .duplicateRun(entryID: self.entryID, classificationRunID: "same-run")
@@ -119,7 +211,8 @@ final class ClassificationEnrichmentTests: XCTestCase {
         _ = try repository.append(EntryClassificationInput(
             entryID: entryID,
             classificationRunID: "immutable-test",
-            detectedType: "plain text"
+            detectedType: "plain text",
+            providerIdentifier: "fixture-provider"
         ))
 
         XCTAssertEqual(try EntrySnapshotProbe.contentFingerprint(database: database, snapshotID: snapshotID), beforeEntries)
@@ -173,5 +266,17 @@ private struct HostileDiagnosticProvider: LocalFileClassificationProvider {
         throw NSError(domain: "hostile", code: 1, userInfo: [
             NSLocalizedDescriptionKey: "hostile stack trace and absolute path /private/test"
         ])
+    }
+}
+
+private struct ClassifiedFixtureProvider: LocalFileClassificationProvider {
+    let providerIdentifier = "fixture-service-provider"
+    let detectorVersion: String? = "provider-detector"
+    let modelVersion: String? = "provider-model"
+
+    func classify(_ request: LocalClassificationRequest) throws -> LocalClassificationProviderResult {
+        .classified(LocalClassificationObservation(
+            detectedType: "text", detectorVersion: "observation-detector", modelVersion: "observation-model"
+        ))
     }
 }

@@ -22,7 +22,7 @@ public struct SchemaMigration: Sendable {
 public enum CatalogMigrations {
     /// The version a fresh `schema.sql` records and the version every supported
     /// catalog is brought to on open.
-    public static let currentVersion: Int64 = 8
+    public static let currentVersion: Int64 = 9
 
     /// The oldest version that can be migrated forward. Versions 1 through 3
     /// never existed as a materialized database, so they have no migration and
@@ -30,7 +30,7 @@ public enum CatalogMigrations {
     public static let oldestMigratableVersion: Int64 = 4
 
     public static let all: [SchemaMigration] = [
-        migrationToVersion5, migrationToVersion6, migrationToVersion7, migrationToVersion8
+        migrationToVersion5, migrationToVersion6, migrationToVersion7, migrationToVersion8, migrationToVersion9
     ]
 
     /// Version 4 to version 5.
@@ -270,6 +270,12 @@ public enum CatalogMigrations {
         ]
     )
 
+    /// Version 8 to version 9: truthful provider provenance, without backfill.
+    public static let migrationToVersion9 = SchemaMigration(
+        version: 9,
+        statements: ["ALTER TABLE entry_classifications ADD COLUMN provider_identifier TEXT"]
+    )
+
     /// The one complete canonical inventory of what a catalog reporting
     /// `currentVersion` must contain, however it got there. Verified on every
     /// open, so a fresh database and a migrated database are held to one
@@ -405,6 +411,7 @@ public enum CatalogMigrations {
 
         public static let comparisonColumns = ["profile_version"]
         public static let profileColumns = ["version"]
+        public static let classificationColumns = ["provider_identifier"]
 
         /// Deterministic normalization used to compare a stored SQLite object
         /// definition against the canonical one. SQLite stores trigger and

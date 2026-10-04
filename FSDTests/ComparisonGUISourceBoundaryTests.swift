@@ -107,9 +107,9 @@ final class ComparisonGUISourceBoundaryTests: XCTestCase {
         XCTAssertFalse(uiText.contains("ComparisonEngine("), "the GUI must not construct the matching engine directly")
     }
 
-    func testSchemaFileStillRecordsVersionEight() throws {
+    func testSchemaFileRecordsVersionNine() throws {
         let schema = try String(contentsOf: repoRoot.appendingPathComponent("docs/database/schema.sql"), encoding: .utf8)
         XCTAssertTrue(schema.contains("INSERT OR IGNORE INTO schema_migrations(version, applied_at)"), "schema version row seeding must remain")
-        XCTAssertTrue(schema.contains("VALUES (8, CURRENT_TIMESTAMP);"), "schema must remain version 8")
+        XCTAssertTrue(schema.contains("VALUES (9, CURRENT_TIMESTAMP);"), "schema must record current version 9")
     }
 }

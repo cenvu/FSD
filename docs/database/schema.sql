@@ -1,3 +1,7 @@
+-- Schema version 9 (P15 runtime Slice 01; ADR-032): adds only the nullable,
+-- no-default provider_identifier after the existing entry_classifications
+-- columns. Legacy rows remain NULL; detector/model/provider are independent.
+--
 -- Schema version 8 (Milestone 5 disposal-performance correction; see
 -- docs/DECISIONS.md ADR-030). This wave adds the dedicated leading index
 -- required by SQLite's self-referencing comparison-result cascade lookup:
@@ -57,7 +61,7 @@
 -- case_preserving_path/case_folded_path, parent/root integrity constraints
 -- and triggers, transient-safe comparisons). Each wave changed the schema
 -- materially; schema.sql remains a single cumulative DDL file describing the
--- current state, so "version 8" names the cumulative state after this wave.
+-- current state, so "version 9" names the cumulative state after this wave.
 -- Applying this file to an empty database is the ONLY supported way to create
 -- a catalog; moving an existing catalog forward is the job of the explicit
 -- migration list, never of this file. Versions 1 through 3 have no migration
@@ -789,7 +793,7 @@ INSERT OR IGNORE INTO comparison_profiles (
 );
 
 INSERT OR IGNORE INTO schema_migrations(version, applied_at)
-VALUES (8, CURRENT_TIMESTAMP);
+VALUES (9, CURRENT_TIMESTAMP);
 
 CREATE TRIGGER IF NOT EXISTS trg_collections_last_used_at_insert
 AFTER INSERT ON snapshots
@@ -845,6 +849,7 @@ CREATE TABLE IF NOT EXISTS entry_classifications (
     model_version       TEXT,
     classified_at       TEXT,
     created_at          TEXT NOT NULL,
+    provider_identifier TEXT,
     CHECK (confidence IS NULL OR (confidence >= 0.0 AND confidence <= 1.0)),
     UNIQUE(entry_id, classification_run_id)
 );

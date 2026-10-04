@@ -129,10 +129,10 @@ final class ComparisonSemanticsTests: XCTestCase {
         )?.int64Value)
         let classifications = EntryClassificationRepository(database: database)
         _ = try classifications.append(EntryClassificationInput(
-            entryID: leftEntryID, classificationRunID: "left-run", detectedType: "text/plain", confidence: 0.10
+            entryID: leftEntryID, classificationRunID: "left-run", detectedType: "text/plain", confidence: 0.10, providerIdentifier: "comparison-fixture-left"
         ))
         _ = try classifications.append(EntryClassificationInput(
-            entryID: rightEntryID, classificationRunID: "right-run", detectedType: "application/octet-stream", confidence: 0.99
+            entryID: rightEntryID, classificationRunID: "right-run", detectedType: "application/octet-stream", confidence: 0.99, providerIdentifier: "comparison-fixture-right"
         ))
 
         let comparison = try compare()
