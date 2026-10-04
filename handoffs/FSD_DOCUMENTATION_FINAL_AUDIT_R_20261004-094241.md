@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-04T09:42:41+07:00
-
 # FSD Stage E — independent documentation final audit
 
 ## HOT
