@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-04T18:36:05+07:00
-
 # FSD BRAIN routing model-pool alignment
 
 ## HOT
