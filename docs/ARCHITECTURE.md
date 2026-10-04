@@ -501,3 +501,67 @@ For the future runtime, classification must be presented as inferred metadata, n
 - Absence of classification is presented as a neutral state ("Not classified" or equivalent), never fabricated as an error.
 - Confidence is shown only when actually present in the data, never fabricated.
 - No raw provider diagnostic, stack trace, or internal path ever reaches visible text.
+
+## 10. Product-facing backend contracts for the Owner UX
+
+HOME:
+bounded aggregates
+recent captures
+recent durable comparisons
+mounted drives
+active capture state/progress
+
+DRIVE IDENTITY:
+strong identity
+ambiguity/confidence
+physical label separate from mount/display name
+
+HISTORY:
+latest lookup
+paged history per drive
+immutable capture facts
+mutable organization metadata separate
+
+BROWSER:
+lazy paged children
+selected details
+ancestor lookup / Reveal in Tree
+source online/offline state
+
+SEARCH:
+indexed bounded paging
+explicit SearchScope abstraction
+avoid snapshot-only coupling in future interfaces
+
+CLASSIFICATION:
+Data-only bounded input
+append-only results
+provider/detector/model provenance separate
+latest + history
+never diff/snapshot truth
+
+COMPARE:
+summary counts
+paged relative hierarchy
+Before/After orientation
+counterpart state
+ancestor-chain lookup
+next/previous across pages
+filters
+immutable terminal evidence
+
+ORGANIZATION:
+future Drive Set direction must remain separate from capture truth.
+
+These contracts are architecture constraints, NOT instructions to implement all APIs.
+UX projection must not alter snapshot/diff truth.
+
+For comparison:
+prefer additive hierarchy/query projection over persisted comparison evidence.
+Do not replace canonical comparison truth merely to support a dual-tree presentation.
+
+For search:
+future SearchScope abstraction must preserve bounded/indexed execution.
+
+For dashboard:
+aggregates must be database-backed and bounded.

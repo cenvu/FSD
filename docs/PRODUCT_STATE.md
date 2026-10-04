@@ -6,6 +6,21 @@ belong to [../STATE/PROJECT_STATE.md](../STATE/PROJECT_STATE.md); Worker continu
 belongs to [../handoffs/CURRENT_HANDOFF.md](../handoffs/CURRENT_HANDOFF.md).
 Neither this baseline nor historical product evidence authorizes product work.
 
+## Owner UX alignment — implementation support/gaps
+
+**Supported foundations:** Read-only metadata capture; immutable snapshots; interrupted capture; SQLite history/browse; lazy trees; selected-entry detail; snapshot/snapshot comparison persistence; bounded comparison paging; classification append-only storage.
+
+**Partial foundations:** Offline state requires visual redesign; capture lacks connected-drive UX; identity lacks strong/ambiguous service; missing dashboard facade for recent data; search lacks scope abstraction; classification lacks runtime; compare navigation lacks ancestor projection.
+
+**Exact gaps:** Real classifier runtime; schema v9 provider identifier; Data-only classification; mount detection; optional Auto Capture; strong volume identity service; paged per-drive history; bounded dashboard aggregates; This Drive/Library search; classification search; compare hierarchy projection; exact reveal chain; Drive Set implementation; durable live-comparison retention; multi-Library/cloud; rendered-window/VoiceOver acceptance.
+
+**ADR needed:**
+1. PHYSICAL_DRIVE_IDENTITY_AND_MOUNT_POLICY
+2. DRIVE_SET_SEMANTICS_VS_EXISTING_COLLECTIONS
+3. DURABLE_LIVE_COMPARISON_SEMANTICS
+
+See canonical target details in [UX_UI_SPEC.md](UX_UI_SPEC.md).
+
 ## Implemented capabilities
 
 - Native macOS 13+ arm64 SwiftUI app and XCTest target in `FSD.xcodeproj`.

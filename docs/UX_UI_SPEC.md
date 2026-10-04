@@ -1,273 +1,439 @@
+OWNER_PRODUCT_UX_DIRECTION=YES
+IMPLEMENTATION_PROOF=NO
+IMPLEMENTATION_AUTHORIZATION=NO
+
 # UX and UI Specification
 
-## 1. Design principles
+This document defines the canonical Owner Product/UX Direction for FSD.
 
-- Read-only must be obvious.
-- Offline entries should feel like a faithful mirror, not fake playable files.
-- Large trees must remain responsive.
-- Comparison semantics must be unambiguous.
-- Differences receive priority; matching branches can recede.
-- Avoid visual similarity to file synchronization tools that imply write actions.
+It clearly distinguishes:
+- TARGET UX
+- CURRENT BACKEND SUPPORT
+- GAP
+- ADR REQUIRED
+- DEFERRED / NON-GOAL
 
-## 2. Main navigation
+## 1. PRODUCT NORTH STAR
 
-```text
-┌──────────────────────────────────────────────────────────────┐
-│ FSD — FishSock Differ                                                │
-├────────────────┬─────────────────────────────────────────────┤
-│ Collections    │ Content                                     │
-│ ├ All Snapshots│                                             │
-│ ├ Unsorted     │                                             │
-│ ├ XYZ          │                                             │
-│ ├ ABC          │                                             │
-│ ├ NA           │                                             │
-│ └ CEN          │                                             │
-│ Live Volumes   │                                             │
-│ Recent Sources │                                             │
-│ Comparisons    │                                             │
-│ Capture Queue  │                                             │
-│ Reports        │                                             │
-│ Settings       │                                             │
-└────────────────┴─────────────────────────────────────────────┘
-```
+Remember the drive
+→ Browse it later
+→ Compare it
+→ Find the change.
 
-Full semantics: [`SNAPSHOT_COLLECTIONS.md`](SNAPSHOT_COLLECTIONS.md) §10. `Collections` and `Live Volumes` are deliberately separate sidebar sections, never merged into one identity model — a Collection is user-defined catalog organization; a volume is physical source identity. `All Snapshots` lists every snapshot regardless of Collection; `Unsorted` lists only those with no Collection assigned. Each named Collection row shows a snapshot count. Right-click on a Collection offers Rename, Edit Note, and Delete; a `+` control creates a new Collection inline.
+FSD must feel like a filesystem/productivity tool, not primarily a database or forensics tool.
 
-## 3. Screen A — Volume library and offline browser
+## 2. ABSOLUTE SAFETY
 
-```text
-┌────────────────────────────────────────────────────────────────────────────┐
-│ FSD — FishSock Differ     [Capture] [Compare] [Search]               Read-only     │
-├──────────────────────┬─────────────────────────────────────────────────────┤
-│ KN_SSD_014      ●     │ Camera Card A — Day 03            [Rename] [Move]  │
-│ CAMERA_MASTER   ○     │ Collection: XYZ Productions · KN_SSD_014 · exFAT   │
-│ SHUTTLE_03      ○     │ Captured: 24 Jul 2026, 17:42 · Offline             │
-│                      │                                                     │
-│ SNAPSHOTS in XYZ Productions │ 248,129 files · 6,442 folders · 4.82 TB    │
-│ Camera Card A — Day 03   Complete  ├───────────────────────────────────────┤
-│ Camera Card A — Day 02   Complete  │ ▾ PROJECT_A                4.71 TB    │
-│ Camera Card A — Day 01   Interrupted│  ▾ CAMERA                 4.52 TB    │
-│                      │       A001C001_240724.mxf            109.95 GB       │
-│                      │       A001C002_240724.mxf            112.18 GB       │
-│                      │   ▸ AUDIO                             85.40 GB       │
-│                      │   ▸ REPORT                            12.00 MB       │
-├──────────────────────┴─────────────────────────────────────────────────────┤
-│ Offline snapshot · Source files are not stored and cannot be modified.     │
-└────────────────────────────────────────────────────────────────────────────┘
-```
+- source absolutely read-only;
+- ordinary capture metadata-only;
+- completed snapshot facts immutable;
+- interrupted never replaces last complete;
+- metadata equality never content verification;
+- symlinks not traversed by default;
+- large trees bounded/lazy;
+- classification bounded and optional;
+- classification never affects snapshot/comparison truth;
+- unknown/uncertain explicit.
 
-Snapshot rows are labeled by `display_name` first, never by a raw session id or UUID; the technical identity (session number, snapshot id, capture timestamp) is always one click away in the summary inspector, never hidden, never the primary label. Row priority, left to right / top to bottom: display name, source name, capture date, filesystem, complete/partial status, online/offline state (`SNAPSHOT_COLLECTIONS.md` §10).
+Canonical successful compare wording:
+Metadata Match
+Content Not Verified
 
-### Required interactions
+## 3. TARGET DEMO STORY
 
-- expand and collapse lazily;
-- type-to-search by name and relative path;
-- select snapshot from history;
-- show summary inspector (including the technical session id/timestamp underneath the display name);
-- copy virtual relative path;
-- reveal live item only when mounted and path exists;
-- export current snapshot;
-- delete local snapshot after confirmation;
-- rename the snapshot's display name;
-- move the snapshot to a different Collection, or to `Unsorted` (instant — no rescan, no progress indicator);
-- edit the snapshot's optional note.
+Canonical E2E:
 
-## 3.1 Screen A1 — Capture-organization sheet
+Home/Library
+→ connect production drive
+→ connected-drive card
+→ explicit Capture Snapshot
+→ inline non-blocking capture
+→ completed snapshot opens
+→ browse hierarchy
+→ selected-entry Detected File Type while source available
+→ eject
+→ continue offline browse
+→ choose snapshot/current source
+→ Compare
+→ hero counts
+→ click Changed/other category
+→ navigate to exact result
+→ expand ancestors
+→ select exact item
+→ Before/After Inspector.
 
-Shown before a manual capture starts:
+## 4. THREE WOW MOMENTS
 
-```text
-┌────────────────────────────────────────────────────────────┐
-│ Capture Organization                                       │
-├──────────────────────────────────────────────────────────────┤
-│ Source            REDMAG_A                                 │
-│ Collection         [ XYZ Productions ▾ ]   (remembered default) │
-│ Snapshot name      [ Camera Card A — Day 03            ]   │
-│                                                              │
-│ [ ] Use this Collection by default for this source          │
-│                                                              │
-│                                    [Cancel]   [Start Capture]│
-└──────────────────────────────────────────────────────────────┘
-```
+- drive gone but still browsable;
+- find exact difference in huge tree;
+- friendly Detected File Type without content-verification claim.
 
-- The Collection field opens a picker: existing Collections, "New Collection…", or "No Collection (Unsorted)".
-- When a value is preselected from a remembered default, the sheet visibly labels it `(remembered default)` — never applied silently and never hidden from the choice.
-- Snapshot name is optional; the placeholder text previews the generated name (`<source> — <date/time>`) that will be used if left blank.
-- This sheet never appears for automatic (mount-triggered) capture — see `SNAPSHOT_COLLECTIONS.md` §7.
+## 5. VISUAL / IA DIRECTION
 
-### Required interactions
+FST visual DNA + Finder/Xcode-style information architecture.
 
-- pick an existing Collection, create a new one inline, or choose none;
-- leave the snapshot name blank to accept the generated default;
-- check "Use this Collection by default for this source" to remember it (`SNAPSHOT_COLLECTIONS.md` §6);
-- Start Capture proceeds regardless of whether a Collection was chosen.
+Do not clone FST's linear Transfer layout.
 
-## 4. Screen B — Capture progress
+Target first-pass IA:
 
-```text
-┌────────────────────────────────────────────────────────────────────────────┐
-│ Capturing CAMERA_MASTER                                      [Cancel]      │
-├────────────────────────────────────────────────────────────────────────────┤
-│ /PROJECT_A/CAMERA/A014/...                                                │
-│                                                                            │
-│ [███████████████████████████──────────────]                                │
-│                                                                            │
-│ Files       182,441                                                        │
-│ Folders       4,920                                                        │
-│ Logical       3.91 TB                                                      │
-│ Issues             2                                                       │
-│ Elapsed        02:41                                                       │
-│                                                                            │
-│ Metadata only. File contents are not being read.                           │
-├────────────────────────────────────────────────────────────────────────────┤
-│ Latest issue: Permission denied · /.Spotlight-V100                         │
-└────────────────────────────────────────────────────────────────────────────┘
-```
+HOME
 
-### Capture completion states
+LIBRARY
+  All Drives
+  Recent Captures
 
-- Complete;
-- Interrupted by disconnect;
-- Cancelled by user;
-- Failed before usable metadata was recorded;
-- Completed with warnings.
+DRIVE SETS
+  <groups>
+  + New Drive Set
 
-## 5. Screen C — Two-pane comparison
+COMPARE
+  Comparisons
 
-```text
-┌────────────────────────────────────────────────────────────────────────────┐
-│ Compare: Fast Metadata     [Differences Only] [Next ›] [Export Report]     │
-├──────────────────────────────────────┬─────────────────────────────────────┤
-│ LEFT                                 │ RIGHT                               │
-│ KN_SSD_014 · Snapshot 007            │ KN_SSD_014 · Snapshot 008          │
-│ 248,127 files · 4.819 TB             │ 248,129 files · 4.821 TB           │
-├──────────────────────────────────────┼─────────────────────────────────────┤
-│ = PROJECT_A                          │ = PROJECT_A                         │
-│   = A001                             │   = A001                            │
-│   − A003                             │                                     │
-│                                      │   + A004                            │
-│   ≠ AUDIO  84.90 GB                  │   ≠ AUDIO  85.40 GB                │
-│     = A001.WAV                       │     = A001.WAV                      │
-│     − A002.WAV                       │                                     │
-│                                      │     + A003.WAV                      │
-├──────────────────────────────────────┴─────────────────────────────────────┤
-│ Added 3 · Removed 1 · Changed 2 · Matched 248,124                         │
-│ Metadata Match only. File contents were not verified.                      │
-└────────────────────────────────────────────────────────────────────────────┘
-```
+CONNECTED NOW
+  <mounted drives>
 
-### Comparison states
+## 6. DRIVE SET DIRECTION
 
-- `=` matched;
-- `+` added on right;
-- `−` missing on right;
-- `≠` same path with changed metadata;
-- `!` inaccessible or uncertain;
-- `~` ignored by active profile.
+A Drive Set is a user-created group of PHYSICAL DRIVES.
 
-### Required interactions
+DRIVE_SET_VS_COLLECTION=ADR_REQUIRED
 
-- synchronized expand and collapse where paths align;
-- optional synchronized scrolling;
-- differences-only filter;
-- collapse matched branches;
-- next and previous difference;
-- copy relative path;
-- change comparison profile;
-- export self-contained HTML report.
+Until that ADR exists:
+- Collection remains current accepted implementation semantics.
+- Drive Set remains Owner target direction.
+- no mass rename;
+- no schema inference;
+- no claim existing Collections already implement Drive Sets.
 
-A Collection itself is never a valid drop target's *content* here — it is not draggable into a comparison pane. Dragging a Collection is disabled outright (rather than opening a picker on drop), because a Collection is a navigation aid, not a comparison input, and its sidebar row already expands to let a user pick one specific snapshot from inside it. A snapshot dragged out of a Collection's own listing is an ordinary comparison source, indistinguishable from one dragged from `All Snapshots` or `Unsorted` (`SNAPSHOT_COLLECTIONS.md` §12).
+## 7. HOME / DASHBOARD CONTRACT
 
-## 6. Volume card states
+Target:
+- Library aggregates;
+- Recent Comparisons;
+- Recent Captures;
+- Recent Drives;
+- Connected Drive card.
 
-### Online
+All metrics database-backed and bounded.
 
-```text
-● KN_SSD_014
-Mounted at /Volumes/CAMERA_MASTER
-Last capture: Today, 17:42
-```
+## 8. CAPTURE UX
 
-### Offline
+Target:
+- mount detection;
+- explicit capture by default;
+- optional Auto Capture setting;
+- inline progress;
+- rest of app remains usable;
+- manual completion opens snapshot;
+- auto completion does not steal focus.
 
-```text
-○ KN_SSD_014
-Last seen: 24 Jul 2026, 18:03
-Last complete snapshot: Session 008
-```
+Naming target:
+<Drive Label> · <Capture Date/Time>
 
-### Capture warning
+Optional mutable user label is organization metadata only.
+Immutable capture facts remain unchanged.
 
-```text
-△ KN_SSD_014
-Last capture interrupted
-Using Session 007 for offline browsing
-```
+## 9. DRIVE IDENTITY / HISTORY
 
-## 7. Settings
+Target:
+- strong automatic identity only with strong evidence;
+- ambiguity surfaced for confirmation;
+- never identify from display name/mount path alone;
+- latest snapshot;
+- paged history per physical drive;
+- immutable capture facts;
+- mutable organization metadata separate.
 
-### General
+PHYSICAL_DRIVE_IDENTITY_AND_MOUNT_POLICY=ADR_REQUIRED
 
-- Launch at login;
-- show menu bar item;
-- default offline snapshot selection;
-- database location display;
-- report export destination.
+This ADR candidate includes:
+- identity evidence tiers;
+- stable vs ambiguous identity;
+- remount reconciliation;
+- eligible mounted drive;
+- mount event handling;
+- Auto Capture policy;
+- confirmation behavior.
 
-### Capture
+## 10. OFFLINE BROWSER
 
-- automatic capture allowlist;
-- delay after mount;
-- package traversal policy;
-- hidden item policy;
-- excluded paths;
-- minimum free local database space warning.
+Target:
+- explicit offline/history icon;
+- OFFLINE SNAPSHOT;
+- prominent capture timestamp;
+- Name / Size / Modified;
+- collapsible Inspector;
+- source availability;
+- classification display;
+- Technical Details;
+- normal branch expansion;
+- Reveal in Tree;
+- no global Expand All.
 
-### Comparison
+## 11. SEARCH
 
-- default profile;
-- ignore macOS service files;
-- case sensitivity policy;
-- timestamp tolerance for Strict Metadata;
-- show allocated size as informational only.
+Target scope abstraction:
+THIS_SNAPSHOT
+THIS_DRIVE
+THIS_LIBRARY
 
-## 8. Empty states
+Search may cover:
+filename/path
+metadata filters
+source/filesystem/date/status
+classification
 
-### No volumes
+Must remain indexed/bounded.
+Currently, the backend only implements bounded single-snapshot metadata search.
 
-```text
-No captured volumes yet.
-Connect a drive or choose a folder to create the first metadata snapshot.
-[Choose Folder] [Scan Mounted Volume]
-```
+## 12. CLASSIFICATION
 
-### No comparison
+User wording:
+Detected File Type
 
-```text
-Choose a source for the left and right side.
-Sources can be live folders or saved snapshots.
-```
+Disclosure:
+Detected from a small file sample · Not content verification
 
-### No Collections yet
+Default UI hides:
+provider
+model
+detector
+provider identifier
+byte budget
+helper/process jargon
 
-```text
-No Collections yet.
-Group your snapshots by project, client, or however you like.
-[New Collection]
-```
+Technical Details may expose provenance.
 
-Shown under the `Collections` sidebar section when none exist. `All Snapshots` and `Unsorted` remain visible regardless — they are not Collections a user creates, so this empty state never hides them.
+Preserve existing P15 boundaries:
+- capture stays metadata-only;
+- explicit selected-entry current-source classification;
+- Data-only provider;
+- bounded bytes;
+- append-only enrichment;
+- no automatic whole-library classification;
+- no snapshot/diff truth dependency.
 
-## 9. Safety copy
+## 13. COMPARE
 
-Persistent footer in relevant views:
+Canonical:
+LEFT=BEFORE/REFERENCE
+RIGHT=AFTER/CHANGED
 
-```text
-Read-only catalog. FSD — FishSock Differ never stores file contents or modifies source files.
-```
+Added = present Right, absent Left.
 
-Comparison disclaimer:
+Target:
+- hero result counts;
+- synchronized dual hierarchy;
+- explicit missing side;
+- filters;
+- next/previous differences;
+- click category → filter → locate → expand ancestors → scroll → select;
+- Before/After metadata;
+- color never only signal.
 
-```text
-Metadata Match does not prove that file contents are identical.
-```
+## 14. COMPARISON PERSISTENCE
+
+CURRENT:
+snapshot/snapshot comparison persists;
+live-side comparison is workspace-scoped and transient evidence is disposed.
+
+OWNER_TARGET:
+easy durable comparison reopening, preferably automatic.
+
+DURABLE_LIVE_COMPARISON_SEMANTICS=ADR_REQUIRED
+
+Explicit options:
+A. demo only promises durable snapshot/snapshot comparisons;
+B. promote live inputs into durable snapshots;
+C. introduce another durable comparison/evidence lifecycle.
+
+## 15. LIBRARY / BACKUP / MULTI-MACHINE
+
+Direction only:
+future Library may contain drives/snapshots/comparisons/Drive Sets/search data.
+
+Multiple Libraries, automatic backup/restore and cross-machine sync are not demo-critical.
+
+Explicit:
+DO NOT sync a live/open SQLite catalog by simply putting it in Google Drive.
+
+## 16. BACKEND CONTRACTS TO PRESERVE
+
+Record narrow/testable UX-facing seams:
+
+HOME:
+bounded aggregates
+recent captures
+recent durable comparisons
+mounted drives
+active capture state/progress
+
+DRIVE IDENTITY:
+strong identity
+ambiguity/confidence
+physical label separate from mount/display name
+
+HISTORY:
+latest lookup
+paged history per drive
+immutable capture facts
+mutable organization metadata separate
+
+BROWSER:
+lazy paged children
+selected details
+ancestor lookup / Reveal in Tree
+source online/offline state
+
+SEARCH:
+indexed bounded paging
+explicit SearchScope abstraction
+avoid snapshot-only coupling in future interfaces
+
+CLASSIFICATION:
+Data-only bounded input
+append-only results
+provider/detector/model provenance separate
+latest + history
+never diff/snapshot truth
+
+COMPARE:
+summary counts
+paged relative hierarchy
+Before/After orientation
+counterpart state
+ancestor-chain lookup
+next/previous across pages
+filters
+immutable terminal evidence
+
+ORGANIZATION:
+future Drive Set direction must remain separate from capture truth.
+
+These contracts are architecture constraints, NOT instructions to implement all APIs.
+
+## 17. CURRENT BACKEND ALIGNMENT
+
+SUPPORTED:
+- absolute read-only / metadata-only capture foundation;
+- immutable completed snapshot lifecycle;
+- interrupted/partial semantics;
+- offline SQLite history/browse;
+- lazy direct-child tree;
+- selected-entry inspector;
+- capture progress + cancellation;
+- snapshot/snapshot comparison persistence;
+- Left/Before Right/After orientation;
+- comparison result counts;
+- filters;
+- Before/After metadata;
+- bounded comparison paging;
+- deterministic next/previous cross-page;
+- classification append-only storage/latest/history/presentation foundation.
+
+PARTIAL:
+- explicit offline browser state exists but target visual treatment needs redesign;
+- capture inline progress exists but no connected-drive UX or auto-open completion;
+- capture/display name fields exist but target naming/edit UX is incomplete;
+- identity has UUID/fallback foundations but not complete strong/ambiguous service;
+- recent captures/comparisons have repository data but no dashboard facade;
+- search supports bounded one-snapshot metadata queries but not scope abstraction;
+- classification UI can display stored result but real runtime absent;
+- compare navigation can locate filtered results but lacks ancestor/hierarchy projection.
+
+GAPS:
+- real Magika/local classifier runtime;
+- schema v9 provider_identifier;
+- Data-only classification request;
+- mount detection/watcher;
+- optional Auto Capture;
+- strong physical volume identity service;
+- paged per-drive history/latest facade;
+- bounded dashboard aggregates;
+- This Drive / This Library search;
+- classification search/filter;
+- comparison hierarchy/ancestor projection;
+- category click → tree reveal chain;
+- Drive Set implementation;
+- durable live-comparison retention;
+- multi-Library/backup/cloud;
+- manual rendered-window/VoiceOver/focus acceptance.
+
+## 18. OPEN ADR CANDIDATES
+
+ADR_REQUIRED:
+1. PHYSICAL_DRIVE_IDENTITY_AND_MOUNT_POLICY
+2. DRIVE_SET_SEMANTICS_VS_EXISTING_COLLECTIONS
+3. DURABLE_LIVE_COMPARISON_SEMANTICS
+
+## 19. BACKEND / UX DEPENDENCY MAP
+
+OWNER UX DIRECTION
+├─ TRACK A: OPENDESIGN
+│  ├─ Home / Library Dashboard
+│  ├─ Offline Snapshot Browser
+│  ├─ Capture Active
+│  ├─ Compare / Differences
+│  └─ Compare / Metadata Match
+│
+└─ TRACK B: BACKEND
+   ├─ P15 runtime sequence
+   │  ├─ Slice 01 schema v9/provider provenance
+   │  ├─ Slice 02 Data-only bounded source authority
+   │  ├─ Slice 03 helper host seam
+   │  ├─ Slice 04 runtime orchestration
+   │  ├─ Slice 05 explicit selected-entry UI only
+   │  ├─ Slice 06 regression matrix
+   │  ├─ Slice 07 external Magika verification
+   │  ├─ real helper integration + audit
+   │  └─ Slice 08 whole-runtime verification
+   │
+   ├─ ADR: physical drive identity + mount policy
+   │  └─ mounted-source observer / Connected Now / Auto Capture / This Drive search
+   │
+   ├─ compare navigation backend
+   │  └─ hierarchy + ancestor-chain + Reveal exact result
+   │
+   ├─ bounded dashboard queries
+   │  └─ aggregates + recent captures + durable comparisons
+   │
+   ├─ snapshot history facade
+   │  └─ latest + paged per-drive history
+   │
+   └─ search scope abstraction
+      ├─ snapshot existing
+      ├─ drive after identity ADR
+      └─ library + classification when supporting indexes/runtime exist
+
+## 20. DEMO CRITICAL PATH
+
+DEMO_CRITICAL:
+- mounted-drive detection / Connected Now;
+- real explicit selected-entry classifier;
+- jump-to-exact-difference with ancestor reveal.
+
+Already strong foundations:
+- metadata capture;
+- offline browse;
+- snapshot history;
+- comparison truth;
+- result counts;
+- Before/After detail;
+- next/previous difference.
+
+## 21. NON-GOALS FOR FIRST DEMO
+
+Do not delay first coherent demo for:
+HTML report
+embedded ext reader
+physical raw auth
+polished Drive Set management
+cloud sync
+multi-Library UI
+custom columns
+global Expand All
+bulk classification
+NAS/network
+decorative analytics.
+
+THIS_DOCUMENT_DOES_NOT_AUTHORIZE_IMPLEMENTATION.

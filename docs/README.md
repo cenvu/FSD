@@ -30,8 +30,9 @@ Expand only for the question being answered; [AGENT.md](AGENT.md) is deep govern
 | Independent review | [independent-review](../.agents/skills/fsd-independent-review/SKILL.md) plus task-execution with ROLE=REVIEWER — risk-first, read-only review |
 | Finalization | [finalizer](../.agents/skills/fsd-handoff-finalizer/SKILL.md) — guarded candidate, STATE projection, recovery parity and verified publication |
 | Low-risk control | Accepted STATE, relevant ledger row, Operator applicable rules; [finalizer](../.agents/skills/fsd-handoff-finalizer/SKILL.md) for a Worker return |
-| Product requirement | [PRD.md](PRD.md) — user promise, scope and exclusions |
-| Product implementation or limitation | [PRODUCT_STATE.md](PRODUCT_STATE.md) — capabilities, gaps and limitation pointers |
+| Product/UX direction | [UX_UI_SPEC.md](UX_UI_SPEC.md) — Canonical target UX and IA |
+| Product/UX/backend implementation | [PRD.md](PRD.md) + [UX_UI_SPEC.md](UX_UI_SPEC.md) + relevant [ARCHITECTURE.md](ARCHITECTURE.md) and [PRODUCT_STATE.md](PRODUCT_STATE.md) |
+| Product limitation | [PRODUCT_STATE.md](PRODUCT_STATE.md) — capabilities, gaps and limitation pointers |
 | Schema or safety review | [ARCHITECTURE.md](ARCHITECTURE.md), [DECISIONS.md](DECISIONS.md), [TEST_PLAN.md](TEST_PLAN.md), [SECURITY_AND_READ_ONLY_POLICY.md](SECURITY_AND_READ_ONLY_POLICY.md), relevant `docs/database/` and source sections |
 | Roadmap/dependency | [MVP_PLAN.md](MVP_PLAN.md) — stable milestone sequence |
 | P15 runtime | [P15_RUNTIME_PLAN.md](P15_RUNTIME_PLAN.md), Architecture §9a, ADR-032, Test Plan §9 and safety policy §2.1 |

@@ -8,6 +8,19 @@ in immutable handoffs. [TEST_PLAN.md](TEST_PLAN.md) owns validation/manual backl
 [SNAPSHOT_COLLECTIONS.md](SNAPSHOT_COLLECTIONS.md) owns Collection semantics;
 [FILESYSTEM_FEASIBILITY_PLAN.md](FILESYSTEM_FEASIBILITY_PLAN.md) owns provider proof.
 
+## Owner UX/demo dependency map
+
+- Track A OpenDesign may occur now as design work.
+- Backend implementation only after explicit product-resume authorization.
+- P15 sequence stays canonical.
+- Identity/mount ADR gates mount-dependent features.
+- Compare hierarchy/ancestor work is independent of compare truth.
+- Dashboard/history/search service additions should be UI-neutral.
+- Production UI implementation follows Owner-reviewed design direction.
+- E2E/manual validation follows integrated demo path.
+- No roadmap item grants authorization.
+- Do not reorder or rewrite P15 slice contracts.
+
 ## Milestone 1 — Application, catalog, and snapshot foundation
 
 - **Outcome:** an FSD application that launches on Apple Silicon, creates its catalog database at schema version 4, and can create and terminalize a snapshot row through a trustworthy lifecycle — with no scanner yet.

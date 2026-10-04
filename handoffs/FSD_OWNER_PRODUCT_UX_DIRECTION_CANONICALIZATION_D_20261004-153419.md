@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-04T15:34:46+07:00
-
 # FSD Owner Product UX Direction Canonicalization
 
 ## HOT

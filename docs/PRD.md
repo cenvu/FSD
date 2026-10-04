@@ -16,6 +16,11 @@ Build a native, read-only macOS application that:
 - compares two trees by metadata only;
 - clearly distinguishes metadata matching from checksum verification.
 
+See [UX_UI_SPEC.md](UX_UI_SPEC.md) for the canonical Owner Product/UX Direction and North Star.
+The target demo may include Phase 1.5 explicit classification, but the target demo direction does not itself authorize Phase 1.5.
+Core MVP safety and Metadata Match semantics remain unchanged.
+Drive Set direction is unresolved relative to current Collection semantics; do not silently rewrite Collection requirements into Drive Sets.
+
 ## 3. Target users
 
 Primary:
