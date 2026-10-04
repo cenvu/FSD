@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-04T18:16:38.820308+07:00
-
 # FSD P15 Runtime Slice 01 — schema v9 and provider provenance audit
 
 ## HOT
