@@ -1,6 +1,6 @@
 # FSD BRAIN Operator Compact
 
-VERSION=1.2.0
+VERSION=1.3.0
 PROJECT=FSD
 POLICY_SCOPE=STABLE_GOVERNANCE_ONLY
 CANONICAL_KERNEL=AGENTS.md
@@ -111,14 +111,49 @@ material mutation/adjudication. The watchdog supplements event-based re-anchor.
 
 ROUTING_OUTPUT=ONE_PRIMARY+ONE_FALLBACK
 WORKER_PROMPT_MODEL_AGNOSTIC=YES
+NO_MODEL_BENCHMARK=YES
+FREE_FIRST_WHEN_SAFE=YES
 
-Check availability/quota when available; choose a capable abundant lane and
-reserve scarce reasoning for material uncertainty. Prompts specify task,
-objective, authority, baseline/reanchor, allowed/forbidden scope, evidence,
-validation, handoff and stop. No permanent model IDs. Required independent review
-covers source safety, snapshot immutability, recovery, schema/compatibility,
-destructive behavior, broad comparison semantics and pre-MVP boundaries in FULL.
-Routine low/medium risk does not automatically require a Reviewer. Keep required
+Stable task prompts contain no HARNESS, MODEL or EFFORT IDs. The Owner-supplied
+CURRENT pool below is mutable operational inventory held only in this Operator;
+it may change without changing product/task semantics. Stale pool entries must
+not be used once Owner supersedes them. Prior SONNET 4.6 and OPUS 4.6 THINKING
+are superseded and are not current choices.
+
+CURRENT_OPERATIONAL_INVENTORY (Owner-supplied; mutable; not architectural constants):
+CODEX_CLI=GPT 6.1 SOL|GPT 6 LUNA
+AGY_CLI=SONNET 5.5|OPUS 5.5
+OPENCODE=Space Bunny Free|Muse Spark 1.3 Contributor FREE|MiMo-V2.6-Flash FREE
+
+BRAIN Owner-facing routing states exactly ONE PRIMARY and ONE FALLBACK, each as
+HARNESS plus MODEL plus EFFORT. A harness without explicit effort control uses
+EFFORT=DEFAULT/NATIVE; do not invent controls it does not expose. For each of
+PRIMARY and FALLBACK explain WHY_THIS_HARNESS, WHY_THIS_MODEL, WHY_THIS_EFFORT,
+QUOTA_COST_REASONING and WHEN_OWNER_MAY_OVERRIDE. No long ranked list.
+
+Prefer current FREE lanes when safe for deterministic docs changes,
+finalizer/publication, bounded checker repairs, simple fixture propagation,
+mechanical reconciliation, low/medium-risk implementation with strong executable
+tests, and repetitive bounded validation where reasoning depth is not the
+bottleneck. Reserve stronger/non-free reasoning for architecture ambiguity,
+source-read/safety boundaries, schema design with unresolved semantics, runtime
+orchestration, concurrency/race/disposal complexity, security/privacy boundaries,
+multi-system debugging, high-risk semantic review, and hard contradictions after
+evidence collection. Paid is not always better; free is not always acceptable.
+Choose by TASK_RISK, TASK_AMBIGUITY, VALIDATION_STRENGTH, CONTEXT_SIZE,
+INDEPENDENCE_NEED, AVAILABLE_QUOTA and CURRENT_COST.
+
+If a FREE lane suffices, say why premium quota is conserved. If premium cost is
+justified, say what uncertainty/risk earns it. For material independent review
+prefer a different harness/model family from the implementer when practical;
+family change alone does not prove independence. No benchmark. No scoring.
+No ranking. No winner selection.
+
+Prompts specify task, objective, authority, baseline/reanchor, allowed/forbidden
+scope, evidence, validation, handoff and stop. Required independent review covers
+source safety, snapshot immutability, recovery, schema/compatibility, destructive
+behavior, broad comparison semantics and pre-MVP boundaries in FULL. Routine
+low/medium risk does not automatically require a Reviewer. Keep required
 implementer/reviewer roles independent; prefer another lane when material.
 
 ## CANONICAL_SKILL_ROUTING
