@@ -2,18 +2,19 @@
 
 STATE_VERSION=1.0.0
 PROJECT=FSD
-CURRENT_PHASE=SKILL_MCP_HARDENING_COMPLETE
+CURRENT_PHASE=OWNER_PRODUCT_UX_DIRECTION_CANONICALIZED
 ACTIVE_WORKSTREAM=OWNER_DIRECTION
-STATUS=PRODUCT_WORK_PAUSED;DOCS_DONE=YES;SKILL_MCP_HARDENING_DONE=YES
+STATUS=PRODUCT_WORK_PAUSED;OWNER_UX_DIRECTION_CANONICAL=YES;SKILL_MCP_HARDENING_DONE=YES
 CURRENT_GATE=OWNER_NEXT_GOAL
 BLOCKERS=NONE
-LAST_ACCEPTED_TASK=FSD_SKILL_MCP_HARDENING_007
-LAST_ACCEPTED_HEAD=581af0f081a236298ae2bd0395e5d53f1f63792a
-AUTHORITY_PTRS=AGENTS.md|docs/BRAIN_OPERATOR.md|docs/AGENT.md|docs/README.md|docs/PRODUCT_STATE.md|docs/MVP_PLAN.md|docs/TEST_PLAN.md|docs/P15_RUNTIME_PLAN.md
+LAST_ACCEPTED_TASK=FSD_OWNER_PRODUCT_UX_DIRECTION_CANONICALIZATION_008
+LAST_ACCEPTED_HEAD=95c98110ec6e82f931efa0470da35fbd9237df20
+AUTHORITY_PTRS=AGENTS.md|docs/BRAIN_OPERATOR.md|docs/UX_UI_SPEC.md|docs/PRD.md|docs/PRODUCT_STATE.md|docs/MVP_PLAN.md|docs/ARCHITECTURE.md|docs/AGENT.md|docs/README.md|docs/TEST_PLAN.md|docs/P15_RUNTIME_PLAN.md
 PARKED_PRODUCT_WORKSTREAM=PHASE_1_5_MAGIKA_RUNTIME
 EXACTLY_ONE_NEXT_DECISION=OWNER_DECISION
 
-Accepted-state provenance: BRAIN adjudication at 2026-10-04T15:07:29+07:00.
-FSD skill/MCP hardening accepted PASS_WITH_ADVISORY.
-Provider-neutral Anti Forget applies to all Workers/Reviewers; MCP remains explicit-task-only with no default project MCP configuration.
+Accepted-state provenance: BRAIN adjudication at 2026-10-04T15:44:44+07:00.
+Owner Product/UX Direction canonicalization accepted PASS.
+UX_UI_SPEC.md is the canonical Owner Product/UX target contract; it does not authorize implementation.
+Open product decisions remain ADR candidates only: physical drive identity/mount policy, Drive Set semantics vs existing Collections, and durable live-comparison semantics.
 Product work remains paused pending Owner direction.
