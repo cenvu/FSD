@@ -178,22 +178,25 @@ final class ClassificationSourceReaderTests: XCTestCase {
         try write("a.txt", Data("a".utf8))
         let ids = try capture([.init("a.txt", .file)])
         var calls = 0
-        let outcome = try reader(RecordingFilesystem(), detect: { [detected] url in
+        let filesystem = RecordingFilesystem()
+        let outcome = try reader(filesystem, detect: { [detected] url in
             calls += 1
             if calls > 1 { throw FilesystemDetectorError.sourceDoesNotExist("gone") }
             return detected!
         }).readPrefix(forEntryID: ids["a.txt"]!)
         XCTAssertEqual(outcome, .sourceChanged)
         XCTAssertEqual(calls, 2)
+        XCTAssertEqual(filesystem.readCalls, 0, "source is rechecked before the payload barrier")
     }
 
     func testIdentitySubstitutionAfterReadIsSourceChanged() throws {
         try write("a.txt", Data("a".utf8))
         let ids = try capture([.init("a.txt", .file)])
         var calls = 0
-        let outcome = try reader(RecordingFilesystem(), detect: { [detected] _ in
+        let filesystem = RecordingFilesystem()
+        let outcome = try reader(filesystem, detect: { [detected] _ in
             calls += 1
-            guard calls > 1 else { return detected! }
+            guard filesystem.readCalls == 1 else { return detected! }
             return FilesystemDescriptor(
                 rootURL: detected!.rootURL, volumeName: detected!.volumeName, volumeIdentifier: "SUBSTITUTE",
                 filesystemType: detected!.filesystemType, sourceCaseSensitivity: detected!.sourceCaseSensitivity,
@@ -202,6 +205,8 @@ final class ClassificationSourceReaderTests: XCTestCase {
             )
         }).readPrefix(forEntryID: ids["a.txt"]!)
         XCTAssertEqual(outcome, .sourceChanged)
+        XCTAssertEqual(filesystem.readCalls, 1, "identity changes only during post-read detection")
+        XCTAssertEqual(calls, 3)
     }
 
     // MARK: - Entry kinds
@@ -592,6 +597,209 @@ final class ClassificationSourceReaderTests: XCTestCase {
         XCTAssertEqual(filesystem.readCalls, 0)
     }
 
+    // MARK: - Slice-02 security repair: pinned-object authority
+
+    func testAcquiredParentRenamedOutsideBeforeFinalStatReadsNothing() throws {
+        try write("sub/f.txt", Data("original".utf8))
+        let ids = try capture([.init("sub", .directory), .init("sub/f.txt", .file)])
+        let filesystem = RecordingFilesystem()
+        filesystem.onStatNoFollow = { [self] count in
+            guard count == 1 else { return }
+            let moved = outside.appendingPathComponent("moved")
+            try FileManager.default.moveItem(at: source.appendingPathComponent("sub"), to: moved)
+            try FileManager.default.removeItem(at: moved.appendingPathComponent("f.txt"))
+            try FileManager.default.moveItem(at: outside.appendingPathComponent("secret.txt"),
+                                             to: moved.appendingPathComponent("f.txt"))
+        }
+        XCTAssertEqual(try reader(filesystem).readPrefix(forEntryID: ids["sub/f.txt"]!), .sourceChanged)
+        XCTAssertEqual(filesystem.readCalls, 0, "outside child must never be sampled")
+        XCTAssertNil(filesystem.lastReadBytes)
+    }
+
+    func testAcquiredParentRenamedOutsideAfterOpenBeforeBarrierReadsNothing() throws {
+        try write("sub/f.txt", Data("original".utf8))
+        let ids = try capture([.init("sub", .directory), .init("sub/f.txt", .file)])
+        let filesystem = RecordingFilesystem()
+        filesystem.onStat = { [self, unowned filesystem] info in
+            guard info.kind == .regular, filesystem.readCalls == 0 else { return }
+            filesystem.onStat = nil
+            try FileManager.default.moveItem(at: source.appendingPathComponent("sub"),
+                                             to: outside.appendingPathComponent("moved"))
+        }
+        XCTAssertEqual(try reader(filesystem).readPrefix(forEntryID: ids["sub/f.txt"]!), .sourceChanged)
+        XCTAssertEqual(filesystem.readCalls, 0)
+    }
+
+    func testFreshAuthorityParentDifferentDirectoryReadsNothing() throws {
+        try write("sub/f.txt", Data("original".utf8))
+        let ids = try capture([.init("sub", .directory), .init("sub/f.txt", .file)])
+        let filesystem = RecordingFilesystem()
+        filesystem.onStat = { [self, unowned filesystem] info in
+            guard info.kind == .regular, filesystem.readCalls == 0 else { return }
+            filesystem.onStat = nil
+            try FileManager.default.moveItem(at: source.appendingPathComponent("sub"),
+                                             to: outside.appendingPathComponent("moved"))
+            try write("sub/f.txt", secret)
+        }
+        XCTAssertEqual(try reader(filesystem).readPrefix(forEntryID: ids["sub/f.txt"]!), .sourceChanged)
+        XCTAssertEqual(filesystem.readCalls, 0)
+    }
+
+    func testFreshAuthorityFinalDifferentFileReadsNothing() throws {
+        try write("f.txt", Data("original".utf8))
+        let ids = try capture([.init("f.txt", .file)])
+        let filesystem = RecordingFilesystem()
+        filesystem.onStat = { [self, unowned filesystem] info in
+            guard info.kind == .regular, filesystem.readCalls == 0 else { return }
+            filesystem.onStat = nil
+            try FileManager.default.moveItem(at: source.appendingPathComponent("f.txt"),
+                                             to: outside.appendingPathComponent("original.txt"))
+            try write("f.txt", secret)
+        }
+        XCTAssertEqual(try reader(filesystem).readPrefix(forEntryID: ids["f.txt"]!), .sourceChanged)
+        XCTAssertEqual(filesystem.readCalls, 0)
+    }
+
+    func testPreReadAuthorityRequiresFreshExactVolumeIdentity() throws {
+        try write("f.txt", Data("original".utf8))
+        let ids = try capture([.init("f.txt", .file)])
+        let filesystem = RecordingFilesystem()
+        var resolutions = 0
+        let outcome = try reader(filesystem, detect: { [detected] _ in
+            resolutions += 1
+            if resolutions == 2 {
+                return FilesystemDescriptor(
+                    rootURL: detected!.rootURL, volumeName: detected!.volumeName,
+                    volumeIdentifier: detected!.volumeIdentifier + "-OTHER",
+                    filesystemType: detected!.filesystemType, sourceCaseSensitivity: detected!.sourceCaseSensitivity,
+                    isReadOnly: detected!.isReadOnly, mountPath: detected!.mountPath,
+                    capacityBytes: detected!.capacityBytes, availableBytes: detected!.availableBytes
+                )
+            }
+            return detected!
+        }).readPrefix(forEntryID: ids["f.txt"]!)
+        XCTAssertEqual(outcome, .sourceChanged)
+        XCTAssertEqual(filesystem.readCalls, 0)
+        XCTAssertEqual(resolutions, 2)
+    }
+
+    func testUnchangedAuthorityBarrierPerformsExactlyOnePayloadRead() throws {
+        let bytes = pattern(6000)
+        try write("sub/f.txt", bytes)
+        let ids = try capture([.init("sub", .directory), .init("sub/f.txt", .file)])
+        let filesystem = RecordingFilesystem()
+        XCTAssertEqual(prefix(try reader(filesystem).readPrefix(forEntryID: ids["sub/f.txt"]!)), bytes.prefix(4096))
+        XCTAssertEqual(filesystem.mountOpens, 3, "initial, pre-read authority, post-read validation")
+        XCTAssertEqual(filesystem.statNoFollowCalls, 3)
+        XCTAssertEqual(filesystem.readCalls, 1)
+        XCTAssertEqual(filesystem.readRequestSizes, [4096])
+    }
+
+    func testNamespaceMoveAfterBarrierCannotRedirectPinnedFile() throws {
+        let original = Data("AUTHORIZED-OPENED-OBJECT".utf8)
+        try write("sub/f.txt", original)
+        let ids = try capture([.init("sub", .directory), .init("sub/f.txt", .file)])
+        let filesystem = RecordingFilesystem()
+        var authorityCompleted = false
+        filesystem.onStatNoFollow = { count in
+            if count == 2 { authorityCompleted = true }
+        }
+        filesystem.beforeRead = { [self] in
+            XCTAssertTrue(authorityCompleted, "move is scheduled after successful authority rebind")
+            try FileManager.default.moveItem(at: source.appendingPathComponent("sub"),
+                                              to: outside.appendingPathComponent("moved"))
+            try write("sub/f.txt", secret)
+        }
+        XCTAssertEqual(try reader(filesystem).readPrefix(forEntryID: ids["sub/f.txt"]!), .sourceChanged)
+        XCTAssertEqual(filesystem.readCalls, 1)
+        XCTAssertEqual(filesystem.lastReadBytes, original, "new namespace child cannot redirect the authorized fd")
+        XCTAssertNotEqual(filesystem.lastReadBytes, secret)
+    }
+
+    func testCancellationAfterAuthorityBarrierBeforePayloadReadsNothing() throws {
+        try write("f.txt", Data("original".utf8))
+        let ids = try capture([.init("f.txt", .file)])
+        let filesystem = RecordingFilesystem()
+        var cancelled = false
+        filesystem.onStatNoFollow = { count in
+            if count == 2 { cancelled = true }
+        }
+        XCTAssertEqual(try reader(filesystem, cancel: { _ in cancelled }).readPrefix(forEntryID: ids["f.txt"]!), .cancelled)
+        XCTAssertEqual(filesystem.readCalls, 0)
+    }
+
+    func testCancellationDuringLateFDStatFailureWins() throws { try assertLateValidation(.fdStat) }
+    func testCancellationDuringLateSourceDetectionFailureWins() throws { try assertLateValidation(.detection) }
+    func testCancellationDuringLateDirectoryWalkFailureWins() throws { try assertLateValidation(.walk) }
+    func testCancellationDuringLateFinalStatFailureWins() throws { try assertLateValidation(.finalStat) }
+    func testCancellationDuringLateFinalIdentityMismatchWins() throws { try assertLateValidation(.finalIdentity) }
+
+    func testPreReadGenuineOutcomesAreNotMaskedByFutureCancellation() throws {
+        try write("f.txt", Data("original".utf8))
+        let ids = try capture([.init("f.txt", .file), .init("dir", .directory)])
+        let filesystem = RecordingFilesystem()
+        let cancelOnlyAfterRead: (Boundary) -> Bool = { $0 == .afterRead }
+        XCTAssertEqual(try reader(filesystem, cancel: cancelOnlyAfterRead)
+            .readPrefix(forEntryID: ids["dir"]!), .unsupportedEntry)
+        let mismatch = FilesystemDescriptor(
+            rootURL: detected.rootURL, volumeName: detected.volumeName,
+            volumeIdentifier: detected.volumeIdentifier + "-OTHER", filesystemType: detected.filesystemType,
+            sourceCaseSensitivity: detected.sourceCaseSensitivity, isReadOnly: detected.isReadOnly,
+            mountPath: detected.mountPath, capacityBytes: detected.capacityBytes, availableBytes: detected.availableBytes
+        )
+        XCTAssertEqual(try reader(filesystem, detect: { _ in mismatch }, cancel: cancelOnlyAfterRead)
+            .readPrefix(forEntryID: ids["f.txt"]!), .sourceChanged)
+        XCTAssertEqual(filesystem.readCalls, 0)
+    }
+
+    private enum LateValidationFailure: Equatable { case fdStat, detection, walk, finalStat, finalIdentity }
+
+    /// Each failing late boundary also runs with cancellation false to lock the original typed mapping.
+    private func assertLateValidation(_ point: LateValidationFailure) throws {
+        for shouldCancel in [false, true] {
+            try write("f.txt", Data("original".utf8))
+            let ids = try capture([.init("f.txt", .file)])
+            let filesystem = RecordingFilesystem()
+            var cancelled = false
+            var reached = false
+            let fail: () throws -> Void = {
+                reached = true
+                cancelled = shouldCancel
+                throw ClassificationPOSIXFailure(code: point == .walk ? ENOENT : EIO)
+            }
+            if point == .fdStat {
+                filesystem.onStat = { [unowned filesystem] info in
+                    if filesystem.readCalls == 1, info.kind == .regular { try fail() }
+                }
+            }
+            if point == .walk {
+                filesystem.onMountOpen = { [unowned filesystem] in
+                    if filesystem.readCalls == 1 { try fail() }
+                }
+            }
+            if point == .finalStat || point == .finalIdentity {
+                filesystem.onStatNoFollow = { [self, unowned filesystem] _ in
+                    guard filesystem.readCalls == 1 else { return }
+                    if point == .finalStat { try fail() }
+                    reached = true
+                    cancelled = shouldCancel
+                    try FileManager.default.moveItem(at: source.appendingPathComponent("f.txt"),
+                                                     to: outside.appendingPathComponent("replaced-\(UUID().uuidString)"))
+                    try write("f.txt", secret)
+                }
+            }
+            let outcome = try reader(filesystem, detect: { url in
+                if point == .detection, filesystem.readCalls == 1 { try fail() }
+                return try FilesystemDetector().detect(root: url)
+            }, cancel: { _ in cancelled }).readPrefix(forEntryID: ids["f.txt"]!)
+            let originalMapping: BoundedClassificationSourceOutcome =
+                (point == .fdStat || point == .finalStat) ? .failed : .sourceChanged
+            XCTAssertTrue(reached, "required post-read error schedule must execute")
+            XCTAssertEqual(outcome, shouldCancel ? .cancelled : originalMapping)
+            XCTAssertEqual(filesystem.readCalls, 1, "no cancellation/error retry")
+        }
+    }
+
     // MARK: - Immutability
 
     func testReaderNeverWritesTheCatalogOrTheSource() throws {
@@ -795,10 +1003,16 @@ private final class RecordingFilesystem: BoundedSourceFilesystem {
     private(set) var fileOpens: [String] = []
     private(set) var readCalls = 0
     private(set) var readRequestSizes: [Int] = []
+    private(set) var statNoFollowCalls = 0
+    private(set) var lastReadBytes: Data?
+
+    var onMountOpen: (() throws -> Void)?
+    var onStatNoFollow: ((Int) throws -> Void)?
+    var onStat: ((ClassificationFileStat) throws -> Void)?
 
     var beforeOpenDirectory: ((String) -> Void)?
     var beforeOpenFile: ((String) -> Void)?
-    var beforeRead: (() -> Void)?
+    var beforeRead: (() throws -> Void)?
     var afterRead: (() -> Void)?
     var openFileFailure: Int32?
     var readFailure: Int32?
@@ -806,6 +1020,7 @@ private final class RecordingFilesystem: BoundedSourceFilesystem {
 
     func openMountRoot(path: String) throws -> Int32 {
         mountOpens += 1
+        try onMountOpen?()
         return try real.openMountRoot(path: path)
     }
 
@@ -816,7 +1031,9 @@ private final class RecordingFilesystem: BoundedSourceFilesystem {
     }
 
     func statNoFollow(parent: Int32, name: String) throws -> ClassificationFileStat {
-        try real.statNoFollow(parent: parent, name: name)
+        statNoFollowCalls += 1
+        try onStatNoFollow?(statNoFollowCalls)
+        return try real.statNoFollow(parent: parent, name: name)
     }
 
     func openRegularFile(parent: Int32, name: String) throws -> Int32 {
@@ -827,16 +1044,19 @@ private final class RecordingFilesystem: BoundedSourceFilesystem {
     }
 
     func stat(descriptor: Int32) throws -> ClassificationFileStat {
-        try real.stat(descriptor: descriptor)
+        let info = try real.stat(descriptor: descriptor)
+        try onStat?(info)
+        return info
     }
 
     func readOnce(descriptor: Int32, into buffer: UnsafeMutableRawBufferPointer) throws -> Int {
         readCalls += 1
         readRequestSizes.append(buffer.count)
-        if let hook = beforeRead { beforeRead = nil; hook() }
+        if let hook = beforeRead { beforeRead = nil; try hook() }
         if let code = readFailure { throw ClassificationPOSIXFailure(code: code) }
         var count = try real.readOnce(descriptor: descriptor, into: buffer)
         if let forced = forcedReadCount { count = min(count, forced) }
+        lastReadBytes = Data(buffer.prefix(count))
         if let hook = afterRead { afterRead = nil; hook() }
         return count
     }

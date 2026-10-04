@@ -294,84 +294,104 @@ final class BoundedClassificationSourceReader {
             return .sourceChanged
         }
 
+        // Pre-read object authorization: the pinned file must still be reachable
+        // through the current source and the original no-follow directory chain.
+        // This authorizes the opened object, not a perpetually stable pathname.
+        if let failure = validateOpenedAuthority(
+            mountPath: recordedMount, recordedIdentity: recordedIdentity,
+            directoryComponents: directoryComponents, identities: walk.identities,
+            fileName: fileName, opened: opened
+        ) {
+            return isCancelled(.beforeRead) ? .cancelled : failure
+        }
+        if isCancelled(.beforeRead) { return .cancelled }
+
         // Exactly one content read, at most 4096 bytes, from offset zero.
         var buffer = [UInt8](repeating: 0, count: Self.maximumPrefixBytes)
         let readCount: Int
+        if isCancelled(.beforeRead) { return .cancelled }
         do {
             readCount = try buffer.withUnsafeMutableBytes { try filesystem.readOnce(descriptor: descriptor, into: $0) }
         } catch {
-            // Cancellation observed at the read boundary wins over mapping the
-            // read failure to another terminal outcome. The read is never retried.
-            if isCancelled(.afterRead) { return .cancelled }
-            if let failure = error as? ClassificationPOSIXFailure {
-                return outcome(forErrno: failure.code)
-            }
-            return .failed
+            let mapped = (error as? ClassificationPOSIXFailure).map { outcome(forErrno: $0.code) } ?? .failed
+            return finishAfterRead(mapped)
         }
-        guard readCount >= 0, readCount <= Self.maximumPrefixBytes else { return .failed }
-
-        // Cancellation observed once the read attempt returned wins over mapping
-        // the returned count or any later path error to another terminal outcome.
-        // Earlier pre-read sourceChanged/unsupported results stand: a cancellation
-        // that had not yet occurred never masks them.
         if isCancelled(.afterRead) { return .cancelled }
+        guard readCount >= 0, readCount <= Self.maximumPrefixBytes else { return finishAfterRead(.failed) }
 
-        // A short result is accepted only when the file genuinely had fewer
-        // bytes. Fewer bytes than the pre-read size promised is never topped up
-        // with a second read: truncation means the source changed, any other
-        // shortfall is a failed read.
+        // A short read is never topped up. Truncation means sourceChanged;
+        // any other shortfall is failed. Late cancellation wins in both cases.
         let expected = min(opened.size, Int64(Self.maximumPrefixBytes))
         if Int64(readCount) < expected {
             if let after = try? filesystem.stat(descriptor: descriptor), after.size < expected {
-                return .sourceChanged
+                return finishAfterRead(.sourceChanged)
             }
-            return .failed
+            return finishAfterRead(.failed)
         }
 
-        // Post-read revalidation: same object, same source, same path.
         let afterRead: ClassificationFileStat
         do {
             afterRead = try filesystem.stat(descriptor: descriptor)
         } catch let failure as ClassificationPOSIXFailure {
-            return outcome(forErrno: failure.code)
+            return finishAfterRead(outcome(forErrno: failure.code))
         } catch {
-            return .failed
+            return finishAfterRead(.failed)
         }
         guard afterRead.kind == .regular, afterRead.device == opened.device, afterRead.inode == opened.inode,
               afterRead.size >= Int64(readCount)
-        else { return .sourceChanged }
+        else { return finishAfterRead(.sourceChanged) }
 
-        guard let again = try? detectMount(URL(fileURLWithPath: recordedMount, isDirectory: true)),
-              again.volumeIdentifier == recordedIdentity, again.mountPath == recordedMount
-        else { return .sourceChanged }
-
-        let revalidation = DescriptorBag(filesystem: filesystem)
-        defer { revalidation.closeAll() }
-        let secondWalk: DirectoryWalk
-        switch walkDirectories(
-            mountPath: recordedMount, components: directoryComponents, bag: revalidation, expected: walk.identities
+        if let failure = validateOpenedAuthority(
+            mountPath: recordedMount, recordedIdentity: recordedIdentity,
+            directoryComponents: directoryComponents, identities: walk.identities,
+            fileName: fileName, opened: opened
         ) {
-        case let .success(value): secondWalk = value
+            return finishAfterRead(failure)
+        }
+        guard let request = LocalClassificationRequest(boundedPrefix: Data(buffer.prefix(readCount))) else {
+            return finishAfterRead(.failed)
+        }
+        return finishAfterRead(.prefix(request))
+    }
+
+    /// Only called once the payload attempt has begun. Earlier genuine pre-read
+    /// outcomes never pass through this late-cancellation completion boundary.
+    private func finishAfterRead(_ outcome: BoundedClassificationSourceOutcome) -> BoundedClassificationSourceOutcome {
+        isCancelled(.afterRead) ? .cancelled : outcome
+    }
+
+    /// Fresh source detection, no-follow directory-chain identity, and final
+    /// pathname-to-opened-object binding. Metadata only; never another read.
+    private func validateOpenedAuthority(
+        mountPath: String,
+        recordedIdentity: String,
+        directoryComponents: [String],
+        identities: [ClassificationFileStat],
+        fileName: String,
+        opened: ClassificationFileStat
+    ) -> BoundedClassificationSourceOutcome? {
+        guard let current = try? detectMount(URL(fileURLWithPath: mountPath, isDirectory: true)),
+              current.volumeIdentifier == recordedIdentity, current.mountPath == mountPath
+        else { return .sourceChanged }
+
+        let fresh = DescriptorBag(filesystem: filesystem)
+        defer { fresh.closeAll() }
+        let walk: DirectoryWalk
+        switch walkDirectories(mountPath: mountPath, components: directoryComponents, bag: fresh, expected: identities) {
+        case let .success(value): walk = value
         case let .failure(outcome): return outcome
         }
-        let confirmed: ClassificationFileStat
         do {
-            confirmed = try filesystem.statNoFollow(parent: secondWalk.parent, name: fileName)
+            let confirmed = try filesystem.statNoFollow(parent: walk.parent, name: fileName)
+            guard confirmed.kind == .regular, confirmed.device == opened.device, confirmed.inode == opened.inode else {
+                return .sourceChanged
+            }
         } catch let failure as ClassificationPOSIXFailure {
             return outcome(forErrno: failure.code)
         } catch {
             return .failed
         }
-        guard confirmed.kind == .regular, confirmed.device == opened.device, confirmed.inode == opened.inode else {
-            return .sourceChanged
-        }
-
-        if isCancelled(.afterRead) { return .cancelled }
-
-        guard let request = LocalClassificationRequest(boundedPrefix: Data(buffer.prefix(readCount))) else {
-            return .failed
-        }
-        return .prefix(request)
+        return nil
     }
 
     // MARK: Walk

@@ -443,6 +443,128 @@ final class SnapshotHistoryTests: XCTestCase {
         XCTAssertEqual(try rootLocator(session.snapshotID), "source")
     }
 
+    // MARK: - Slice-02 security repair: alias proof consumption
+
+    func testAliasCandidateReplacedAfterProofBeforeAdmissionRejectsCapture() throws {
+        let descriptor = try aliasAdmissionDescriptor()
+        let candidate = URL(fileURLWithPath: descriptor.mountPath)
+            .appendingPathComponent(String((try aliasCanonicalRoot()).path.dropFirst()))
+        let writer = SnapshotWriter(database: database)
+        var scheduled = false
+        writer.rootLocatorAdmissionObserver = { [self] boundary in
+            guard boundary == .afterPreparation else { return }
+            scheduled = true
+            XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM snapshots")?.int64Value, 0)
+            try replaceAliasDirectory(at: candidate)
+        }
+        XCTAssertThrowsError(try writer.beginCapture(descriptor: descriptor, scanRootName: "Replaced")) {
+            XCTAssertEqual($0 as? SnapshotWriterError, .sourceRootNotWithinMount)
+        }
+        XCTAssertTrue(scheduled, "initial same-object proof must succeed before the mutation")
+        try assertNoAdmittedCapture()
+    }
+
+    func testAliasCandidateReplacedDuringAdmissionRollsBackCapture() throws {
+        let descriptor = try aliasAdmissionDescriptor()
+        let candidate = URL(fileURLWithPath: descriptor.mountPath)
+            .appendingPathComponent(String((try aliasCanonicalRoot()).path.dropFirst()))
+        let writer = SnapshotWriter(database: database)
+        var scheduled = false
+        writer.rootLocatorAdmissionObserver = { [self] boundary in
+            guard boundary == .afterRowInsertion else { return }
+            scheduled = true
+            XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM snapshots")?.int64Value, 1)
+            XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM entries")?.int64Value, 1)
+            try replaceAliasDirectory(at: candidate)
+        }
+        XCTAssertThrowsError(try writer.beginCapture(descriptor: descriptor, scanRootName: "Replaced")) {
+            XCTAssertEqual($0 as? SnapshotWriterError, .sourceRootNotWithinMount)
+        }
+        XCTAssertTrue(scheduled, "row exists inside transaction before actor substitution")
+        try assertNoAdmittedCapture()
+    }
+
+    func testCanonicalPathReplacedDuringAdmissionRollsBackCapture() throws {
+        let descriptor = try aliasAdmissionDescriptor()
+        let canonical = try aliasCanonicalRoot()
+        let writer = SnapshotWriter(database: database)
+        var scheduled = false
+        writer.rootLocatorAdmissionObserver = { [self] boundary in
+            guard boundary == .afterRowInsertion else { return }
+            scheduled = true
+            XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM snapshots")?.int64Value, 1)
+            let old = directory.appendingPathComponent("selected-old")
+            let other = directory.appendingPathComponent("canonical-substitute")
+            try FileManager.default.moveItem(at: canonical, to: old)
+            try FileManager.default.createDirectory(at: other, withIntermediateDirectories: false)
+            try FileManager.default.createSymbolicLink(at: canonical, withDestinationURL: other)
+        }
+        XCTAssertThrowsError(try writer.beginCapture(descriptor: descriptor, scanRootName: "Replaced")) {
+            XCTAssertEqual($0 as? SnapshotWriterError, .sourceRootNotWithinMount)
+        }
+        XCTAssertTrue(scheduled)
+        try assertNoAdmittedCapture()
+    }
+
+    func testUnchangedAliasProofAdmitsCaptureThroughBothTransactionBoundaries() throws {
+        let descriptor = try aliasAdmissionDescriptor()
+        let writer = SnapshotWriter(database: database)
+        var boundaries: [SnapshotWriter.RootLocatorAdmissionBoundary] = []
+        writer.rootLocatorAdmissionObserver = { boundaries.append($0) }
+        let session = try writer.beginCapture(descriptor: descriptor, scanRootName: "Alias")
+        XCTAssertEqual(boundaries, [.afterPreparation, .afterRowInsertion])
+        XCTAssertEqual(try rootLocator(session.snapshotID), String((try aliasCanonicalRoot()).path.dropFirst()))
+        XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM snapshots")?.int64Value, 1)
+        try session.finish(preferredStatus: .complete)
+    }
+
+    func testDirectLexicalCaptureNeverEntersAliasProofAdmission() throws {
+        let missing = source.appendingPathComponent("not-created")
+        let writer = SnapshotWriter(database: database)
+        writer.rootLocatorAdmissionObserver = { _ in
+            XCTFail("direct route must not enter alias-proof admission")
+            throw SnapshotWriterError.sourceRootNotWithinMount
+        }
+        let session = try writer.beginCapture(
+            descriptor: locatorDescriptor(rootURL: missing, mountPath: source.path), scanRootName: "Direct"
+        )
+        XCTAssertEqual(try rootLocator(session.snapshotID), "not-created")
+        try session.finish(preferredStatus: .complete)
+    }
+
+    private func aliasAdmissionDescriptor() throws -> FilesystemDescriptor {
+        let canonical = try aliasCanonicalRoot()
+        let mount = "/System/Volumes/Data"
+        let candidate = URL(fileURLWithPath: mount).appendingPathComponent(String(canonical.path.dropFirst()))
+        let fs = DarwinBoundedSourceFilesystem()
+        let selected = try fs.statFollowing(path: canonical.path)
+        let physical = try fs.statFollowing(path: candidate.path)
+        XCTAssertEqual(selected.kind, .directory)
+        XCTAssertEqual(selected.device, physical.device)
+        XCTAssertEqual(selected.inode, physical.inode, "real physical-mount alias fixture, never a fabricated identity")
+        return locatorDescriptor(rootURL: source, mountPath: mount)
+    }
+
+    private func replaceAliasDirectory(at candidate: URL) throws {
+        try FileManager.default.moveItem(at: candidate, to: directory.appendingPathComponent("selected-old"))
+        try FileManager.default.createDirectory(at: candidate, withIntermediateDirectories: false)
+    }
+
+    private func assertNoAdmittedCapture(file: StaticString = #filePath, line: UInt = #line) throws {
+        for table in ["snapshots", "entries", "volumes"] {
+            XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM \(table)")?.int64Value, 0,
+                           "entire capture admission must roll back", file: file, line: line)
+        }
+    }
+
+    private func aliasCanonicalRoot() throws -> URL {
+        guard let path = Darwin.realpath(source.path, nil) else {
+            throw ClassificationPOSIXFailure(code: errno)
+        }
+        defer { free(path) }
+        return URL(fileURLWithPath: String(cString: path))
+    }
+
     // MARK: - Helpers
 
     private func locatorDescriptor(rootURL: URL, mountPath: String) -> FilesystemDescriptor {

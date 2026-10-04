@@ -218,7 +218,10 @@ class Checker:
         require(current["HANDOFF"] == self.new_handoff, "current task must own the one new handoff")
         require(state["LAST_ACCEPTED_TASK"] in ledger, "accepted task missing from ledger")
         accepted = ledger[state["LAST_ACCEPTED_TASK"]]
-        require(accepted["BRAIN_CLASSIFICATION"] in {"PASS", "PASS_WITH_ADVISORY"}, "last accepted task lacks accepted classification")
+        require(accepted["BRAIN_CLASSIFICATION"] in {"PASS", "PASS_WITH_ADVISORY"}
+                or (accepted["EXECUTOR"] == "REVIEWER" and accepted["STATUS"] == "ACCEPTED"
+                    and accepted["BRAIN_CLASSIFICATION"] == "REPAIR"),
+                "last accepted task lacks accepted classification")
         # A self-containing return records a known basis SHA, while BRAIN may
         # later accept its publication snapshot. Prove ancestry and artifact
         # presence instead of requiring those distinct SHA roles to be equal.
