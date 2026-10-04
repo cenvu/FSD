@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-05T01:00:50+07:00
-
 # P15 Slice 02 bounded source-authority security repair
 
 ## HOT
