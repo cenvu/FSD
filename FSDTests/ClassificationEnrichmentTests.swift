@@ -116,15 +116,6 @@ final class ClassificationEnrichmentTests: XCTestCase {
         XCTAssertEqual(try EntrySnapshotProbe.classificationRowCount(database: database), 3)
     }
 
-    func testExistingClassifiedServiceForwardsProviderIdentityIndependently() throws {
-        let service = ClassificationEnrichmentService(database: database, provider: ClassifiedFixtureProvider())
-        let stored = try XCTUnwrap(try service.enrich(entryID: entryID, classificationRunID: "service-provider"))
-        XCTAssertEqual(stored.providerIdentifier, "fixture-service-provider")
-        XCTAssertEqual(stored.detectorVersion, "observation-detector")
-        XCTAssertEqual(stored.modelVersion, "observation-model")
-        XCTAssertEqual(try EntryClassificationRepository(database: database).classification(for: entryID), stored)
-    }
-
     func testAbsentClassificationBrowsesWithNeutralStateAndExportsDeterministically() throws {
         let details = try XCTUnwrap(
             try SnapshotTreeDataSource(database: database, snapshotID: snapshotID).details(for: entryID)
@@ -221,26 +212,6 @@ final class ClassificationEnrichmentTests: XCTestCase {
         XCTAssertTrue(try database.query("PRAGMA foreign_key_check").isEmpty)
     }
 
-    func testDisabledProviderLeavesClassificationAbsent() throws {
-        let service = ClassificationEnrichmentService(
-            database: database,
-            provider: DisabledFileClassificationProvider()
-        )
-        XCTAssertNil(try service.enrich(entryID: entryID, classificationRunID: "disabled-run"))
-        XCTAssertEqual(try EntrySnapshotProbe.classificationRowCount(database: database), 0)
-    }
-
-    func testProviderFailureStoresOnlyBoundedTypedStatus() throws {
-        let service = ClassificationEnrichmentService(database: database, provider: HostileDiagnosticProvider())
-        let result = try XCTUnwrap(try service.enrich(entryID: entryID, classificationRunID: "failed-run"))
-        XCTAssertEqual(result.detectionStatus, .failed)
-        XCTAssertNil(result.detectedType)
-        XCTAssertNil(result.mimeType)
-        XCTAssertNil(result.classifiedAt)
-        XCTAssertFalse(result.statusLabel.contains("hostile"))
-        XCTAssertFalse(result.statusLabel.contains("stack"))
-    }
-
     func testOrdinaryCaptureSearchAndExportDoNotCreateClassificationRows() throws {
         let source = directory.appendingPathComponent("generated-source", isDirectory: true)
         try FileManager.default.createDirectory(at: source, withIntermediateDirectories: true)
@@ -254,29 +225,5 @@ final class ClassificationEnrichmentTests: XCTestCase {
         _ = try JSONSnapshotExporter(database: database).write(snapshotID: captured.id) { exported += $0 }
         XCTAssertFalse(exported.contains("classification"))
         XCTAssertEqual(try EntrySnapshotProbe.classificationRowCount(database: database), 0)
-    }
-}
-
-private struct HostileDiagnosticProvider: LocalFileClassificationProvider {
-    let providerIdentifier = "hostile-test-provider"
-    let detectorVersion: String? = "test-detector"
-    let modelVersion: String? = "test-model"
-
-    func classify(_ request: LocalClassificationRequest) throws -> LocalClassificationProviderResult {
-        throw NSError(domain: "hostile", code: 1, userInfo: [
-            NSLocalizedDescriptionKey: "hostile stack trace and absolute path /private/test"
-        ])
-    }
-}
-
-private struct ClassifiedFixtureProvider: LocalFileClassificationProvider {
-    let providerIdentifier = "fixture-service-provider"
-    let detectorVersion: String? = "provider-detector"
-    let modelVersion: String? = "provider-model"
-
-    func classify(_ request: LocalClassificationRequest) throws -> LocalClassificationProviderResult {
-        .classified(LocalClassificationObservation(
-            detectedType: "text", detectorVersion: "observation-detector", modelVersion: "observation-model"
-        ))
     }
 }

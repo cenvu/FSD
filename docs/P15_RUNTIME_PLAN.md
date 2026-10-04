@@ -157,7 +157,7 @@ Establish the security boundary FSD must own: reliable source-root capture for n
 
 ### Locked implementation decisions
 
-- `SnapshotWriter` computes and stores `snapshots.root_relative_path` for every new schema-v9 capture as the normalized lexical path from the detected mount root to `descriptor.rootURL`. It must be relative, must not contain `.`/`..`, and must fail capture rather than guess if the selected root is outside the mount.
+- `SnapshotWriter` computes and stores `snapshots.root_relative_path` for every new schema-v9 capture under the FINAL root-locator contract: direct lexical containment needs no alias lookup and no identity proof; otherwise POSIX `realpath` canonicalizes the selected capture root only, exactly one physical-mount candidate is built from the canonical absolute components, and it is accepted only after same-object identity proof (st_dev and st_ino) between the canonical root and the no-follow-walked candidate. No entry symlink resolution, no hard-coded mapping table, no second candidate; canonicalization, candidate or identity failure fails the capture closed.
 - Existing snapshots with `schema_version < 9` have no trustworthy root locator because current production always left `root_relative_path` at its default. Classification of them fails closed as `.unavailable` with no row and no backfill. A genuine v9 mount-root capture is distinguishable because its schema version is 9 and its root locator is intentionally empty.
 - Source identity is the current detected `volumeIdentifier` compared exactly with `volume_identifier_at_capture`; display name and mount-name coincidence are never identity. Missing recorded identity/root context is `.unavailable`; a present source with mismatched identity is `.sourceChanged`.
 - Candidate paths are constructed only from validated root/entry relative components. Use POSIX no-follow semantics (`lstat`/`open` with `O_NOFOLLOW`, then `fstat`) and post-read identity validation so symlink/race substitution cannot escape the selected root.
@@ -190,7 +190,7 @@ Establish the security boundary FSD must own: reliable source-root capture for n
 
 #### Step 1 — Persist a trustworthy source-root locator for new captures
 
-Populate the existing immutable `root_relative_path` field for schema-v9 captures, validate it is beneath the detected mount, and add focused capture/history tests for mount-root and nested-root sources plus fail-closed legacy schema-v8 behavior. Do not backfill or reinterpret old rows.
+Populate the existing immutable `root_relative_path` field for schema-v9 captures under the FINAL root-locator contract above, and add focused capture/history tests for mount-root and nested-root sources, the macOS `/var` presentation case via the canonical `/private/var` candidate with same-object proof, the full rejection matrix (canonicalization failure, missing/different-object/escaping/unprovable candidate), plus fail-closed legacy schema-v8 behavior. Do not backfill or reinterpret old rows.
 
 #### Step 2 — Implement FSD-owned resolution, identity validation, and bounded read
 

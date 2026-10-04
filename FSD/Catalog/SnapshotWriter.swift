@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 
 /// Cancellation state is protected entirely by `lock`; the finalization lock
@@ -55,6 +56,7 @@ public enum SnapshotWriterError: Error, LocalizedError, Equatable {
     case parentMissing(String)
     case rootAlreadyWritten
     case terminalTransitionRejected(SnapshotStatus)
+    case sourceRootNotWithinMount
 
     public var errorDescription: String? {
         switch self {
@@ -64,6 +66,7 @@ public enum SnapshotWriterError: Error, LocalizedError, Equatable {
         case let .parentMissing(path): return "Parent entry was not persisted before child \(path)."
         case .rootAlreadyWritten: return "A snapshot may contain exactly one root entry."
         case let .terminalTransitionRejected(status): return "Snapshot cannot transition from \(status.rawValue)."
+        case .sourceRootNotWithinMount: return "The selected capture root could not be proven to lie within its detected volume mount."
         }
     }
 }
@@ -85,6 +88,9 @@ public final class SnapshotWriter {
         providerVersion: String = NativeMountedProvider.currentProviderVersion,
         token: CaptureCancellationToken = CaptureCancellationToken()
     ) throws -> SnapshotWriteSession {
+        // Schema v9 source-root locator: computed before any catalog write so an
+        // unprovable root fails the capture instead of being guessed.
+        let rootRelativePath = try Self.rootRelativePath(for: descriptor)
         do {
             let snapshotID = try database.transaction {
                 let volumeID = try ensureVolume(descriptor: descriptor)
@@ -96,18 +102,19 @@ public final class SnapshotWriter {
                     """
                     INSERT INTO snapshots (
                         volume_id, session_number, scan_root_name, mount_path_at_capture,
+                        root_relative_path,
                         status, scanner_version, schema_version, normalization_version,
                         snapshot_kind, source_case_sensitivity, filesystem_provider,
                         provider_version, source_access_mode, filesystem_variant,
                         volume_display_name_at_capture, volume_identifier_at_capture,
                         volume_total_capacity_bytes_at_capture,
                         display_name, capture_policy_json, started_at, created_at, updated_at
-                    ) VALUES (?, ?, ?, ?, 'scanning', ?, ?, ?, ?, ?, 'native', ?, 'mounted', ?, ?, ?, ?, ?, '{}',
+                    ) VALUES (?, ?, ?, ?, ?, 'scanning', ?, ?, ?, ?, ?, 'native', ?, 'mounted', ?, ?, ?, ?, ?, '{}',
                               CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                     """,
                     bindings: [
                         .integer(volumeID), .integer(sessionNumber), .text(scanRootName),
-                        .text(descriptor.mountPath), .text(Self.scannerVersion),
+                        .text(descriptor.mountPath), .text(rootRelativePath), .text(Self.scannerVersion),
                         .integer(CatalogDatabase.currentSchemaVersion), .text(NormalizationVersion.current.rawValue),
                         .text(kind.rawValue), .text(descriptor.sourceCaseSensitivity.rawValue),
                         .text(providerVersion), .text(descriptor.filesystemType),
@@ -131,6 +138,110 @@ public final class SnapshotWriter {
             throw error
         } catch let error as CatalogDatabaseError {
             throw SnapshotWriterError.database(error)
+        }
+    }
+
+    /// Normalized lexical path from the detected mount root to the selected
+    /// root, stored once as an immutable capture fact (`""` for a mount-root
+    /// capture). Relative, never `.`/`..`. The FINAL root-locator contract:
+    /// direct lexical containment needs no alias lookup and no identity proof;
+    /// otherwise POSIX `realpath` canonicalizes the selected capture root only,
+    /// exactly one candidate (mount plus canonical components) is built, and it
+    /// is accepted only after a no-follow walk from the mount root lands on the
+    /// same filesystem object (st_dev and st_ino). Anything else fails capture;
+    /// nothing is guessed and no second candidate is ever attempted.
+    static func rootRelativePath(for descriptor: FilesystemDescriptor) throws -> String {
+        let filesystem = DarwinBoundedSourceFilesystem()
+        guard let mountPath = lexicalAbsolutePath(descriptor.mountPath),
+              let rootPath = lexicalAbsolutePath(descriptor.rootURL.path)
+        else { throw SnapshotWriterError.sourceRootNotWithinMount }
+
+        // STAGE A — direct representation. Pure lexical containment of the
+        // selected root beneath the physical mount. No alias lookup, no
+        // object-identity proof, no filesystem I/O of any kind.
+        if let direct = remainder(of: rootPath, under: mountPath) {
+            guard let components = ClassificationSourcePath.components(of: direct, allowEmpty: true) else {
+                throw SnapshotWriterError.sourceRootNotWithinMount
+            }
+            return components.joined(separator: "/")
+        }
+
+        // STAGE B — POSIX canonical selected root only. Resolves ordinary
+        // symlinks and dot components of the capture root. Never entries, never
+        // provider-visible, never used after capture to follow an entry symlink.
+        guard let canonical = realPath(of: rootPath) else {
+            throw SnapshotWriterError.sourceRootNotWithinMount
+        }
+
+        // STAGE C — exactly one physical candidate: the mount joined with the
+        // canonical absolute components minus the leading "/". No raw-presentation
+        // fallback, no mapping table, no second candidate.
+        guard let candidate = physicalCandidate(mountPath: mountPath, canonicalRoot: canonical),
+              let components = ClassificationSourcePath.components(of: candidate, allowEmpty: true)
+        else { throw SnapshotWriterError.sourceRootNotWithinMount }
+
+        // STAGE D — same-object proof. Both ends must exist as directories and
+        // the no-follow walk from the mount root must land on the canonical
+        // root's own filesystem object (st_dev and st_ino).
+        guard let canonicalStat = try? filesystem.statFollowing(path: canonical),
+              canonicalStat.kind == .directory,
+              provesDirectory(mountPath: mountPath, components: components, equals: canonicalStat, using: filesystem)
+        else { throw SnapshotWriterError.sourceRootNotWithinMount }
+
+        return components.joined(separator: "/")
+    }
+
+    /// The single physical candidate for a canonical selected root: the mount
+    /// path joined with the canonical absolute components minus the leading
+    /// "/". Returns nil unless the result stays lexically beneath the mount.
+    /// There is deliberately no plural form; callers must never retry with a
+    /// raw-presentation or otherwise alternate candidate.
+    static func physicalCandidate(mountPath: String, canonicalRoot: String) -> String? {
+        guard canonicalRoot.hasPrefix("/") else { return nil }
+        let stripped = String(canonicalRoot.dropFirst())
+        let candidate = mountPath == "/" ? "/" + stripped : mountPath + "/" + stripped
+        guard remainder(of: candidate, under: mountPath) != nil else { return nil }
+        return stripped
+    }
+
+    private static func lexicalAbsolutePath(_ path: String) -> String? {
+        guard path.hasPrefix("/") else { return nil }
+        let standardized = URL(fileURLWithPath: path).standardizedFileURL.path
+        return standardized.hasPrefix("/") ? standardized : nil
+    }
+
+    private static func remainder(of path: String, under mount: String) -> String? {
+        if mount == "/" { return String(path.dropFirst()) }
+        if path == mount { return "" }
+        let prefix = mount + "/"
+        return path.hasPrefix(prefix) ? String(path.dropFirst(prefix.count)) : nil
+    }
+
+    private static func realPath(of path: String) -> String? {
+        guard let resolved = Darwin.realpath(path, nil) else { return nil }
+        defer { free(resolved) }
+        return String(cString: resolved)
+    }
+
+    private static func provesDirectory(
+        mountPath: String,
+        components: [String],
+        equals target: ClassificationFileStat,
+        using filesystem: DarwinBoundedSourceFilesystem
+    ) -> Bool {
+        var descriptors: [Int32] = []
+        defer { for descriptor in descriptors.reversed() { filesystem.close(descriptor: descriptor) } }
+        do {
+            var current = try filesystem.openMountRoot(path: mountPath)
+            descriptors.append(current)
+            for component in components {
+                current = try filesystem.openDirectory(parent: current, name: component)
+                descriptors.append(current)
+            }
+            let reached = try filesystem.stat(descriptor: current)
+            return reached.kind == .directory && reached.device == target.device && reached.inode == target.inode
+        } catch {
+            return false
         }
     }
 
