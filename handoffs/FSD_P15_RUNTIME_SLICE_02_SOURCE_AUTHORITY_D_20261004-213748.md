@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-04T21:38:19+07:00
-
 # FSD P15 Runtime Slice 02 — bounded source authority and Data-only provider
 
 ## HOT
