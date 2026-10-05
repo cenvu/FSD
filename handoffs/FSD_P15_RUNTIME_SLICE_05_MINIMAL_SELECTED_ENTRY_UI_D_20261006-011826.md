@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-06T01:18:26+07:00
-
 # P15 Slice 05 minimal selected-entry UI
 
 ## HOT
