@@ -7,6 +7,46 @@ import SwiftUI
 /// results — never the tree. The rows on screen live in the `NSOutlineView`
 /// coordinator's per-parent cache, which is only ever populated for branches the
 /// user actually expanded.
+/// Bounded selected-entry classification phase. Progress affordance appears
+/// only in `runningWithProgress`, which the model enters after exactly 0.5 s
+/// when the same operation is still running. Fast completions never flash.
+enum SelectedEntryClassificationPhase: String, Sendable, Equatable {
+    case idle
+    case runningBeforeProgress
+    case runningWithProgress
+}
+
+/// Minimal UI outcome of one explicit selected-entry classification.
+/// Persisted cases refresh exactly the selected entry's details; all other
+/// cases show only a bounded runtime message and never a raw diagnostic.
+enum SelectedEntryClassificationResult: Sendable, Equatable {
+    case busy
+    case cancelled
+    case unavailable
+    case classifiedPersisted
+    case failedPersisted
+    case repositoryFailure
+}
+
+/// Narrow model-only seam around the global runtime. Production wraps the one
+/// app-scoped `ClassificationRuntimeService`; tests inject a fake. The seam
+/// never broadens the runtime API and never creates a second production run.
+struct SelectedEntryClassificationControl: Sendable {
+    var start: @Sendable (Int64) async -> SelectedEntryClassificationResult
+    var cancel: @Sendable () async -> Void
+}
+
+/// Bounded, truthful inspector wording. No sample bytes, paths, errors,
+/// diagnostics or provider internals ever reach visible text.
+enum ClassificationUIText {
+    static let absence = "Not classified."
+    static let unavailable = "Classification unavailable."
+    static let cancelled = "Classification cancelled."
+    static let busy = "Classification busy. Try again."
+    static let saveFailure = "Classification failed to save."
+    static let disclaimer = "Snapshot metadata is not byte proof. Optional classification may sample at most the first 4096 bytes of the currently attached source; it does not verify historical content."
+}
+
 @MainActor
 final class SnapshotBrowserModel: ObservableObject {
     @Published private(set) var summary: SnapshotSummary
@@ -20,19 +60,76 @@ final class SnapshotBrowserModel: ObservableObject {
     @Published var searchText: String = ""
     @Published var searchField: MetadataSearchQuery.Field = .nameOrPath
     @Published var exportMessage: String?
+    @Published private(set) var selectedEntryID: Int64?
+    @Published private(set) var classificationPhase: SelectedEntryClassificationPhase = .idle
+    @Published private(set) var classificationMessage: String?
+
+    var canClassifySelectedFile: Bool { selectedEntryID != nil && classificationPhase == .idle }
 
     let dataSource: SnapshotTreeDataSource
+    let classificationRuntime: ClassificationRuntimeService
+    var classificationControl: SelectedEntryClassificationControl
+    var classificationProgressDelay: @Sendable () async -> Void
+    var classificationDetailsLoader: ((Int64) throws -> SnapshotEntryDetails?)?
+    private var classificationOperation: UInt64 = 0
     private let database: CatalogDatabase
     private let history: SnapshotHistoryRepository
     private let search: MetadataSearchService
     private var searchGeneration: UInt64 = 0
 
-    init(database: CatalogDatabase, summary: SnapshotSummary) {
+    init(database: CatalogDatabase, summary: SnapshotSummary,
+         runtime: ClassificationRuntimeService = .shared,
+         control: SelectedEntryClassificationControl? = nil,
+         progressDelay: @escaping @Sendable () async -> Void = { try? await Task.sleep(for: .milliseconds(500)) },
+         detailsLoader: ((Int64) throws -> SnapshotEntryDetails?)? = nil) {
         self.database = database
         self.summary = summary
         self.history = SnapshotHistoryRepository(database: database)
         self.search = MetadataSearchService(database: database)
         self.dataSource = SnapshotTreeDataSource(database: database, snapshotID: summary.id)
+        self.classificationRuntime = runtime
+        self.classificationProgressDelay = progressDelay
+        self.classificationDetailsLoader = detailsLoader
+        if let control {
+            self.classificationControl = control
+        } else {
+            let capturedDatabase = database
+            let capturedRuntime = runtime
+            self.classificationControl = SelectedEntryClassificationControl(
+                start: { entryID in
+                    await Self.productionStart(entryID: entryID, database: capturedDatabase, runtime: capturedRuntime)
+                },
+                cancel: { await capturedRuntime.cancel() }
+            )
+        }
+    }
+
+    static func productionStart(entryID: Int64, database: CatalogDatabase,
+                                runtime: ClassificationRuntimeService) async -> SelectedEntryClassificationResult {
+        let provider = BundledMagikaClassificationProvider()
+        let started = await runtime.start(entryID: entryID, database: database, provider: provider)
+        switch started {
+        case .busy:
+            return .busy
+        case .rejected:
+            return .repositoryFailure
+        case .completed(let completion):
+            switch completion.result {
+            case .repositoryFailure:
+                return .repositoryFailure
+            case .classification(let outcome, let row):
+                switch outcome {
+                case .classified:
+                    return row == nil ? .repositoryFailure : .classifiedPersisted
+                case .failed, .sourceChanged, .unsupportedEntry:
+                    return row == nil ? .repositoryFailure : .failedPersisted
+                case .unavailable:
+                    return .unavailable
+                case .cancelled:
+                    return .cancelled
+                }
+            }
+        }
     }
 
     /// Opening a snapshot reads the summary that is already in hand, the root
@@ -51,15 +148,105 @@ final class SnapshotBrowserModel: ObservableObject {
     }
 
     func select(entryID: Int64?) {
+        // Changing selection invalidates old classification ownership first.
+        // No user-facing cancelled message on the new selection.
+        classificationOperation += 1
+        let control = classificationControl
+        Task { await control.cancel() }
+        classificationPhase = .idle
+        classificationMessage = nil
         guard let entryID else {
+            selectedEntryID = nil
             selectedDetails = nil
             return
         }
+        selectedEntryID = entryID
         do {
-            selectedDetails = try dataSource.details(for: entryID)
+            selectedDetails = try classificationDetails(for: entryID)
         } catch {
             self.error = error.localizedDescription
         }
+    }
+
+    func classificationDetails(for entryID: Int64) throws -> SnapshotEntryDetails? {
+        if let loader = classificationDetailsLoader {
+            return try loader(entryID)
+        }
+        return try dataSource.details(for: entryID)
+    }
+
+    /// Explicit user action only. No caller besides the inspector button may
+    /// invoke the runtime. Delayed progress appears after exactly 0.5 s when
+    /// the same operation is still running; stale completions never mutate.
+    func classifySelectedFile() async {
+        guard let entryID = selectedEntryID else { return }
+        guard classificationPhase == .idle else { return }
+        classificationOperation += 1
+        let operation = classificationOperation
+        classificationPhase = .runningBeforeProgress
+        classificationMessage = nil
+        let delay = classificationProgressDelay
+        Task { [weak self] in
+            await delay()
+            await MainActor.run {
+                guard let self,
+                      self.classificationOperation == operation,
+                      self.classificationPhase == .runningBeforeProgress,
+                      self.selectedEntryID == entryID else { return }
+                self.classificationPhase = .runningWithProgress
+            }
+        }
+        let outcome = await classificationControl.start(entryID)
+        guard classificationOperation == operation, selectedEntryID == entryID else { return }
+        switch outcome {
+        case .busy:
+            classificationPhase = .idle
+            classificationMessage = ClassificationUIText.busy
+        case .cancelled:
+            classificationPhase = .idle
+            classificationMessage = ClassificationUIText.cancelled
+        case .unavailable:
+            classificationPhase = .idle
+            classificationMessage = ClassificationUIText.unavailable
+        case .classifiedPersisted, .failedPersisted:
+            do {
+                if let refreshed = try classificationDetails(for: entryID) {
+                    guard classificationOperation == operation, selectedEntryID == entryID else { return }
+                    selectedDetails = refreshed
+                    classificationMessage = nil
+                } else {
+                    classificationMessage = nil
+                }
+            } catch {
+                classificationMessage = ClassificationUIText.saveFailure
+            }
+            classificationPhase = .idle
+        case .repositoryFailure:
+            classificationPhase = .idle
+            classificationMessage = ClassificationUIText.saveFailure
+        }
+    }
+
+    /// Explicit Cancel, visible only with delayed progress. Shows a bounded
+    /// cancelled message and invalidates the old operation so a late
+    /// completion cannot alter the inspector.
+    func cancelClassification() {
+        guard classificationPhase != .idle else { return }
+        classificationOperation += 1
+        let control = classificationControl
+        Task { await control.cancel() }
+        classificationPhase = .idle
+        classificationMessage = ClassificationUIText.cancelled
+    }
+
+    /// Selection/snapshot/browser lifecycle cancellation. No user-facing
+    /// cancelled message on the new selection or browser.
+    func cancelClassificationForSnapshotClose() {
+        classificationOperation += 1
+        let control = classificationControl
+        Task { await control.cancel() }
+        classificationPhase = .idle
+        classificationMessage = nil
     }
 
     func runSearch() {
@@ -296,7 +483,7 @@ struct SnapshotBrowserView: View {
                     onSelect: { model.select(entryID: $0) }
                 )
                 .frame(minWidth: 380)
-                EntryInspectorView(details: model.selectedDetails, summary: model.summary)
+                EntryInspectorView(model: model)
                     .frame(minWidth: 260)
             }
             footer
@@ -406,14 +593,13 @@ private struct SearchResultsView: View {
 }
 
 private struct EntryInspectorView: View {
-    let details: SnapshotEntryDetails?
-    let summary: SnapshotSummary
+    @ObservedObject var model: SnapshotBrowserModel
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Stored metadata").font(.headline)
-                if let details {
+                if let details = model.selectedDetails {
                     row("Name", details.name)
                     row("Path", details.relativePath.isEmpty ? "(root)" : details.relativePath)
                     row("Kind", details.itemKind.rawValue)
@@ -427,7 +613,7 @@ private struct EntryInspectorView: View {
                     row("Hidden", details.isHidden ? "Yes" : "No")
                     row("Package", details.isPackage ? "Yes" : "No")
                     row("Inaccessible", details.isInaccessible ? "Yes" : "No")
-                    row("Normalization", summary.normalizationVersion.rawValue)
+                    row("Normalization", model.summary.normalizationVersion.rawValue)
                     Divider()
                     Text("Inferred classification (optional)").font(.headline)
                     if let classification = details.classification {
@@ -442,11 +628,30 @@ private struct EntryInspectorView: View {
                         Text("Inferred metadata only; this is not content verification.")
                             .font(.caption).foregroundStyle(.secondary)
                     } else {
-                        Text("Not classified")
+                        Text(ClassificationUIText.absence)
                             .font(.caption).foregroundStyle(.secondary)
                     }
                     Divider()
-                    Text("Recorded metadata only. FSD never read this file's contents, so nothing here confirms what the file contains.")
+                    if model.selectedEntryID != nil {
+                        Button("Classify selected file") {
+                            Task { await model.classifySelectedFile() }
+                        }
+                        .disabled(!model.canClassifySelectedFile)
+                    }
+                    if model.classificationPhase == .runningWithProgress {
+                        HStack(spacing: 8) {
+                            ProgressView()
+                            Text("Classifying selected file…")
+                                .font(.caption).foregroundStyle(.secondary)
+                            Button("Cancel", action: model.cancelClassification)
+                        }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("Classifying selected file. Cancel available.")
+                    }
+                    if let message = model.classificationMessage {
+                        Text(message).font(.caption).foregroundStyle(.secondary)
+                    }
+                    Text(ClassificationUIText.disclaimer)
                         .font(.caption).foregroundStyle(.secondary)
                 } else {
                     Text("Select an item to see its stored metadata.")

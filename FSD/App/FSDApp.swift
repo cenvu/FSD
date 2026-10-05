@@ -59,6 +59,10 @@ final class ApplicationModel: ObservableObject {
     @Published private(set) var browser: SnapshotBrowserModel?
     @Published var selectedSnapshotID: SnapshotID?
 
+    /// The one app-scoped classification runtime. Shared by every browser;
+    /// opening another browser never creates a second runtime.
+    let classificationRuntime: ClassificationRuntimeService = .shared
+
     let database: CatalogDatabase?
     private let historyRepository: SnapshotHistoryRepository?
     /// Held for the process lifetime. Releasing it would let a second instance
@@ -203,14 +207,17 @@ final class ApplicationModel: ObservableObject {
 
     /// Opening a snapshot builds a browser over the stored catalog rows only.
     /// It never checks that the source still exists first, and never fails
-    /// because it does not.
+    /// because it does not. Replacing a browser cancels the old browser's
+    /// classification ownership first; opening never starts classification.
     func openSnapshot(_ summary: SnapshotSummary) {
         guard let database else { return }
+        browser?.cancelClassificationForSnapshotClose()
         selectedSnapshotID = summary.id
-        browser = SnapshotBrowserModel(database: database, summary: summary)
+        browser = SnapshotBrowserModel(database: database, summary: summary, runtime: classificationRuntime)
     }
 
     func closeSnapshot() {
+        browser?.cancelClassificationForSnapshotClose()
         selectedSnapshotID = nil
         browser = nil
     }
