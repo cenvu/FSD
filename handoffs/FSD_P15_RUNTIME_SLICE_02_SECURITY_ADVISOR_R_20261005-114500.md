@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-05T11:44:30+07:00
-
 # P15 Slice 02 compact premium security advisor (Q-F1 + Q-F3)
 
 ## HOT
