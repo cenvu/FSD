@@ -72,6 +72,50 @@ final class JSONExportTests: XCTestCase {
         XCTAssertNotNil(symlink["symlinkTarget"] as? String)
     }
 
+    func testExportIsByteIdenticalBeforeAndAfterClassificationEnrichment() throws {
+        // §9: the export is classification-neutral. Enrichment rows exist in the
+        // catalog, yet the exported bytes, the format version and the catalog
+        // schema version are unchanged, and no classification key appears.
+        let before = try exportString()
+        let beforeObject = try XCTUnwrap(
+            try JSONSerialization.jsonObject(with: try XCTUnwrap(before.data(using: .utf8))) as? [String: Any]
+        )
+        XCTAssertEqual(try EntrySnapshotProbe.classificationRowCount(database: database), 0)
+
+        let entryID = try XCTUnwrap(try database.scalar(
+            "SELECT id FROM entries WHERE snapshot_id = ? AND relative_path = 'Nested/leaf.txt'",
+            bindings: [.integer(snapshotID.rawValue)]
+        )?.int64Value)
+        let repository = EntryClassificationRepository(database: database)
+        _ = try repository.append(EntryClassificationInput(
+            entryID: entryID, classificationRunID: "export-neutrality-run",
+            detectedType: "text/plain", mimeType: "text/plain", confidence: 0.5,
+            detectionStatus: .classified, detectorVersion: "export-detector",
+            modelVersion: "export-model", providerIdentifier: "export-fixture-provider",
+            classifiedAt: "2026-10-06T00:00:00Z"
+        ))
+        _ = try repository.append(EntryClassificationInput(
+            entryID: entryID, classificationRunID: "export-neutrality-failed-run",
+            detectionStatus: .failed, providerIdentifier: "export-fixture-provider"
+        ))
+        XCTAssertEqual(try EntrySnapshotProbe.classificationRowCount(database: database), 2,
+                       "enrichment rows exist and are visible to the exporter's own catalog")
+
+        let after = try exportString()
+        let afterObject = try XCTUnwrap(
+            try JSONSerialization.jsonObject(with: try XCTUnwrap(after.data(using: .utf8))) as? [String: Any]
+        )
+        XCTAssertEqual(after, before, "classification enrichment must not change one exported byte")
+        XCTAssertEqual(afterObject["format"] as? String, JSONSnapshotExporter.formatIdentifier)
+        XCTAssertEqual(afterObject["formatVersion"] as? Int, 1, "the export format version is unchanged")
+        XCTAssertEqual(afterObject["formatVersion"] as? Int, beforeObject["formatVersion"] as? Int)
+        XCTAssertEqual(afterObject["catalogSchemaVersion"] as? Int, beforeObject["catalogSchemaVersion"] as? Int)
+        XCTAssertNil(afterObject["classifications"])
+        XCTAssertFalse(after.contains("classification"))
+        XCTAssertFalse(after.contains("export-fixture-provider"))
+        XCTAssertFalse(after.contains("export-detector"))
+    }
+
     func testExportStatesContentIsNotVerifiedAndCarriesNoPayloadOrClassification() throws {
         let text = try exportString()
         let object = try XCTUnwrap(

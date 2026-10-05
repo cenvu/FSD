@@ -279,6 +279,32 @@ final class ClassificationSourceReaderTests: XCTestCase {
         XCTAssertEqual(filesystem.readCalls, 1)
     }
 
+    func testExactOneByteOverCeilingReturnsExactly4096InOneRead() throws {
+        // The exact §9 boundary pair: 4096 is admitted whole, 4097 is truncated
+        // to the same 4096 bytes with no tail read and no second read.
+        let exact = pattern(4096)
+        let over = pattern(4097)
+        try write("exact-ceiling.bin", exact)
+        try write("one-over-ceiling.bin", over)
+        let ids = try capture([.init("exact-ceiling.bin", .file), .init("one-over-ceiling.bin", .file)])
+
+        let exactFilesystem = RecordingFilesystem()
+        let exactResult = prefix(try reader(exactFilesystem).readPrefix(forEntryID: ids["exact-ceiling.bin"]!))
+        XCTAssertEqual(exactResult?.count, 4096)
+        XCTAssertEqual(exactResult, exact)
+        XCTAssertEqual(exactFilesystem.readCalls, 1)
+        XCTAssertEqual(exactFilesystem.readRequestSizes, [4096])
+
+        let overFilesystem = RecordingFilesystem()
+        let overResult = prefix(try reader(overFilesystem).readPrefix(forEntryID: ids["one-over-ceiling.bin"]!))
+        XCTAssertEqual(overResult?.count, 4096, "exactly one byte over the ceiling still yields one 4096-byte prefix")
+        XCTAssertEqual(overResult, over.prefix(4096))
+        XCTAssertEqual(overResult, exactResult, "4096 and 4097 sources expose the identical bounded prefix")
+        XCTAssertNotEqual(over.prefix(4096), over.suffix(1), "the 4097th byte is never part of the request")
+        XCTAssertEqual(overFilesystem.readCalls, 1, "one byte over the ceiling is never topped up with a second read")
+        XCTAssertEqual(overFilesystem.readRequestSizes, [4096])
+    }
+
     func testLargeFileReturnsOnlyTheFirst4096BytesInOneRead() throws {
         let bytes = pattern(10_000)
         try write("large.bin", bytes)

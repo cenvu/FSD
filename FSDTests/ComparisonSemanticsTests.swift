@@ -143,6 +143,66 @@ final class ComparisonSemanticsTests: XCTestCase {
         XCTAssertEqual(comparison.changedCount, 2)
     }
 
+    func testClassificationEnrichmentLeavesEveryComparisonOutcomeIdenticalToUnenrichedBaseline() throws {
+        // §9 requires the outcome itself to be unchanged, not merely plausible.
+        // Baseline first: compare a pair that has no classification row at all,
+        // record every observable comparison fact, then add divergent
+        // classification metadata to both sides and compare again.
+        try seedKnownPair()
+        let leftEntriesBefore = try EntrySnapshotProbe.contentFingerprint(database: database, snapshotID: leftSnapshot)
+        let rightEntriesBefore = try EntrySnapshotProbe.contentFingerprint(database: database, snapshotID: rightSnapshot)
+        let leftSnapshotBefore = try EntrySnapshotProbe.snapshotFingerprint(database: database, snapshotID: leftSnapshot)
+        let rightSnapshotBefore = try EntrySnapshotProbe.snapshotFingerprint(database: database, snapshotID: rightSnapshot)
+        XCTAssertEqual(try EntrySnapshotProbe.classificationRowCount(database: database), 0)
+
+        let baseline = try compare()
+        let baselineRows = try rows(baseline)
+        let baselineShape = baselineRows.map { "\($0.resultPath)|\($0.resultType.rawValue)|\($0.differenceFlags)" }
+        let baselineCounts = "\(baseline.status.rawValue)|\(baseline.matchedCount)|\(baseline.changedCount)|\(baseline.addedCount)|\(baseline.removedCount)"
+
+        let classifications = EntryClassificationRepository(database: database)
+        for (snapshot, path, runID, detectedType, confidence) in [
+            (leftSnapshot, "same.txt", "baseline-left-run", "text/plain", 0.10),
+            (rightSnapshot, "same.txt", "baseline-right-run", "application/octet-stream", 0.99),
+            (leftSnapshot, "grown.bin", "baseline-left-grown", "inode/directory", 0.0),
+            (rightSnapshot, "grown.bin", "baseline-right-grown", "video/mp4", 1.0)
+        ] {
+            let snapshotID = try XCTUnwrap(snapshot)
+            let entryID = try XCTUnwrap(try database.scalar(
+                "SELECT id FROM entries WHERE snapshot_id = ? AND relative_path = ?",
+                bindings: [.integer(snapshotID.rawValue), .text(path)]
+            )?.int64Value)
+            _ = try classifications.append(EntryClassificationInput(
+                entryID: entryID, classificationRunID: runID, detectedType: detectedType,
+                confidence: confidence, providerIdentifier: "comparison-baseline-provider"
+            ))
+        }
+        XCTAssertEqual(try EntrySnapshotProbe.classificationRowCount(database: database), 4)
+
+        let enriched = try compare()
+        let enrichedRows = try rows(enriched)
+        let enrichedShape = enrichedRows.map { "\($0.resultPath)|\($0.resultType.rawValue)|\($0.differenceFlags)" }
+        let enrichedCounts = "\(enriched.status.rawValue)|\(enriched.matchedCount)|\(enriched.changedCount)|\(enriched.addedCount)|\(enriched.removedCount)"
+
+        XCTAssertEqual(enrichedShape, baselineShape, "result kinds, paths and difference bits are identical")
+        XCTAssertEqual(enrichedCounts, baselineCounts, "comparison counts and status are identical")
+        XCTAssertEqual(
+            try enrichedRows.map(\.resultPath), try baselineRows.map(\.resultPath), "result paths are identical"
+        )
+        XCTAssertEqual(
+            try EntrySnapshotProbe.contentFingerprint(database: database, snapshotID: leftSnapshot), leftEntriesBefore
+        )
+        XCTAssertEqual(
+            try EntrySnapshotProbe.contentFingerprint(database: database, snapshotID: rightSnapshot), rightEntriesBefore
+        )
+        XCTAssertEqual(
+            try EntrySnapshotProbe.snapshotFingerprint(database: database, snapshotID: leftSnapshot), leftSnapshotBefore
+        )
+        XCTAssertEqual(
+            try EntrySnapshotProbe.snapshotFingerprint(database: database, snapshotID: rightSnapshot), rightSnapshotBefore
+        )
+    }
+
     func testAddedAndRemovedEntriesAreClassifiedExactly() throws {
         try seedKnownPair()
         let comparison = try compare()
