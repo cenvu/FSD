@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-06T03:46:30+07:00
-
 # P15 Slice 06 cross-workflow and security regression matrix
 
 ## HOT
