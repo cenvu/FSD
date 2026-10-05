@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-05T11:22:44+07:00
-
 # P15 Slice 02 F1/F3 security proof packet (read-only preparation)
 
 ## HOT
