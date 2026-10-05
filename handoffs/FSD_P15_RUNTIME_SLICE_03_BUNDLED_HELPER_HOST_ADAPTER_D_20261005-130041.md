@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-05T13:00:41+07:00
-
 # P15 Slice 03 bundled-helper host adapter
 
 ## HOT
