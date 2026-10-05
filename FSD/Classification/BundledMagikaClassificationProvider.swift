@@ -61,8 +61,10 @@ struct BundledMagikaClassificationProvider: LocalFileClassificationProvider, @un
     private func execute(_ input: Data, cancellation: HelperCancellation) -> LocalClassificationProviderResult {
         if cancellation.isCancelled { return cancellation.complete(.cancelled) }
         guard let executable = resolve(bundleRoot) else { return cancellation.complete(.unavailable) }
-        if cancellation.isCancelled { return cancellation.complete(.cancelled) }
         let runner = makeRunner()
+        // Runner construction launches nothing. This locked authorization,
+        // rather than the later kernel launch, is the launch/cancel boundary.
+        guard cancellation.authorizeLaunch() else { return cancellation.complete(.cancelled) }
         var output = Data()
         var stderrCount = 0
         var result: LocalClassificationProviderResult = .failed
@@ -133,7 +135,16 @@ final class HelperCancellation: @unchecked Sendable {
     private let lock = NSCondition()
     private var cancelled = false
     private var completed = false
+    private var launchAuthorized = false
     var isCancelled: Bool { lock.lock(); defer { lock.unlock() }; return cancelled }
+    func authorizeLaunch() -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        guard !cancelled, !completed, !launchAuthorized else { return false }
+        launchAuthorized = true
+        // No process work under this lock; later cancellation may still win
+        // completion and the owned operation must clean up any launched child.
+        return true
+    }
     func cancel() {
         lock.lock(); defer { lock.unlock() }
         if !completed { cancelled = true; lock.broadcast() }

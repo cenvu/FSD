@@ -244,7 +244,7 @@ If the platform APIs cannot guarantee no-follow open plus object/path identity v
 
 ### Purpose
 
-Implement and test the FSD-side process boundary for a locally bundled helper without downloading, vendoring, building, or pretending to implement Magika itself. The host adapter accepts only the bounded bytes from Slice 02, launches only an executable resolved inside the FSD app bundle, uses bounded raw-byte IPC, and converts helper/process behavior to typed results.
+Implement and test the FSD-side process boundary for a locally bundled helper without downloading, vendoring, building, or pretending to implement Magika itself. The host adapter accepts only the bounded bytes from Slice 02, selects a fixed executable canonically resolved inside the trusted FSD app bundle, uses bounded raw-byte IPC, and converts helper/process behavior to typed results.
 
 ### Prerequisites
 
@@ -254,11 +254,13 @@ Implement and test the FSD-side process boundary for a locally bundled helper wi
 ### Locked implementation decisions
 
 - Packaging remains a locally bundled helper executable. The host never searches `$PATH`, invokes a shell, or accepts a user/defaults/environment override for the executable.
-- The helper URL is resolved from a fixed bundle-relative location and must remain inside the standardized bundle root. Missing/non-executable helper maps to `.unavailable`.
+- `TRUSTED_CODE_ROOT=FSD_INSTALLED_SIGNED_APP_BUNDLE`. Same-principal mutation, rename, replacement or rewrite of FSD's own application code bundle after trusted resolution is outside the Slice-03 host-seam threat model; this does not assert filesystem namespace immutability or atomic path protection by macOS/code signing.
+- Fixed bundle-relative resolution, canonical containment inside the standardized canonical bundle root, regular-file/executable validation and no PATH/shell/config override remain mandatory defense in depth. Missing/non-executable helper maps to `.unavailable`. Path validation is not an object-bound execution guarantee: pathname TOCTOU under bundle mutation still exists, and `Process` does not launch an opened descriptor.
+- Before real integration, Slice 07 must verify nested-helper signing/packaging, bundle placement, real artifact identity and distribution integrity, plus absence of persistent helper descendants. This seam supplies no process-tree containment guarantee.
 - The 0–4096 input bytes are written as raw stdin once, then stdin is closed. Do not base64/hex/JSON-wrap the sample, write it to disk, pass it in argv/environment, or expose the source path.
 - Stdout is a small versioned metadata envelope only: schema version, result kind, detected type, MIME type, confidence, detector version, model version. Lock a 4096-byte stdout cap and a 4096-byte stderr drain cap; stderr is never stored or shown. Oversize/malformed/unknown output is `.failed`.
 - `providerIdentifier` is a host-defined stable adapter identifier, independent from helper-reported detector/model versions. Helper output cannot override it.
-- Adapter cancellation terminates the child, closes pipes, reaps the process, and returns `.cancelled`. Crash/non-zero exit/malformed output returns `.failed`. Timeout policy is enforced by Slice 04's runtime, but cancellation must reliably stop the process.
+- Launch authorization and cancellation linearize under the same lock after side-effect-free runner creation. Cancellation winning before authorization forbids launch; authorization winning first permits launch, with later cancellation terminating any launched child, closing pipes, reaping and returning `.cancelled` if it wins before completion. Completion winning first preserves the deterministic result. The boundary is launch authorization, not the kernel's child-creation instruction; the lock is never held across `Process.run`. Crash/non-zero exit/malformed output returns `.failed`. Timeout policy is enforced by Slice 04's runtime, but cancellation must reliably stop the process.
 - No persistent helper daemon, background watcher, telemetry, network API, sampled-byte persistence, or automatic launch.
 - Tests use an injected fake process runner. They do not execute Magika, install dependencies, use an external command, or require a real helper binary.
 

@@ -231,6 +231,63 @@ final class BundledMagikaClassificationProviderTests: XCTestCase {
         XCTAssertTrue(runner.pipesClosed)
     }
 
+    func testCancellationDuringRunnerCreationPreventsLaunchAuthorization() async {
+        let creating = expectation(description: "runner factory entered")
+        let release = DispatchSemaphore(value: 0)
+        let runner = FakeHelperRunner(frames: [])
+        let provider = BundledMagikaClassificationProvider(bundleRoot: root, makeRunner: {
+            creating.fulfill()
+            XCTAssertEqual(release.wait(timeout: .now() + 5), .success)
+            return runner
+        }, canonicalize: { $0 }, isExecutable: { _ in true })
+        let task = Task { await provider.classify(LocalClassificationRequest(boundedPrefix: Data())!) }
+        await fulfillment(of: [creating], timeout: 5)
+        task.cancel()
+        release.signal()
+        let result = await task.value
+        XCTAssertEqual(result, .cancelled)
+        XCTAssertEqual(runner.events.filter { $0 == "launch" }.count, 0)
+        XCTAssertNil(runner.launchedURL, "no modeled child was created")
+        XCTAssertFalse(runner.reaped, "nonlaunched runner needs no reap")
+        XCTAssertTrue(runner.events.isEmpty)
+    }
+
+    func testLaunchAuthorizationFirstThenCancellationDuringLaunchCleansUp() async {
+        let launching = expectation(description: "authorized launch entered")
+        let release = DispatchSemaphore(value: 0)
+        let runner = FakeHelperRunner(frames: [], onLaunch: {
+            launching.fulfill()
+            XCTAssertEqual(release.wait(timeout: .now() + 5), .success)
+        })
+        let provider = BundledMagikaClassificationProvider(bundleRoot: root, makeRunner: { runner }, canonicalize: { $0 }, isExecutable: { _ in true })
+        let task = Task { await provider.classify(LocalClassificationRequest(boundedPrefix: Data())!) }
+        await fulfillment(of: [launching], timeout: 5)
+        task.cancel()
+        release.signal()
+        let result = await task.value
+        XCTAssertEqual(result, .cancelled)
+        XCTAssertEqual(runner.events, ["launch", "terminate", "closePipes", "reap"])
+        XCTAssertEqual(runner.launchedURL, root.appendingPathComponent(BundledMagikaClassificationProvider.helperRelativePath))
+        XCTAssertTrue(runner.terminated)
+        XCTAssertTrue(runner.pipesClosed)
+        XCTAssertTrue(runner.reaped)
+    }
+
+    func testCompletionFirstRemainsStableAfterTaskCancellation() async {
+        let runner = FakeHelperRunner(frames: [HelperProcessFrame(stdout: valid, stderrCount: 0, finished: true)])
+        let provider = BundledMagikaClassificationProvider(bundleRoot: root, makeRunner: { runner }, canonicalize: { $0 }, isExecutable: { _ in true })
+        let task = Task { await provider.classify(LocalClassificationRequest(boundedPrefix: Data())!) }
+        let completed = await task.value
+        guard case .classified = completed else { return XCTFail("completion must succeed") }
+        let events = runner.events
+        task.cancel()
+        let afterCancellation = await task.value
+        XCTAssertEqual(afterCancellation, completed)
+        XCTAssertEqual(runner.events, events, "no runner activity after completion")
+        XCTAssertTrue(runner.reaped)
+        XCTAssertTrue(runner.pipesClosed)
+    }
+
     func testCancellationBeforeLaunchAndCompletionOrdering() async {
         let runner = FakeHelperRunner(frames: [])
         let provider = BundledMagikaClassificationProvider(bundleRoot: root, makeRunner: { runner }, canonicalize: { $0 }, isExecutable: { _ in true })
@@ -246,9 +303,16 @@ final class BundledMagikaClassificationProviderTests: XCTestCase {
         XCTAssertEqual(ordering.complete(.unavailable), .unavailable)
         ordering.cancel()
         XCTAssertFalse(ordering.isCancelled, "completion is the locked linearization point")
+        XCTAssertFalse(ordering.authorizeLaunch(), "completion forbids later launch authorization")
         let cancelFirst = HelperCancellation()
         cancelFirst.cancel()
+        XCTAssertFalse(cancelFirst.authorizeLaunch())
         XCTAssertEqual(cancelFirst.complete(.unavailable), .cancelled)
+        let authorizationFirst = HelperCancellation()
+        XCTAssertTrue(authorizationFirst.authorizeLaunch())
+        XCTAssertFalse(authorizationFirst.authorizeLaunch(), "launch is authorized only once")
+        authorizationFirst.cancel()
+        XCTAssertEqual(authorizationFirst.complete(.unavailable), .cancelled)
     }
 
     func testConstructionAndDisabledProviderAreInert() async {
@@ -283,6 +347,7 @@ private final class FakeHelperRunner: HelperProcessRunner {
     private var frames: [HelperProcessFrame]
     private let exit: HelperProcessExit
     private let fault: String?
+    private let onLaunch: (() -> Void)?
     private let onPoll: ((HelperCancellation) -> Void)?
     private(set) var stdoutConsumed = 0
     private(set) var stderrConsumed = 0
@@ -293,14 +358,14 @@ private final class FakeHelperRunner: HelperProcessRunner {
     private(set) var reaped = false
     private(set) var pipesClosed = false
     init(frames: [HelperProcessFrame], exit: HelperProcessExit = HelperProcessExit(status: 0, crashed: false),
-         fault: String? = nil, onPoll: ((HelperCancellation) -> Void)? = nil) {
-        self.frames = frames; self.exit = exit; self.fault = fault; self.onPoll = onPoll
+         fault: String? = nil, onLaunch: (() -> Void)? = nil, onPoll: ((HelperCancellation) -> Void)? = nil) {
+        self.frames = frames; self.exit = exit; self.fault = fault; self.onLaunch = onLaunch; self.onPoll = onPoll
     }
     private func record(_ event: String) throws {
         events.append(event)
         if fault == event { throw NSError(domain: "fixture", code: 1) }
     }
-    func launch(executable: URL) throws { try record("launch"); launchedURL = executable }
+    func launch(executable: URL) throws { try record("launch"); launchedURL = executable; onLaunch?() }
     func deliverInputOnce(_ input: Data) throws { try record("deliver"); deliveries.append(input) }
     func closeInput() { events.append("closeInput") }
     func poll(stdoutBudget: Int, stderrBudget: Int, cancellation: HelperCancellation) throws -> HelperProcessFrame {
