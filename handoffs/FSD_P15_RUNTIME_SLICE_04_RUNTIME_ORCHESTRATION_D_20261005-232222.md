@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-05T23:22:22+07:00
-
 # P15 Slice 04 explicit runtime orchestration
 
 ## HOT
