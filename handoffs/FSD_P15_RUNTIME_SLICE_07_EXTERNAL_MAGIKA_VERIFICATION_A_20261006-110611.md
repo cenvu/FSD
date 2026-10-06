@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-06T11:06:11+07:00
-
 # P15 Slice 07 external Magika verification — Architect STOP
 
 ## HOT
