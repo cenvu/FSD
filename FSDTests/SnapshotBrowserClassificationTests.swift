@@ -433,6 +433,55 @@ final class SnapshotBrowserClassificationTests: XCTestCase {
         XCTAssertNil(model.classificationMessage)
     }
 
+    func testProductionMappingPreservesNoMatch() {
+        let identity = ClassificationRuntimeService.Identity(entryID: 2, runID: "no-match", generation: 1)
+        let completion = ClassificationRuntimeService.Completion(identity: identity, result: .classification(.noMatch, nil))
+        XCTAssertEqual(SnapshotBrowserModel.selectedEntryResult(.completed(completion)), .noMatch)
+    }
+
+    func testCurrentNoMatchIsNeutralWithoutRefreshOrFabricatedStatus() async throws {
+        let counters = Counters()
+        let delayGate = ClassificationTestGate()
+        let model = makeModel(counters: counters, delayGate: delayGate, result: .noMatch)
+        model.select(entryID: 2)
+        let details = try XCTUnwrap(model.selectedDetails)
+        let before = counters.refreshCount
+        await model.classifySelectedFile()
+        await delayGate.release()
+        XCTAssertEqual(model.classificationPhase, .idle)
+        XCTAssertEqual(model.classificationMessage, ClassificationUIText.noMatch)
+        XCTAssertEqual(model.classificationMessage, "No file type recognized.")
+        XCTAssertEqual(counters.refreshCount - before, 0)
+        XCTAssertEqual(model.selectedDetails, details, "current selection details are preserved in full")
+        XCTAssertNil(model.selectedDetails?.classification, "no persisted status fabricated")
+        XCTAssertEqual(try EntrySnapshotProbe.classificationRowCount(database: database), 0)
+        XCTAssertEqual(ClassificationUIText.absence, "Not classified.")
+    }
+
+    func testStaleNoMatchCannotAlterNewSelectionMessageOrDetails() async throws {
+        let counters = Counters()
+        let startGate = ClassificationTestGate()
+        let delayGate = ClassificationTestGate()
+        let model = makeModel(counters: counters, startGate: startGate, delayGate: delayGate, result: .noMatch)
+        model.select(entryID: 2)
+        let run = Task { await model.classifySelectedFile() }
+        await startGate.waitUntilEntered()
+        model.select(entryID: 3)
+        let details = try XCTUnwrap(model.selectedDetails)
+        let message = model.classificationMessage
+        let refreshes = counters.refreshCount
+        await startGate.release()
+        await run.value
+        await delayGate.release()
+        XCTAssertEqual(model.selectedEntryID, 3)
+        XCTAssertEqual(model.selectedDetails, details)
+        XCTAssertEqual(model.classificationMessage, message)
+        XCTAssertEqual(model.classificationPhase, .idle)
+        XCTAssertEqual(counters.refreshCount, refreshes)
+        XCTAssertNil(model.selectedDetails?.classification)
+        XCTAssertEqual(try EntrySnapshotProbe.classificationRowCount(database: database), 0)
+    }
+
     func testUnavailableShowsBoundedMessageNoRefresh() async {
         let counters = Counters()
         let model = makeModel(counters: counters, result: .unavailable)
@@ -495,7 +544,7 @@ final class SnapshotBrowserClassificationTests: XCTestCase {
         )
         XCTAssertEqual(withConfidence.confidenceLabel, "87.5%")
         // Bounded messages never expose paths or diagnostics.
-        for message in [ClassificationUIText.unavailable, ClassificationUIText.cancelled,
+        for message in [ClassificationUIText.noMatch, ClassificationUIText.unavailable, ClassificationUIText.cancelled,
                         ClassificationUIText.busy, ClassificationUIText.saveFailure] {
             XCTAssertFalse(message.contains("/"), "no private path in \(message)")
             XCTAssertFalse(message.lowercased().contains("stderr"))

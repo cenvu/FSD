@@ -125,6 +125,37 @@ final class BundledMagikaClassificationProviderTests: XCTestCase {
         XCTAssertEqual(provider.providerIdentifier, "fsd.bundled-helper-host.v1")
     }
 
+    func testValidNoMatchEnvelope() async {
+        let envelope = Data(#"{"schemaVersion":1,"resultKind":"no_match","detectedType":null,"mimeType":null,"confidence":null,"detectorVersion":null,"modelVersion":null}"#.utf8)
+        let (result, runner) = await classify(envelope)
+        XCTAssertEqual(result, .noMatch)
+        XCTAssertEqual(runner.deliveries, [Data()])
+        XCTAssertEqual(runner.events, ["launch", "deliver", "closeInput", "poll", "reap", "closePipes"])
+    }
+
+    func testNoMatchRejectsEachNonNullMetadataField() async throws {
+        let base: [String: Any] = [
+            "schemaVersion": 1, "resultKind": "no_match", "detectedType": NSNull(),
+            "mimeType": NSNull(), "confidence": NSNull(), "detectorVersion": NSNull(), "modelVersion": NSNull()
+        ]
+        for field in ["detectedType", "mimeType", "confidence", "detectorVersion", "modelVersion"] {
+            var envelope = base
+            envelope[field] = field == "confidence" ? 0.5 : "metadata"
+            let (result, runner) = await classify(try JSONSerialization.data(withJSONObject: envelope))
+            XCTAssertEqual(result, .failed, "no_match metadata must be null: \(field)")
+            XCTAssertTrue(runner.reaped)
+            XCTAssertTrue(runner.pipesClosed)
+        }
+    }
+
+    func testUnknownResultKindsFailAndClassifiedRequiresDetectedType() async {
+        for kind in ["unknown", "unrecognized", "not_classified", "classified"] {
+            let envelope = Data("{\"schemaVersion\":1,\"resultKind\":\"\(kind)\",\"detectedType\":null,\"mimeType\":null,\"confidence\":null,\"detectorVersion\":null,\"modelVersion\":null}".utf8)
+            let (result, _) = await classify(envelope)
+            XCTAssertEqual(result, .failed, "kind must fail without a recognized type: \(kind)")
+        }
+    }
+
     func testDeclaredUnavailableAndFailed() async {
         for (kind, expected) in [("unavailable", LocalClassificationProviderResult.unavailable), ("failed", .failed)] {
             let envelope = Data("{\"schemaVersion\":1,\"resultKind\":\"\(kind)\",\"detectedType\":null,\"mimeType\":null,\"confidence\":null,\"detectorVersion\":null,\"modelVersion\":null}".utf8)

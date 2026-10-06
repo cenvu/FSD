@@ -52,7 +52,7 @@ public struct LocalClassificationObservation: Sendable, Hashable {
 }
 
 /// The complete, closed outcome vocabulary of one classification attempt.
-/// Providers normally produce `classified`, `failed`, `unavailable` and
+/// Providers normally produce `classified`, `noMatch`, `failed`, `unavailable` and
 /// `cancelled`; FSD's pre-provider reader produces `sourceChanged` and
 /// `unsupportedEntry` (and may produce the other outcomes before any provider
 /// call). Nothing here carries a diagnostic string, path, or sampled byte.
@@ -63,6 +63,8 @@ public enum LocalClassificationProviderResult: Sendable, Hashable {
     case unsupportedEntry
     case unavailable
     case cancelled
+    /// The provider ran successfully but recognized no type; no metadata or row.
+    case noMatch
 }
 
 /// Future local adapters implement this protocol. It exposes no raw diagnostic

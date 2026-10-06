@@ -94,7 +94,7 @@ final class ClassificationRuntimeServiceTests: XCTestCase {
         XCTAssertEqual(probe.inputs.count, 0)
     }
 
-    func testAllSixOutcomesAndExactObservationProvenance() async throws {
+    func testAllSevenOutcomesAndExactObservationProvenance() async throws {
         let cases: [(BoundedClassificationSourceOutcome?, LocalClassificationProviderResult,
                      LocalClassificationProviderResult, Bool, String?)] = [
             (nil, .classified(Self.observation), .classified(Self.observation), true, "actual-provider"),
@@ -105,7 +105,8 @@ final class ClassificationRuntimeServiceTests: XCTestCase {
             (.unavailable, .classified(Self.observation), .unavailable, false, nil),
             (nil, .unavailable, .unavailable, false, nil),
             (.cancelled, .classified(Self.observation), .cancelled, false, nil),
-            (nil, .cancelled, .cancelled, false, nil)
+            (nil, .cancelled, .cancelled, false, nil),
+            (nil, .noMatch, .noMatch, false, nil)
         ]
         for (source, provided, expected, writes, identifier) in cases {
             let probe = RuntimeTestProbe()
@@ -132,6 +133,121 @@ final class ClassificationRuntimeServiceTests: XCTestCase {
                 }
             }
         }
+    }
+
+    func testNoMatchAndZeroBytePrefixRunProviderWithoutAppendOrPersistedMetadata() async throws {
+        let (directory, database) = try noMatchDatabase()
+        defer { database.close(); try? FileManager.default.removeItem(at: directory) }
+        let repository = EntryClassificationRepository(database: database)
+        for bytes in [Data([0, 255, 10]), Data()] {
+            let probe = RuntimeTestProbe()
+            let rowsBefore = try EntrySnapshotProbe.classificationRowCount(database: database)
+            var deps = dependencies(
+                probe: probe, source: .prefix(LocalClassificationRequest(boundedPrefix: bytes)!),
+                provider: RuntimeTestProvider { request in
+                    XCTAssertEqual(request.data, bytes)
+                    XCTAssertEqual(request.data.count, bytes.count)
+                    return .noMatch
+                }, deadline: RuntimeTestDeadline()
+            )
+            deps.append = { input in
+                _ = probe.append(input) // Existing append probe counts every call.
+                return try repository.append(input)
+            }
+            let result = await runtime.start(entryID: 2, dependencies: deps)
+            await runtime.waitForCleanup()
+            guard case let .completed(completion) = result else { return XCTFail("not completed") }
+            XCTAssertEqual(completion.result, .classification(.noMatch, nil))
+            XCTAssertEqual(probe.inferences, 1, "provider ran exactly once, including empty Data")
+            XCTAssertEqual(probe.inputs.count, 0, "append call count is zero")
+            XCTAssertEqual(try EntrySnapshotProbe.classificationRowCount(database: database) - rowsBefore, 0)
+            XCTAssertTrue(try repository.history(for: 2).isEmpty, "no type, MIME, confidence or provider/detector/model provenance persisted")
+            let state = await runtime.state
+            XCTAssertEqual(state, .terminal(completion))
+        }
+    }
+
+    func testInvalidatedGenerationRejectsLateNoMatchAppendAndPublication() async throws {
+        let (directory, database) = try noMatchDatabase()
+        defer { database.close(); try? FileManager.default.removeItem(at: directory) }
+        let repository = EntryClassificationRepository(database: database)
+        let entered = expectation(description: "noMatch provider active")
+        let gate = RuntimeTestGate(entered: entered)
+        let probe = RuntimeTestProbe()
+        var deps = dependencies(probe: probe, provider: RuntimeTestProvider { _ in
+            await gate.wait() // Noncooperative provider deliberately returns noMatch later.
+            XCTAssertTrue(Task.isCancelled)
+            return .noMatch
+        }, deadline: RuntimeTestDeadline())
+        deps.append = { input in
+            _ = probe.append(input)
+            return try repository.append(input)
+        }
+        let fixed = deps
+        let run = Task { await runtime.start(entryID: 2, dependencies: fixed) }
+        await fulfillment(of: [entered], timeout: 5)
+        let prior = await runtime.generation
+        await runtime.invalidate()
+        let generation = await runtime.generation
+        XCTAssertGreaterThan(generation, prior)
+        let result = await run.value // Cancellation publishes before the provider returns.
+        guard case let .completed(completion) = result else { return XCTFail("not completed") }
+        XCTAssertEqual(completion.result, .classification(.cancelled, nil))
+        await gate.release()
+        await runtime.waitForCleanup()
+        XCTAssertEqual(probe.inferences, 1)
+        XCTAssertEqual(probe.inputs.count, 0)
+        XCTAssertEqual(try EntrySnapshotProbe.classificationRowCount(database: database), 0)
+        let state = await runtime.state
+        XCTAssertEqual(state, .idle, "late noMatch must never publish as current")
+    }
+
+    func testCallerCancellationBeforeNoMatchCompletionWins() async {
+        let entered = expectation(description: "noMatch before completion authorization")
+        let gate = RuntimeTestGate(entered: entered)
+        let probe = RuntimeTestProbe()
+        let run = Task { await runtime.start(entryID: 2, dependencies: dependencies(
+            probe: probe, provider: RuntimeTestProvider { _ in .noMatch },
+            deadline: RuntimeTestDeadline(),
+            checkpoint: { if $0 == .beforePersistence { await gate.wait() } }
+        )) }
+        await fulfillment(of: [entered], timeout: 5)
+        run.cancel()
+        await gate.release()
+        let result = await run.value
+        await runtime.waitForCleanup()
+        guard case let .completed(completion) = result else { return XCTFail("not completed") }
+        XCTAssertEqual(completion.result, .classification(.cancelled, nil))
+        XCTAssertEqual(probe.inferences, 1)
+        XCTAssertEqual(probe.inputs.count, 0)
+        let state = await runtime.state
+        XCTAssertEqual(state, .idle)
+    }
+
+    func testTimeoutRemainsFailedWhenLateProviderReturnsNoMatch() async {
+        let entered = expectation(description: "provider before timeout")
+        let gate = RuntimeTestGate(entered: entered)
+        let clock = RuntimeTestDeadline()
+        let probe = RuntimeTestProbe()
+        let run = Task { await runtime.start(entryID: 2, dependencies: dependencies(
+            probe: probe, provider: RuntimeTestProvider { _ in
+                await gate.wait()
+                return .noMatch
+            }, deadline: clock
+        )) }
+        await fulfillment(of: [entered], timeout: 5)
+        clock.fire()
+        let result = await run.value
+        XCTAssertEqual(classification(result), .failed)
+        XCTAssertEqual(probe.inputs.count, 1)
+        assertFailedMetadata(probe.inputs.first)
+        XCTAssertEqual(probe.inputs.first?.providerIdentifier, "actual-provider")
+        let timedOut = await runtime.state
+        await gate.release()
+        await runtime.waitForCleanup()
+        let state = await runtime.state
+        XCTAssertEqual(state, timedOut, "late noMatch cannot replace the timeout")
+        XCTAssertEqual(probe.inputs.count, 1)
     }
 
     func testCancellationBeforeSourceResolutionDoesNotCallReader() async {
@@ -639,6 +755,20 @@ final class ClassificationRuntimeServiceTests: XCTestCase {
         let state = await runtime.state
         guard case let .completed(completion) = result else { return XCTFail("not completed") }
         XCTAssertEqual(state, .terminal(completion))
+    }
+
+    private func noMatchDatabase() throws -> (URL, CatalogDatabase) {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("Runtime-NoMatch-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let database = try CatalogDatabase(url: directory.appendingPathComponent("catalog.sqlite3"),
+                                           schemaURL: CatalogSchemaFixture.canonicalSchemaURL)
+        let snapshot = try SyntheticSnapshot.createSnapshot(database: database, volumeID: 1, session: 1)
+        try SyntheticSnapshot.insertEntries(database: database, snapshotID: snapshot, entries: [
+            SyntheticSnapshot.root(id: 1),
+            SyntheticSnapshot.SeedEntry(id: 2, parentID: 1, relativePath: "fixture.txt", name: "fixture.txt")
+        ])
+        try SyntheticSnapshot.complete(database: database, snapshotID: snapshot)
+        return (directory, database)
     }
 
     private func assertFailedMetadata(_ input: EntryClassificationInput?, file: StaticString = #filePath, line: UInt = #line) {

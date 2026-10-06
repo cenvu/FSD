@@ -286,7 +286,7 @@ actor ClassificationRuntimeService {
                     entryID: identity.entryID, classificationRunID: identity.runID, detectionStatus: .failed,
                     providerIdentifier: outcome == .failed && providerRan ? dependencies.provider.providerIdentifier : nil
                 )
-            case .unavailable, .cancelled: input = nil
+            case .unavailable, .cancelled, .noMatch: input = nil
             }
             do { return Result.classification(outcome, try input.map { try dependencies.append($0) }) }
             catch { return .repositoryFailure(RepositoryFailure(error)) }

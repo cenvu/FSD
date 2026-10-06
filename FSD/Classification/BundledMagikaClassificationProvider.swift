@@ -336,7 +336,7 @@ private struct HelperMetadataEnvelope {
         guard let fields = parser.object(), fields.count == 7,
               case .number("1")? = fields["schemaVersion"],
               case let .string(kind)? = fields["resultKind"],
-              ["classified", "unavailable", "failed"].contains(kind) else { return .failed }
+              ["classified", "no_match", "unavailable", "failed"].contains(kind) else { return .failed }
         let names = ["detectedType", "mimeType", "detectorVersion", "modelVersion"]
         var text: [String: String] = [:]
         for name in names {
@@ -361,6 +361,7 @@ private struct HelperMetadataEnvelope {
         }
         if kind != "classified" {
             guard text.isEmpty, confidence == nil else { return .failed }
+            if kind == "no_match" { return .noMatch }
             return kind == "unavailable" ? .unavailable : .failed
         }
         guard let detectedType = text["detectedType"] else { return .failed }

@@ -23,6 +23,7 @@ enum SelectedEntryClassificationResult: Sendable, Equatable {
     case busy
     case cancelled
     case unavailable
+    case noMatch
     case classifiedPersisted
     case failedPersisted
     case repositoryFailure
@@ -40,6 +41,7 @@ struct SelectedEntryClassificationControl: Sendable {
 /// diagnostics or provider internals ever reach visible text.
 enum ClassificationUIText {
     static let absence = "Not classified."
+    static let noMatch = "No file type recognized."
     static let unavailable = "Classification unavailable."
     static let cancelled = "Classification cancelled."
     static let busy = "Classification busy. Try again."
@@ -108,6 +110,11 @@ final class SnapshotBrowserModel: ObservableObject {
                                 runtime: ClassificationRuntimeService) async -> SelectedEntryClassificationResult {
         let provider = BundledMagikaClassificationProvider()
         let started = await runtime.start(entryID: entryID, database: database, provider: provider)
+        return selectedEntryResult(started)
+    }
+
+    /// Shared production mapping, exercised without launching a real helper.
+    static func selectedEntryResult(_ started: ClassificationRuntimeService.StartResult) -> SelectedEntryClassificationResult {
         switch started {
         case .busy:
             return .busy
@@ -127,6 +134,8 @@ final class SnapshotBrowserModel: ObservableObject {
                     return .unavailable
                 case .cancelled:
                     return .cancelled
+                case .noMatch:
+                    return .noMatch
                 }
             }
         }
@@ -208,6 +217,9 @@ final class SnapshotBrowserModel: ObservableObject {
         case .unavailable:
             classificationPhase = .idle
             classificationMessage = ClassificationUIText.unavailable
+        case .noMatch:
+            classificationPhase = .idle
+            classificationMessage = ClassificationUIText.noMatch
         case .classifiedPersisted, .failedPersisted:
             do {
                 if let refreshed = try classificationDetails(for: entryID) {

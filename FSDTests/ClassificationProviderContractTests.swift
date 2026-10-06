@@ -2,7 +2,7 @@ import XCTest
 @testable import FSD
 
 /// The provider-facing contract: bounded immutable Data only, async,
-/// cancellation-aware, six closed outcomes, no source capability of any kind.
+/// cancellation-aware, seven closed outcomes, no source capability of any kind.
 final class ClassificationProviderContractTests: XCTestCase {
     private var directory: URL!
     private var source: URL!
@@ -128,10 +128,10 @@ final class ClassificationProviderContractTests: XCTestCase {
         XCTAssertEqual(try EntrySnapshotProbe.classificationRowCount(database: database), 0)
     }
 
-    func testResultVocabularyIsExactlyTheSixLockedCases() {
+    func testResultVocabularyIsExactlyTheSevenLockedCases() {
         let observation = LocalClassificationObservation(detectedType: "x")
         let all: [LocalClassificationProviderResult] = [
-            .classified(observation), .failed, .sourceChanged, .unsupportedEntry, .unavailable, .cancelled
+            .classified(observation), .failed, .sourceChanged, .unsupportedEntry, .unavailable, .cancelled, .noMatch
         ]
         // No `default`: adding or removing a case breaks compilation here.
         let names = all.map { result -> String in
@@ -142,10 +142,17 @@ final class ClassificationProviderContractTests: XCTestCase {
             case .unsupportedEntry: return "unsupportedEntry"
             case .unavailable: return "unavailable"
             case .cancelled: return "cancelled"
+            case .noMatch: return "noMatch"
             }
         }
-        XCTAssertEqual(names, ["classified", "failed", "sourceChanged", "unsupportedEntry", "unavailable", "cancelled"])
-        XCTAssertEqual(Set(all).count, 6)
+        XCTAssertEqual(names, ["classified", "failed", "sourceChanged", "unsupportedEntry", "unavailable", "cancelled", "noMatch"])
+        XCTAssertEqual(Set(all).count, 7)
+    }
+
+    func testNoMatchHasNoPayloadPathOrDiagnostic() {
+        let result = LocalClassificationProviderResult.noMatch
+        XCTAssertTrue(Mirror(reflecting: result).children.isEmpty, "no associated metadata, bytes, path or diagnostic")
+        XCTAssertEqual(String(describing: result), "noMatch")
     }
 
     // MARK: - Supplementary source-text audit (text is the contract here)
