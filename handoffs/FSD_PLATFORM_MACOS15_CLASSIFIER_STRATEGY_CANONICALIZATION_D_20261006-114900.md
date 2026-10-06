@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-06T11:49:00+07:00
-
 # macOS 15 + classifier strategy canonicalization — Worker STOP on allowlist boundary
 
 ## HOT
