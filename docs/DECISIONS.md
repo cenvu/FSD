@@ -562,3 +562,28 @@ Task029 exposed a **semantic vocabulary gap before candidate build**: a provider
 `docs/ARCHITECTURE.md`, `docs/P15_RUNTIME_PLAN.md`, `docs/TEST_PLAN.md` and `docs/UX_UI_SPEC.md` now state seven typed outcomes with a 4-row-writing / 3-no-row persistence split. **ADR-034 `IMPLEMENTATION=PENDING`**: no Swift enum case, helper parser branch, runtime mapping, UI current-result handling or permanent test exists yet, and this ADR does not claim otherwise. Implementation requires a separate bounded task; the task029 filetype native feasibility spike remains **INCOMPLETE** and may be retried **only after** the accepted ADR-034 semantics are implemented and their tests accepted.
 
 This ADR **does not select or integrate** `filetype` or any other provider, authorizes no dependency, and is not a benchmark or comparison of candidates. `FILETYPE_SELECTED_FOR_PRODUCTION=NO` and `PROVIDER_INTEGRATION=NONE` remain true.
+
+## ADR-035 — filetype v1.1.3 bounded bundled-helper integration contract
+
+**Status:** Accepted (2026-10-06, Architect contract task `FSD_CLASSIFIER_FILETYPE_INTEGRATION_CONTRACT_032`, BRAIN-authorized after BRAIN accepted the task029S feasibility closure at publication `878d3396666a8dae00dda079046aafceb0d96e50`)
+
+### Context
+
+Tasks 029R and 029S established native feasibility for `github.com/h2non/filetype@v1.1.3` and closed its external facts: corrected Go writable-state containment (zero outside-scratch writes), reproducible arm64/minos 13.0 artifact compatible with the macOS 15+ floor, no interpreter/model/database/third-party module, zero observed helper network and descendants, closed engineering license/notice inventory, and an exactly reconciled 73-matcher / 74-registry inventory (`Unknown` is the matcher-less sentinel). The same evidence retained a real advisory: filetype v1.1.3 builds matcher priority through Go-map iteration, so a deliberately short ambiguous CFB prefix can classify as doc, xls or ppt across fresh processes.
+
+### Decision
+
+1. filetype v1.1.3 is selected as the **sole integration TARGET** (`INTEGRATION_TARGET=filetype_v1.1.3`). It is **NOT yet an accepted production provider** (`PRODUCTION_PROVIDER_ACCEPTED=NO`). Selection of a target authorizes no integration (`INTEGRATION_AUTHORIZED=NO`).
+2. Tasks 029R/029S established native feasibility and closed external facts. They do not establish production acceptance.
+3. The short ambiguous-CFB nondeterminism is real and is retained as a documented advisory. The production adapter neutralizes it before upstream matching: if the bounded input is at most 513 bytes and begins `D0 CF 11 E0`, the helper returns `no_match` (all metadata null) **without calling** `filetype.Match`. This is consistent with ADR-034 (successful execution, no single type truthfully recognizable) and requires no schema change.
+4. The upstream module remains unmodified (no fork, no patch, no `MatcherKeys` sorting/editing, no custom priority list, no manual category dispatch). All other non-oversize inputs call `filetype.Match` exactly once; oversize input (over 4096) fails before `Match`.
+5. Exact identities are pinned: module `v1.1.3`, Sum `h1:FKkx9QbD7HR/zjK1Ia5XiBsq9zdLi5Kf3zGyFTAFkGg=`, GoModSum `h1:319b3zT68BvV+WRj7cwy856M2ehB3HqNOt6sy1HndBY=`; toolchain `go1.27.1.darwin-arm64.tar.gz` from `https://go.dev/dl/` with SHA256 `ee215d57e0ec269c60cc9ceca68e6bda321ba9ee5afe24f4b0988703c2d87d12`; the notice set (filetype MIT, Go 1.27.1 LICENSE and PATENTS, linked Sun Microsystems `math/log.go` notice, re-inventoried for the final helper). The feasibility helper SHA256 `e7907f75...e2d6` is feasibility evidence only and is not the production helper SHA256, which is recorded only after two identical controlled builds.
+6. Normal Xcode builds consume one committed, audited native helper artifact and do not require Go, the Go module proxy or any network (`NORMAL_XCODE_REQUIRES_GO=NO`, `NORMAL_XCODE_REQUIRES_NETWORK=NO`). A separate controlled rebuild script exists only to reproduce or update the artifact.
+7. The production Swift provider is to be renamed `BundledFiletypeClassificationProvider` during implementation. The helper bundle path stays the provider-neutral `Contents/Helpers/FSDClassificationHostSeam`; provider identity remains host-owned (`fsd.bundled-helper-host.v1`).
+8. Integration requires a separate bounded implementation task (proposed `FSD_CLASSIFIER_FILETYPE_BUNDLED_HELPER_INTEGRATION_033`) governed by `docs/CLASSIFIER_FILETYPE_INTEGRATION_CONTRACT.md`, and then an independent audit (`FSD_CLASSIFIER_FILETYPE_INTEGRATION_AUDIT_034`). Only a successful independent audit may permit BRAIN to accept filetype as the real production provider and unblock Slice 08 prerequisite reasoning.
+9. No general determinism claim: available pinned realistic PNG/DOCX/XLSX/PPTX fixtures were single-valued, but the exact upstream pin has no realistic legacy DOC/XLS/PPT fixtures, so general legacy-Office determinism is not proven.
+10. All ADR-033/ADR-034 safety invariants are unchanged (Data-only 0...4096 bytes, no path/URL/handle/callback, read-only source, offline, no telemetry/sample persistence, seven typed outcomes, no schema change, no automatic classification, snapshot immutability).
+
+### Consequences
+
+`IMPLEMENTATION=NOT_IMPLEMENTED` and `AUDIT=NOT_AUDITED`: no helper source, binary, rename, Xcode phase, test or notice file exists, and this ADR claims none. ADR-033 decision 8 (rename only after a provider is selected) is satisfied for the rename in task033 only. Magika remains preserved historical candidate evidence (`BLOCKED_NON_EXCLUSIVE_CANDIDATE`). `FILETYPE_SELECTED_FOR_PRODUCTION=NO` stands until BRAIN accepts a passing independent audit.

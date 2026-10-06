@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-06T20:53:30+07:00
-
 # filetype v1.1.3 integration contract (task032) — PASS_WITH_ADVISORY
 
 ## HOT

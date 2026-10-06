@@ -388,6 +388,25 @@ MAGIKA_STATUS=BLOCKED_CANDIDATE (blocked, non-exclusive; not rejected, not appro
 
 The packaging decision below remains accepted and provider-independent: the classifier runs as a locally bundled helper process inside `FSD.app`, arm64, macOS 15+ compatible, offline and self-contained. No provider is selected here; provider selection requires a separate authoritative external research gate (`P15_RUNTIME_PLAN.md` Slice 07) and no compatibility may be assumed for any candidate before that gate verifies it (ADR-033).
 
+### Integration target (ADR-035, not an accepted provider)
+
+```text
+INTEGRATION_TARGET=filetype_v1.1.3
+PRODUCTION_PROVIDER_ACCEPTED=NO
+INTEGRATION=NOT_IMPLEMENTED;NOT_AUDITED
+```
+
+Intended layering (design constraint; nothing below exists yet):
+
+```text
+FSD Swift host (BoundedClassificationSourceReader reads <=4096 bytes, owns Data)
+  -> fixed bundled helper process (Contents/Helpers/FSDClassificationHostSeam, stdin only)
+  -> deterministic FSD ambiguity guard (len<=513 && prefix D0 CF 11 E0 -> no_match, no Match call)
+  -> filetype.Match (v1.1.3, unmodified, at most one call)
+```
+
+The guard receives no additional authority and reads no additional bytes. It is an FSD adapter truthfulness guard against a demonstrated upstream map-order ambiguity, not a forked detector. No universal classifier determinism is claimed: available pinned PNG/DOCX/XLSX/PPTX fixtures were single-valued, and legacy-Office determinism is not proven. Normal Xcode builds consume one committed native helper and require no Go or network. Full contract: `docs/CLASSIFIER_FILETYPE_INTEGRATION_CONTRACT.md`.
+
 ### Historical Magika packaging evaluation (retained as evidence; superseded as provider selection by ADR-033)
 
 The Magika file-type enrichment adapter packaging was evaluated across four shapes. This four-option analysis is preserved verbatim as the historical basis for the packaging decision. Its `macOS 13 arm64 fit` lines record an evaluation made against the then-current macOS 13 deployment floor; the current floor is macOS 15 (ADR-033), so those lines describe no current compatibility claim, and any future candidate must be verified against macOS 15+ instead:

@@ -597,6 +597,40 @@ implementation task and not in the ADR-034 canonicalization task:
   current `noMatch` completion; it is not an error and shows no detected type
 - a stale `noMatch` completion cannot alter the new selection or browser
 
+### Required filetype v1.1.3 real-helper integration and audit tests (ADR-035)
+
+Forward-looking only (`INTEGRATION=NOT_IMPLEMENTED`, `NOT_AUDITED`). These are required
+of the later bounded implementation task and its independent audit; historical counts
+above are not rewritten. Full contract: `docs/CLASSIFIER_FILETYPE_INTEGRATION_CONTRACT.md`
+sections 19-22. All run the actual committed helper (directly and through the Swift host
+seam); no fake-runner result substitutes, and a missing helper fails rather than skips.
+
+- known PNG classified; unknown bytes `no_match`; empty input `no_match`
+- exact 4096 bytes bounded and processed; 4097 bytes rejected before `Match`
+- short-CFB advisory regression (prefix `D0 CF 11 E0`, lengths 4, 32 and 513): all
+  deterministic `no_match` across fresh helper launches, zero `Match` calls. **This
+  regression must never be deleted or weakened because it looks like an odd synthetic
+  edge: it guards a demonstrated real upstream map-order nondeterminism.**
+- synthetic CFB of length 514 or more: DOC discriminant -> `doc`, XLS -> `xls`,
+  PPT -> `ppt`; a non-matching 514+ CFB probe must be single-valued across launches
+  (else STOP); no general legacy DOC/XLS/PPT fixture claim
+- available pinned DOCX, XLSX, PPTX and PNG fixtures each repeated across fresh helper
+  launches and single-valued
+- strict seven-field envelope; stdout cap; stderr cap; zero network observation; zero
+  descendants; normal exit; crash; SIGTERM/cancellation; five-second host timeout
+- no stale publication; no row for `noMatch`; exact `detectorVersion`
+  (`github.com/h2non/filetype@v1.1.3`); `modelVersion` nil; `confidence` nil;
+  source/path authority absent; sample persistence absent
+- built bundle: helper exactly at `Contents/Helpers/FSDClassificationHostSeam`, arm64,
+  `minos` at most 15, manifest/hash correspondence for the unsigned artifact, notice
+  resource present, no Go toolchain/cache/module source/model/database, no unexpected
+  executable; ad-hoc signing/package inspection of a scratch copy (no Developer
+  ID/notarization claim)
+- full validation: clean Debug, focused real-helper tests, existing classification
+  focused tests, full Debug suite, clean Release, `git diff --check`, canonical checker
+- independent audit `FSD_CLASSIFIER_FILETYPE_INTEGRATION_AUDIT_034` is mandatory before
+  Slice 08
+
 ### Adversarial Provider Test
 
 Verify that a provider cannot escape FSD's bounded-byte authority using a fake/hostile provider implementation (analogous to `FSDTests/ClassificationEnrichmentTests.swift`'s existing `HostileDiagnosticProvider`). The fake provider must attempt all three of the following violations deliberately, and the test passes only if all three attempts fail to have any effect:

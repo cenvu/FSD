@@ -656,6 +656,28 @@ No separate audit is required solely for this mechanical test slice if all gates
 
 Resolve the external facts required to replace Slice 03's tested host seam with a real locally bundled classifier helper. This gate is provider-neutral: no provider is selected by it, and it exists to verify whichever candidate a separate authoritative research task puts forward. This file is deliberately a stop gate, not authorization to browse, download, install, vendor, build, or modify production code.
 
+### Current status (task032, 2026-10-06) — filetype v1.1.3 integration target
+
+```text
+EXTERNAL_FEASIBILITY_FACTS=CLOSED_FOR_SELECTED_TARGET(filetype_v1.1.3; tasks 029R STOP + 029S PASS_WITH_ADVISORY)
+INTEGRATION_TARGET=filetype_v1.1.3
+PRODUCTION_PROVIDER_ACCEPTED=NO
+INTEGRATION=NOT_IMPLEMENTED
+INTEGRATION_AUDIT=NOT_AUDITED
+SLICE08=NOT_STARTED;BLOCKED_UNTIL_INDEPENDENT_AUDIT_PASSES_AND_BRAIN_ACCEPTS
+```
+
+Authority: ADR-035 and `docs/CLASSIFIER_FILETYPE_INTEGRATION_CONTRACT.md`. The external candidate facts below are now closed for filetype v1.1.3 only; they do not generalize to other candidates. ADR-034 `noMatch` runtime semantics were implemented and accepted separately (task031). The Magika task025 STOP evidence below is preserved unchanged as historical candidate evidence. Slice 07's "no new parallel planning document" restriction is satisfied by the Owner/BRAIN-authorized single contract document named above; no other planning document is created.
+
+Exact bounded implementation contract (4 steps; each is gated by its own accepted Worker return, and no step self-authorizes the next):
+
+1. **Task033 step 1 — controlled helper source/artifact construction.** Create the `Tools/FSDClassificationHelper/` Go sources, `scripts/build_classification_helper.sh`, the committed `FSD/Helpers/FSDClassificationHostSeam` artifact, its manifest and `THIRD_PARTY_NOTICES.txt`; official go1.27.1 archive SHA-verified before extraction; fully scratch-contained Go state; two byte-identical clean builds; arm64/minos/dylib checks; final linked-notice inventory (STOP if it differs).
+2. **Task033 step 2 — Xcode bundle/provider wiring plus deterministic CFB guard.** One Copy Files phase to `Contents/Helpers`, notice resource, rename to `BundledFiletypeClassificationProvider`, `SnapshotBrowserView.swift` wiring; the guard `len<=513 && prefix D0CF11E0 -> no_match` executes before `filetype.Match`.
+3. **Task033 step 3 — real-helper integration/security/package tests.** The `docs/TEST_PLAN.md` section 9 real-helper and bundle requirements, run against the actual helper through the existing host seam; full validation set and bounded ad-hoc signing check.
+4. **Task034 — independent audit.** `FSD_CLASSIFIER_FILETYPE_INTEGRATION_AUDIT_034` by a separate reviewer; only a pass plus BRAIN acceptance can accept filetype as the production provider.
+
+Do not start Slice 08. Proposed next after task032 acceptance: `FSD_CLASSIFIER_FILETYPE_BUNDLED_HELPER_INTEGRATION_033` (not started).
+
 ### Unresolved external prerequisite
 
 `EXTERNAL VERIFICATION REQUIRED`; Architect escalation is required before integration. This is a technical prerequisite, not the active control gate.
