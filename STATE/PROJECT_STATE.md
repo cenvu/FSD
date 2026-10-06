@@ -4,18 +4,20 @@ STATE_VERSION=1.0.0
 PROJECT=FSD
 CURRENT_PHASE=DEMO_SPRINT
 ACTIVE_WORKSTREAM=FSD_DEMO_CRITICAL_PATH
-STATUS=RUSH_SPRINT_LEAN;FILETYPE_FEASIBILITY_STOP_ACCEPTED;UNKNOWN_RESULT_ARCHITECTURE_DECISION_REQUIRED
-CURRENT_GATE=FSD_CLASSIFIER_UNKNOWN_RESULT_SEMANTICS_ADR
-BLOCKERS=UNKNOWN_RESULT_VOCABULARY_GAP
+STATUS=RUSH_SPRINT_LEAN;OWNER_NOMATCH_DECISION_ACCEPTED;NOMATCH_CANONICALIZATION_AUTHORIZED
+CURRENT_GATE=FSD_CLASSIFIER_NOMATCH_SEMANTICS_CANONICALIZATION_030
+BLOCKERS=NONE
 LAST_ACCEPTED_TASK=FSD_CLASSIFIER_PROVIDER_SELECTION_ADVISOR_028
 LAST_ACCEPTED_HEAD=0e0cae6ca4843b922a574480da28004e841b3076
 AUTHORITY_PTRS=AGENTS.md|docs/BRAIN_OPERATOR.md|docs/AGENT.md|docs/UX_UI_SPEC.md|docs/PRD.md|docs/PRODUCT_STATE.md|docs/MVP_PLAN.md|docs/ARCHITECTURE.md|docs/DECISIONS.md|docs/DEPENDENCY_AND_LICENSE_REVIEW.md|docs/SECURITY_AND_READ_ONLY_POLICY.md|docs/TEST_PLAN.md|docs/P15_RUNTIME_PLAN.md
 PARKED_PRODUCT_WORKSTREAM=MAGIKA_INTEGRATION_BLOCKED_AT_025
-EXACTLY_ONE_NEXT_DECISION=OWNER_DECISION
+EXACTLY_ONE_NEXT_DECISION=ACTION(FSD_CLASSIFIER_NOMATCH_SEMANTICS_CANONICALIZATION_030)
 
-Accepted-state provenance: BRAIN adjudication at 2026-10-06T18:15:00+07:00.
-Task 029 scratch-only filetype feasibility spike is accepted as STOP at publication 19ec81f376a0884d11a5989ebe39a3f3950f6037.
-The stop is semantic and mandatory, not a native-build failure. Canonical provider/runtime/helper contracts contain no explicit no-match/unknown result. The Slice03 helper envelope accepts classified, unavailable and failed; classified requires detectedType. Existing unavailable semantics represent missing/disabled provider or unavailable source/helper conditions and do not authorize a successful detector returning no match.
-No network, toolchain, module, helper build or candidate execution occurred. No production/test/docs/project/schema/dependency/helper artifact mutation occurred. The remaining 18 feasibility proofs are unproven and must not be inferred from research evidence.
-Continuing with filetype, infer, libmagic or another honest detector requires an explicit product/architecture decision for how a provider-level no-match result is represented. BRAIN recommends a dedicated no-match result with no persisted classification row and neutral UI semantics, but this would change the previously locked six-outcome provider/runtime contract and therefore requires Owner approval before canonicalization or repair.
-No alternate provider retry, runtime vocabulary repair or integration is authorized until the Owner decision is made.
+Accepted-state provenance: Owner decision accepted by BRAIN at 2026-10-06T18:14:55+07:00 following task029 STOP.
+Owner approved an explicit noMatch classification outcome to close UNKNOWN_RESULT_VOCABULARY_GAP.
+Canonical intended semantics to be projected by task030: Swift provider/runtime outcome .noMatch; helper wire resultKind "no_match"; meaning the provider executed successfully on the FSD-supplied bounded input but recognized no type. noMatch is distinct from unavailable, failed and cancelled; it is not a fabricated classified type.
+Persistence semantics: noMatch writes no entry_classifications row and therefore stores no provider/detector/model provenance. The inspector remains row-neutral ("Not classified") while the explicit current action may show a bounded transient neutral message such as "No file type recognized." No raw diagnostics or sampled bytes are stored or shown.
+The existing four row-writing outcomes remain unchanged. unavailable and cancelled remain no-row outcomes; busy remains runtime control state only and is not a LocalClassificationProviderResult.
+The accepted source-authority, bounded 4096-byte Data-only, offline/no-network, read-only, snapshot immutability, cancellation, timeout, single-flight and helper-process security contracts remain unchanged.
+Task030 is authorized as docs/ADR canonicalization only. It must not modify Swift/tests/schema/Xcode/dependencies or resume filetype acquisition/build. After task030 acceptance, a separate bounded implementation/repair task will add permanent code/tests for noMatch before task029 feasibility is retried.
+Owner-authorized RUSH/SPRINT/LEAN progression remains active.
