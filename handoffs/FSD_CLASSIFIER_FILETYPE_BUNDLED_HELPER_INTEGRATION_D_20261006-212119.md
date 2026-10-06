@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-06T21:21:19+07:00
-
 # filetype bundled-helper integration — STOP (scope gap)
 
 ## HOT
