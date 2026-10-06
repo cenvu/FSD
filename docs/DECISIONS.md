@@ -442,7 +442,9 @@ Runtime implementation is **NOT STARTED / INACTIVE**, current schema remains
 **v8**, and the schema change required below needs separate authorization
 before runtime implementation. No migration or runtime is implemented by this ADR.
 
-The Magika file-type enrichment adapter packaging was evaluated across four shapes:
+The Magika file-type enrichment adapter packaging was evaluated across four shapes.
+
+**Supersession amendment (2026-10-06, ADR-033): provider commitment superseded, packaging decision retained.** ADR-032's Magika-specific provider commitment is superseded: no provider is currently selected and future selection is provider-neutral. Magika remains a blocked, non-exclusive candidate; its task-025 verification STOP is preserved as prior candidate evidence and is neither a rejection nor an approval. ADR-032's packaging/process-isolation decision — a locally bundled helper executable inside `FSD.app`, arm64, offline, self-contained, separately crash-isolated — remains accepted, now against a macOS 15+ floor. The historical four-option evaluation below is preserved as the basis of that packaging decision and records the macOS 13 floor current when it was written; it defines no current compatibility claim and no candidate may assume macOS 15 compatibility before the Slice 07 gate verifies it. All bounded-byte, read-only, provenance and snapshot-isolation invariants below are unchanged.
 
 1. **Native in-process library/model embedding:**
    - **Offline behavior:** Fully offline.
@@ -505,3 +507,24 @@ Classification will be bounded to a single 4096-byte prefix read per file (PROPO
 
 Conclusion: `SCHEMA CHANGE REQUIRED BEFORE RUNTIME`.
 Exactly one minimal missing field, `provider_identifier`, is required to record which adapter/process produced the row, independent of the algorithm and model versions. `detector_version` must not be overloaded to carry this fact because it would merge two orthogonal facts, forcing future queries to rely on an undocumented string convention to disentangle "which adapter" from "which detector".
+
+## ADR-033 — macOS 15+ deployment floor and provider-neutral classification strategy
+
+**Status:** Accepted (2026-10-06, Owner decision)
+
+**Owner decision and provenance:** the Owner changed the minimum supported macOS deployment from 13+ to 15+ and selected a provider-neutral path for future local classifier selection, after BRAIN accepted the task-025 Magika verification STOP (blocked on unresolved redistribution rights, exact artifact SHA256 closure, the then-macOS13 compatibility proof and complete native-runtime license/notice/resource closure) and after Worker task 026 correctly stopped before mutation because active macOS13 authority existed outside its allowlist. Recorded in `STATE/EVENTS.jsonl` as the Owner decision at 2026-10-06T11:39:53+07:00 and authorized for canonicalization as `FSD_PLATFORM_MACOS15_CLASSIFIER_STRATEGY_CANONICALIZATION_RESCOPE_026A`.
+
+### Decision
+
+1. FSD's minimum supported OS is now **macOS 15 (Sequoia) or later**. Current product wording is "macOS 15 Sequoia or later"; the Xcode deployment target is `MACOSX_DEPLOYMENT_TARGET = 15.0`. Architecture remains Apple Silicon `arm64` only, and the Swift 5.9+ / SwiftUI shell / AppKit large-tree / SQLite-canonical / single self-contained `.app` invariants are unchanged.
+2. This **supersedes every active** product, architecture, governance and build claim of a macOS 13 minimum — including `macOS 13+`, `macOS 13`, "Ventura or later", `MACOSX_DEPLOYMENT_TARGET = 13.0`, the `Platform invariant` line in `docs/AGENT.md`, and the FSKit exclusion rationale that rested on FSKit's macOS 15+ floor exceeding FSD's macOS 13 minimum. Historical Handoffs, dated receipts and prior ADR evaluation bodies remain immutable historical evidence and are not rewritten.
+3. ADR-032's **packaging and process-isolation decision remains accepted**: the classifier runs as a locally bundled helper process inside `FSD.app`, arm64, offline, self-contained, separately crash-isolated, never discovered via `$PATH` and never requiring a Python runtime, Homebrew, or any user/system-installed classifier. The Slice 03 host seam remains accepted infrastructure.
+4. ADR-032's **Magika-specific provider commitment is superseded**. The current strategy is `PROVIDER_NEUTRAL_LOCAL_CLASSIFIER`: no provider is selected by this ADR.
+5. **Magika remains a blocked candidate** — `BLOCKED_NON_EXCLUSIVE_CANDIDATE` — not rejected and not approved. Its task-025 evidence is preserved exactly: native bounded byte-slice fit was supported and detector/model provenance looked feasible, while model redistribution rights, exact model/resource SHA256 closure, the then-macOS13 compatibility proof and complete native-runtime license/notice/resource closure remained unresolved. Those four gaps were facts about that candidate at that time and are **not** converted into permanent generic blockers for every future candidate.
+6. **Future provider selection requires a separate authoritative external research gate** (`docs/P15_RUNTIME_PLAN.md` Slice 07, now provider-neutral) verifying, per candidate: license and redistribution rights, exact artifact identity and checksums, **macOS 15 arm64** compatibility, native runtime/dependency and resource closure, bounded in-memory input API fit, offline/no-network/no-telemetry behavior, process-tree behavior, output/provenance mapping, and bundle/signing placement. No candidate may be assumed macOS 15 compatible before that gate proves it.
+7. **All classification safety invariants remain unchanged**: explicit selected-entry invocation only; FSD-owned bounded `Data` input with a single prefix read of at most 4096 bytes; the provider never receives path, URL, file descriptor, `FileHandle`, filesystem resolver, source callback or any additional-byte callback; FSD owns the source bytes and source media stay read-only; no network, telemetry, watcher, backfill, daemon, automatic classification, sampled-byte persistence, sampled-byte hashing or sampled-byte logging; classification is inferred metadata only; snapshot facts are immutable; and a detected content type is never historical content verification.
+8. **No provider is selected by this ADR** and **no real helper integration is authorized by this ADR**. Naming of existing `Magika`-containing Swift/Xcode identifiers is implementation history and does not select or imply a provider; a future integration task may address naming only after a provider is actually selected.
+
+### Consequences
+
+Product, architecture, plan, test, UX, security, governance and build authorities now state the macOS 15+ floor and a provider-neutral future classifier gate. Slice 08's prerequisite is a real audited bundled classifier helper rather than a named provider. The FSKit filesystem exclusion stands on its app-extension/user-approval ground alone; the deployment-floor ground is superseded and must not be cited again.

@@ -505,7 +505,7 @@ diagnostic suppression, disabled-provider no-op behavior, metadata-only capture
 and export, and comparison isolation. Ordinary workflows create zero
 classification rows; rows are created only by explicit enrichment tests.
 Classification remains excluded from the canonical JSON export and comparison
-semantics. Magika inference is **not active**: no model, dependency, network,
+semantics. Local classifier inference is **not active**: no model, dependency, network,
 automatic payload read or old-snapshot backfill exists.
 
 Phase 1.5 execution evidence: fresh Debug full suite **293 executed, 290
@@ -529,7 +529,7 @@ It independently reproduced the full Debug suite (293 executed, 290 passed,
 and the Auditor's 59-test selection are distinct historical runs, not counts
 to merge. Deferred manual acceptance and inactive runtime remain unchanged.
 
-## 9. Future Magika runtime adapter test plan (not yet implemented)
+## 9. Local classifier runtime test plan (not yet implemented)
 
 - exact byte ceiling enforcement (4096 bytes)
 - exact byte boundary (a file of exactly the ceiling size vs. one byte over)

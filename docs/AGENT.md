@@ -15,7 +15,7 @@ FSD — FishSock Differ is a metadata-only, read-only catalog and comparison app
 
 ## Platform invariant
 
-- macOS 13+
+- macOS 15+
 - Apple Silicon arm64 only for initial releases
 - Swift 5.9+
 - SwiftUI shell

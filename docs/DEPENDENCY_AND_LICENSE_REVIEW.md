@@ -12,7 +12,7 @@ FSD must ship as **one self-contained `.app`** that reads APFS, HFS+, FAT16, FAT
 
 ## 2. The scope-changing finding: most of the list is already native
 
-Before evaluating third-party libraries, the first question has to be "does macOS already do this without FSD's help?" It does, for most of the list, across the entire macOS 13–26 range FSD targets:
+Before evaluating third-party libraries, the first question has to be "does macOS already do this without FSD's help?" It does, for most of the list, across the entire macOS 15–26 range FSD targets:
 
 | Filesystem | macOS native support | Mechanism | Requires user install? |
 |---|---|---|---|
@@ -89,7 +89,7 @@ Excluded by the user's explicit constraint: these require the user to install an
 | License | N/A — Apple system framework |
 | Packaging | An FSKit reader ships as an **app extension** the user approves once in System Settings — this is precisely the category ("app extensions") the task's explicit constraint rules out, regardless of macOS version |
 
-**Recommendation: excluded**, for two independent reasons: (a) it requires a macOS 15+ floor, which is above FSD's stated macOS 13+ minimum, and (b) FSKit extensions are packaged and approved as app extensions, which the user has explicitly said FSD must not require. Recorded here so the exclusion is deliberate and documented, not a research gap — this is the one candidate the task brief did not explicitly name but that a reasonable "current options" search surfaces immediately, so it needs an explicit ruling.
+**Recommendation: excluded**, on one still-decisive reason: (b) FSKit extensions are packaged and approved as app extensions, which the user has explicitly said FSD must not require — this remains independent of any macOS version. The former reason (a) is **SUPERSEDED**: it read that FSKit's macOS 15+ floor sat above FSD's stated macOS 13+ minimum, and FSD's minimum supported deployment is now macOS 15+ (ADR-033), so reason (a) is no longer an exclusion ground and must not be cited again. The exclusion itself is unchanged: FSKit stays out. Recorded here so the exclusion is deliberate and documented, not a research gap — this is the one candidate the task brief did not explicitly name but that a reasonable "current options" search surfaces immediately, so it needs an explicit ruling.
 
 ### 3.6 UDF-specific libraries
 

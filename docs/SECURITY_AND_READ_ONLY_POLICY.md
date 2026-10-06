@@ -23,7 +23,7 @@ As of Milestone 3 these are the only write calls in the production target, and e
 
 ### 2.1 Bounded Byte Reads for Future Classification (Not Yet Implemented)
 
-The Phase 1.5 Magika runtime adapter will perform local reads under strict constraints:
+The Phase 1.5 local classifier runtime will perform local reads under strict constraints:
 - It uses bounded byte-range reads only (a single 4096-byte prefix read PROPOSED).
 - It never reads full file payloads and never computes content hashes.
 - Bytes read for classification are never written to storage, never logged to any diagnostic surface, and never persisted in any outcome.

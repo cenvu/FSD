@@ -23,7 +23,7 @@ See canonical target details in [UX_UI_SPEC.md](UX_UI_SPEC.md).
 
 ## Implemented capabilities
 
-- Native macOS 13+ arm64 SwiftUI app and XCTest target in `FSD.xcodeproj`.
+- Native macOS 15+ arm64 SwiftUI app and XCTest target in `FSD.xcodeproj`.
 - SQLite catalog schema **v8**; explicit transactional v4→v5 (both known v4
   variants), v5→v6, v6→v7 and v7→v8 migrations. Fresh and migrated catalogs
   converge. `schema.sql` creates fresh catalogs only; `CatalogMigrations` moves
@@ -68,7 +68,10 @@ See canonical target details in [UX_UI_SPEC.md](UX_UI_SPEC.md).
 - HTML export, automatic mount detection/capture, login-item support, full volume
   identity service, EmbeddedRawProvider/reader-helper production integration and
   physical raw-device access. These remain scoped roadmap requirements, not claims.
-- **Magika runtime NOT STARTED / INACTIVE.** No installed/downloaded model,
+- **Local classifier runtime NOT STARTED / INACTIVE.** No provider is selected;
+  the current strategy is provider-neutral and Magika remains a blocked,
+  non-exclusive candidate with its task-025 verification evidence preserved.
+  No installed/downloaded model,
   dependency or inference. The present provider seam still exposes `sourceURL`
   and `byteBudget`; it is not the future Data-only reader/runtime. Schema v8 has
   detector/model provenance but no `provider_identifier`; provider identity is
@@ -106,7 +109,7 @@ are preserved. Neither is repaired by documentation consolidation.
 
 Manual acceptance remains **NOT PERFORMED — DEFERRED BY OWNER**; overall MVP
 approval and notarized/distributable release readiness are **NOT CLAIMED**.
-Internal alpha remains local-only macOS 13+ Apple Silicon (ADR-006); local
+Internal alpha remains local-only macOS 15+ Apple Silicon (ADR-006); local
 development needs no Apple Developer account, signing or notarization.
 
 ## Baseline evidence retrieval

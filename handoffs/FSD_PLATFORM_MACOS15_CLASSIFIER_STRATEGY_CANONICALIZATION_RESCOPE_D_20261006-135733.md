@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-06T13:57:33+07:00
-
 # macOS 15+ deployment floor and provider-neutral classifier canonicalization — Worker return
 
 ## HOT

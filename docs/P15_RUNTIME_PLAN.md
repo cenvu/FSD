@@ -8,7 +8,7 @@ ADR-032 in [DECISIONS.md](DECISIONS.md) and [ARCHITECTURE.md](ARCHITECTURE.md)
 §9a own the approved design. [TEST_PLAN.md](TEST_PLAN.md) §9 owns validation
 requirements; [SECURITY_AND_READ_ONLY_POLICY.md](SECURITY_AND_READ_ONLY_POLICY.md)
 owns source safety. Numeric runtime limits remain proposed implementation
-constraints, not measurements of actual Magika behavior.
+constraints, not measurements of actual classifier behavior.
 
 ## Sequence and independent boundaries
 
@@ -39,7 +39,7 @@ Old filenames below are historical lookup keys, not live file references.
 | `TODO_GEMINI_P15_RUNTIME_IMPL_04.md` | Slice 04 — Runtime orchestration, cancellation, and six outcomes |
 | `TODO_GEMINI_P15_RUNTIME_IMPL_05.md` | Slice 05 — Minimal selected-entry UI |
 | `TODO_GEMINI_P15_RUNTIME_IMPL_06.md` | Slice 06 — Cross-workflow and security regression matrix |
-| `TODO_GEMINI_P15_RUNTIME_IMPL_07.md` | Slice 07 — External Magika integration gate |
+| `TODO_GEMINI_P15_RUNTIME_IMPL_07.md` | Slice 07 — External classifier integration gate |
 | `TODO_GEMINI_P15_RUNTIME_IMPL_08.md` | Slice 08 — Whole-runtime verification and canonical Handoff |
 
 ## Slice 01 — Schema v9 and provider provenance
@@ -597,32 +597,35 @@ On any production defect, missing injection seam, flaky race, or unprovable requ
 
 No separate audit is required solely for this mechanical test slice if all gates pass. Its coverage ledger is mandatory input to the external integration gate and the final independent audit.
 
-## Slice 07 — External Magika integration gate
+## Slice 07 — External classifier integration gate
 
 ### Purpose
 
-Resolve the external facts required to replace Slice 03's tested host seam with a real locally bundled Magika helper. This file is deliberately a stop gate, not authorization to browse, download, install, vendor, build, or modify production code.
+Resolve the external facts required to replace Slice 03's tested host seam with a real locally bundled classifier helper. This gate is provider-neutral: no provider is selected by it, and it exists to verify whichever candidate a separate authoritative research task puts forward. This file is deliberately a stop gate, not authorization to browse, download, install, vendor, build, or modify production code.
 
 ### Unresolved external prerequisite
 
 `EXTERNAL VERIFICATION REQUIRED`; Architect escalation is required before integration. This is a technical prerequisite, not the active control gate.
 
-Repository evidence cannot establish the exact upstream license/model redistribution terms, supported native macOS arm64 embedding/build shape, pinned source/model artifact identities, helper API, or detector/model version reporting. The accepted design did not verify those external Magika facts. Inventing filenames, checksums, build flags, target inputs, or an output mapping would violate the audited design.
+Repository evidence cannot establish the exact upstream license/model redistribution terms, supported native macOS arm64 embedding/build shape, pinned source/model artifact identities, helper API, or detector/model version reporting. The accepted design did not verify those external candidate facts. Inventing filenames, checksums, build flags, target inputs, or an output mapping would violate the audited design.
+
+Prior candidate evidence (preserved, not a permanent generic blocker): Slice 07 was first executed against Magika as the then-named candidate and returned STOP with four unresolved items — model redistribution rights, exact model/resource SHA256 closure, the then-macOS13 compatibility proof, and complete native-runtime license/notice/resource closure — while its native bounded byte-slice fit and detector/model provenance feasibility were supported. Those items are facts about that candidate at that time. Any future candidate is verified on its own authoritative evidence against the current macOS 15+ floor; the four gaps must not be restated as failures every unrelated provider automatically inherits.
 
 ### Prerequisites
 
 - Slices 01–06 are merged and green.
 - CONTROL explicitly authorizes a separate external-verification session.
 - That session starts from the exact accepted base and preserves the fixed locally bundled helper decision, bounded raw-byte host contract, no network/telemetry, and self-contained app invariant.
+- The candidate is named by that separate research task. This gate selects nothing and pre-approves nothing.
 
 ### Locked decisions that external verification may not overturn
 
 - Provider input is only the already-read 0–4096-byte prefix; no path/URL/handle/callback.
-- Helper is bundled inside the app, arm64/macOS 13 compatible, fully offline, separately crash-isolated, and never discovered via `$PATH` or user installation.
+- Helper is bundled inside the app, arm64 and macOS 15+ compatible, fully offline, separately crash-isolated, and never discovered via `$PATH` or user installation.
 - No Python/runtime dependency may be introduced without an explicit new architecture decision; current audited packaging ruled that shape out.
 - Model/detector/provider versions are distinct and exact; helper output cannot set provider identity.
 - No source write, sample persistence/hash/logging, network, telemetry, watcher, backfill, daemon, or automatic invocation.
-- Existing Slice 03 IPC caps/result envelope are the host contract. If verified Magika cannot fit it, stop for architecture review rather than changing it in an implementation task.
+- Existing Slice 03 IPC caps/result envelope are the host contract. If the verified candidate cannot fit it, stop for architecture review rather than changing it in an implementation task.
 
 ### Files/modules the Architect may modify in this gate
 
@@ -631,13 +634,13 @@ Repository evidence cannot establish the exact upstream license/model redistribu
 
 ### Files/modules that must not be modified under this gate
 
-- All production Swift, tests, schema/SQL, `FSD.xcodeproj`, app bundle contents, other product docs, dependencies, vendor directories, Magika source/model/binaries, and historical Handoffs
+- All production Swift, tests, schema/SQL, `FSD.xcodeproj`, app bundle contents, other product docs, dependencies, vendor directories, candidate source/model/binaries, and historical Handoffs
 
 ### Ordered steps
 
 #### Step 1 — Verify and record the external integration facts
 
-In an explicitly authorized external-research session, record authoritative license and model redistribution terms; exact upstream version/commit and asset checksums; supported macOS arm64 build/runtime path; minimum deployment compatibility; model/runtime footprint; deterministic bounded-input API behavior; exact output/provenance semantics; offline/no-telemetry behavior; and signing/bundle placement requirements. Separate quoted facts from Architect inference. Do not change code.
+In an explicitly authorized external-research session, record authoritative license and model redistribution terms; exact upstream version/commit and asset checksums; supported macOS arm64 build/runtime path; minimum deployment compatibility at or above the macOS 15 floor; model/runtime footprint; deterministic bounded-input API behavior; exact output/provenance semantics; offline/no-telemetry behavior; and signing/bundle placement requirements. Separate quoted facts from Architect inference. Do not change code.
 
 #### Step 2 — Issue the bounded integration Worker slice or stop permanently
 
@@ -651,13 +654,13 @@ None in this gate. It performs no implementation. The bounded integration Worker
 
 - Every external fact is supported by an authoritative source and pinned artifact identity.
 - Licensing covers both executable/runtime and model redistribution.
-- A real offline arm64 helper can satisfy the already-implemented byte/result contract.
+- A real offline arm64 helper, verified compatible with macOS 15+, can satisfy the already-implemented byte/result contract.
 - Proposed integration contract has 2–4 major steps, exact file/artifact allowlists, commands, stop conditions, and an independent audit gate.
 - No code/artifact/dependency was changed during this gate.
 
 ### Stop condition
 
-This external gate remains `ARCHITECT ESCALATION REQUIRED` until separately authorized research resolves every required fact. Route to an Architect with external-verification authority. Any unresolved license, model, API, build, signing, provenance, offline, or macOS compatibility fact keeps the gate closed.
+This external gate remains `ARCHITECT ESCALATION REQUIRED` until separately authorized research resolves every required fact. Route to an Architect with external-verification authority. Any unresolved license, model, API, build, signing, provenance, offline, or macOS 15+ compatibility fact keeps the gate closed.
 
 ### Audit gate
 
@@ -672,9 +675,9 @@ Perform whole-implementation verification, synchronize only the documentation fa
 ### Prerequisites
 
 - Slices 01–06 are merged and their required audits passed.
-- Slice 07's escalation is resolved by a separately approved replacement implementation slice, and that real helper integration has passed independent audit.
+- Slice 07's escalation is resolved by a separately approved real-helper integration slice for a selected, verified candidate, and that real helper integration has passed independent audit.
 - Every intermediate Writer/audit Handoff and the Slice 06 §9 coverage ledger are available.
-- If a real bundled Magika helper is not present and verified, stop; do not finalize a seam/stub as “runtime implemented.”
+- If a real audited bundled classifier helper is not present and verified, stop; do not finalize a seam/stub as “runtime implemented.”
 
 ### Locked decisions
 

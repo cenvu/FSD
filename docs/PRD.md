@@ -38,7 +38,7 @@ Secondary:
 
 ## 4. Supported environment
 
-- macOS 13 Ventura or later;
+- macOS 15 Sequoia or later;
 - Apple Silicon arm64;
 - delivered as a single self-contained `.app` — no Homebrew, macFUSE, ntfs-3g, kernel extension, or app extension install required of the user;
 - removable HDD, SSD, USB and Thunderbolt storage;
@@ -248,11 +248,11 @@ Minimum entry fields:
 - cloud synchronization;
 - iOS support;
 - Intel macOS builds;
-- Magika-based file content/type classification (deferred to Phase 1.5, `MVP_PLAN.md`, `ARCHITECTURE.md` §9).
+- local classifier-based file content/type classification (deferred to Phase 1.5, `MVP_PLAN.md`, `ARCHITECTURE.md` §9).
 
 ### 8.1 Future content classification (Phase 1.5, deferred, not MVP)
 
-Magika content classification is a future optional enrichment phase and is not part of the MVP. Specifically:
+Local content classification is a future optional enrichment phase and is not part of the MVP. No classifier provider is selected; provider selection is a separate, later, provider-neutral research gate (`P15_RUNTIME_PLAN.md` Slice 07). Specifically:
 
 - file classification is not displayed anywhere in the MVP UI;
 - file classification is not used in MVP metadata diff or comparison results;

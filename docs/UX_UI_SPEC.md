@@ -342,7 +342,7 @@ PARTIAL:
 - compare navigation can locate filtered results but lacks ancestor/hierarchy projection.
 
 GAPS:
-- real Magika/local classifier runtime;
+- real local classifier runtime;
 - schema v9 provider_identifier;
 - Data-only classification request;
 - mount detection/watcher;
@@ -384,7 +384,7 @@ OWNER UX DIRECTION
    │  ├─ Slice 04 runtime orchestration
    │  ├─ Slice 05 explicit selected-entry UI only
    │  ├─ Slice 06 regression matrix
-   │  ├─ Slice 07 external Magika verification
+   │  ├─ Slice 07 external classifier verification
    │  ├─ real helper integration + audit
    │  └─ Slice 08 whole-runtime verification
    │

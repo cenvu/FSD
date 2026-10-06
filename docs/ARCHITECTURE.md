@@ -318,8 +318,8 @@ To support live folder/volume comparison seamlessly within the snapshot-backed d
 This section is the binding boundary for the Phase 1.5 preparation slice.
 `FSD/Catalog/EntryClassificationRepository.swift` implements the typed
 `LocalFileClassificationProvider`, `DisabledFileClassificationProvider` and
-explicit `ClassificationEnrichmentService` seam. Magika inference is not
-implemented, installed or executed.
+explicit `ClassificationEnrichmentService` seam. No classifier inference is
+implemented, installed or executed, and no provider is selected.
 
 ### Boundary rule
 
@@ -376,13 +376,21 @@ service and remain payload-free.
 - classification never mutates immutable snapshot metadata (`entries`, `snapshots` aggregate fields) and never alters a historical Metadata Match or diff conclusion, past or future;
 - classification failure never changes a snapshot's `complete`/`interrupted`/`failed` status.
 
-## 9a. Future Magika Runtime (Not Yet Implemented)
+## 9a. Local Classifier Runtime (Not Yet Implemented)
 
-This section documents the resolved design for the future Phase 1.5 Magika runtime adapter. **This is a design constraint only; the runtime is not yet built.**
+This section documents the resolved design for the future Phase 1.5 local classifier runtime adapter. **This is a design constraint only; the runtime is not yet built.**
 
-### Architecture and Packaging
+### Current provider status
 
-The Magika file-type enrichment adapter packaging was evaluated across four shapes:
+CURRENT_PROVIDER_STRATEGY=PROVIDER_NEUTRAL_LOCAL_CLASSIFIER
+MAGIKA_PROVIDER_SELECTION=CURRENTLY_NONE
+MAGIKA_STATUS=BLOCKED_CANDIDATE (blocked, non-exclusive; not rejected, not approved)
+
+The packaging decision below remains accepted and provider-independent: the classifier runs as a locally bundled helper process inside `FSD.app`, arm64, macOS 15+ compatible, offline and self-contained. No provider is selected here; provider selection requires a separate authoritative external research gate (`P15_RUNTIME_PLAN.md` Slice 07) and no compatibility may be assumed for any candidate before that gate verifies it (ADR-033).
+
+### Historical Magika packaging evaluation (retained as evidence; superseded as provider selection by ADR-033)
+
+The Magika file-type enrichment adapter packaging was evaluated across four shapes. This four-option analysis is preserved verbatim as the historical basis for the packaging decision. Its `macOS 13 arm64 fit` lines record an evaluation made against the then-current macOS 13 deployment floor; the current floor is macOS 15 (ADR-033), so those lines describe no current compatibility claim, and any future candidate must be verified against macOS 15+ instead:
 
 1. **Native in-process library/model embedding:**
    - **Offline behavior:** Fully offline.
@@ -428,7 +436,7 @@ The Magika file-type enrichment adapter packaging was evaluated across four shap
    - **Failure modes:** Missing or incompatible tool fails classification; main app survives.
    - **Update/version provenance:** Opaque; user can update independently, making exact provenance hard to record.
 
-**Decision:** Locally bundled helper executable.
+**Decision:** Locally bundled helper executable. This decision remains accepted and provider-independent (ADR-033).
 Shape 1 was ruled out because a classifier crash would take down the main app.
 Shape 3 was ruled out because bundling a Python runtime violates the "minimal dependencies" priority.
 Shape 4 was ruled out because it requires user installation, which violates the platform invariant of a single self-contained `.app`.
