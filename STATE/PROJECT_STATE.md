@@ -4,19 +4,19 @@ STATE_VERSION=1.0.0
 PROJECT=FSD
 CURRENT_PHASE=DEMO_SPRINT
 ACTIVE_WORKSTREAM=FSD_DEMO_CRITICAL_PATH
-STATUS=RUSH_SPRINT_LEAN;FILETYPE_FEASIBILITY_RETRY_STOP_ACCEPTED;FILETYPE_FEASIBILITY_CLOSURE_AUTHORIZED
-CURRENT_GATE=FSD_CLASSIFIER_NATIVE_FEASIBILITY_CLOSURE_029S
+STATUS=RUSH_SPRINT_LEAN;FILETYPE_FEASIBILITY_ACCEPTED_WITH_ADVISORY;FILETYPE_INTEGRATION_CONTRACT_AUTHORIZED
+CURRENT_GATE=FSD_CLASSIFIER_FILETYPE_INTEGRATION_CONTRACT_032
 BLOCKERS=NONE
-LAST_ACCEPTED_TASK=FSD_CLASSIFIER_NOMATCH_RUNTIME_REPAIR_031
-LAST_ACCEPTED_HEAD=de8484e203b8b6e259dac90349d44069fc5a6ed0
+LAST_ACCEPTED_TASK=FSD_CLASSIFIER_NATIVE_FEASIBILITY_CLOSURE_029S
+LAST_ACCEPTED_HEAD=878d3396666a8dae00dda079046aafceb0d96e50
 AUTHORITY_PTRS=AGENTS.md|docs/BRAIN_OPERATOR.md|docs/AGENT.md|docs/UX_UI_SPEC.md|docs/PRD.md|docs/PRODUCT_STATE.md|docs/MVP_PLAN.md|docs/ARCHITECTURE.md|docs/DECISIONS.md|docs/DEPENDENCY_AND_LICENSE_REVIEW.md|docs/SECURITY_AND_READ_ONLY_POLICY.md|docs/TEST_PLAN.md|docs/P15_RUNTIME_PLAN.md
 PARKED_PRODUCT_WORKSTREAM=MAGIKA_INTEGRATION_BLOCKED_AT_025
-EXACTLY_ONE_NEXT_DECISION=ACTION(FSD_CLASSIFIER_NATIVE_FEASIBILITY_CLOSURE_029S)
+EXACTLY_ONE_NEXT_DECISION=ACTION(FSD_CLASSIFIER_FILETYPE_INTEGRATION_CONTRACT_032)
 
-Accepted-state provenance: BRAIN adjudication at 2026-10-06T20:10:21+07:00.
-Task029R filetype v1.1.3 scratch feasibility retry is accepted as STOP at publication 0667a909bec27b326b83774620c19dc5e490b227.
-The STOP does not reject filetype. Seventeen of nineteen provider/helper proofs are supported, including native arm64 build, LC_BUILD_VERSION minos13.0 (therefore within the macOS15 floor), bounded 0...4096 behavior, truthful Unknown/empty -> noMatch mapping, helper zero-network observation, zero descendants, Slice03 process compatibility and identical controlled-build SHA-256 e7907f75903da75b5a3649f8fc894ac304fadef17d126ca37f2b76cd2ec8e2d6.
-Completion failed for execution containment: Go1.27.1 build-tool telemetry wrote local counters/report state in the user's pre-existing Go telemetry directory outside /tmp despite GOTELEMETRY=off. Worker did not delete or rewrite that owner state and stopped further Go invocation. Proof05 final license/notice closure and proof18 exact matcher inventory remain unproven.
-Official Go source independently confirms GOTELEMETRY is read-only/non-settable and cmd/internal telemetry counter/parent paths honor TEST_TELEMETRY_DIR for test relocation. Task029S is authorized as a narrow scratch-only closure: use a fresh TEST_TELEMETRY_DIR under /tmp before every Go invocation, prove no new writes outside scratch, rebuild/verify artifact identity under corrected containment, finish license/notice closure and exact matcher inventory, and resolve the newly surfaced matcher-order determinism risk.
-The determinism risk is material evidence, not yet a candidate rejection: filetype v1.1.3 register() iterates Go maps when constructing MatcherKeys, and short legacy OLE matchers share signatures. Task029S must determine whether fixed-input results can vary across fresh helper processes. Divergence on realistic/full bounded fixtures is a STOP; divergence confined to deliberately ambiguous/truncated prefixes may be reported as an explicit advisory if all locked FSD safety/truthfulness contracts remain satisfied.
-No production/provider integration, tracked dependency/helper artifact or alternate-provider work is authorized.
+Accepted-state provenance: BRAIN adjudication at 2026-10-06T20:34:00+07:00.
+Task029S filetype v1.1.3 feasibility closure is accepted PASS_WITH_ADVISORY at publication 878d3396666a8dae00dda079046aafceb0d96e50.
+Hard feasibility is closed for the evaluated scratch helper: corrected Go writable-state containment produced zero outside-scratch writes; fresh independent A/B builds reproduced the prior artifact hash; arm64/minos13 is compatible with the macOS15 floor; helper network/process/source-authority/noMatch behavior remains supported; engineering license/notice inventory is closed for the exact evaluated artifact; and the exact upstream registry reconciles 73 registered matchers plus the non-matcher Unknown sentinel.
+Advisory retained: filetype v1.1.3 constructs matcher priority through Go-map iteration. A deliberately short ambiguous CFB prefix can classify as doc, xls or ppt across fresh processes. Available pinned realistic PNG/DOCX/XLSX/PPTX fixtures were single-valued, but the exact pin supplies no realistic legacy DOC/XLS/PPT fixtures, so no general determinism claim is accepted.
+Task032 is authorized as an architecture/integration-contract task only. It may select filetype v1.1.3 as the intended production classifier subject to the contract, but it may not implement, vendor, bundle, sign or run the production helper. The contract must neutralize the observed ambiguous short-CFB nondeterminism truthfully before upstream matching (return noMatch when the bounded input is too short to disambiguate legacy CFB types), preserve upstream matching otherwise, pin exact source/module/toolchain/artifact/notice identities, define app-bundle/signing/provenance/test/audit requirements, and retain every existing 4096-byte/Data-only/read-only/offline/runtime invariant.
+No production integration is authorized until task032 is accepted and a separate bounded implementation task passes independent audit.
+Owner-authorized RUSH/SPRINT/LEAN progression remains active.
