@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-07T00:10:45+07:00
-
 # filetype bundled-helper integration audit — independent ADR-035 verification
 
 ## HOT
