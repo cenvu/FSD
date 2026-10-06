@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-06T22:56:18+07:00
-
 # filetype bundled-helper integration rescope — PASS_WITH_ADVISORY
 
 ## HOT
