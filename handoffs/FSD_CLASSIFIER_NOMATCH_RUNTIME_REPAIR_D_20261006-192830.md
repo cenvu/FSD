@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-06T19:28:30+07:00
-
 # ADR-034 noMatch runtime repair
 
 ## HOT
