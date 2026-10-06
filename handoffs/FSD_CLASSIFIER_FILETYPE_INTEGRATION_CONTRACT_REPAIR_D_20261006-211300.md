@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-06T21:13:00+07:00
-
 # ADR-034 status repair (task032A) — PASS
 
 ## HOT

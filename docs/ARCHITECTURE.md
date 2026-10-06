@@ -504,7 +504,7 @@ Append-only semantics and `(entry_id, classification_run_id)` duplicate-rejectio
 
 ### Outcomes and Schema Impact
 
-**Canonical result semantics (ADR-034, Accepted 2026-10-06):** the provider/runtime classification contract has **seven typed outcomes**. `IMPLEMENTATION=PENDING` — this is the canonical contract, not a claim of shipped code.
+**Canonical result semantics (ADR-034, Accepted 2026-10-06):** the provider/runtime classification contract has **seven typed outcomes**. `IMPLEMENTATION=ACCEPTED_BY_TASK031` — ADR-034 seven-outcome provider/runtime semantics are implemented and accepted at task031 publication `de8484e203b8b6e259dac90349d44069fc5a6ed0`. `ADR034_RUNTIME_SEMANTICS=IMPLEMENTED`; `FILETYPE_REAL_HELPER_INTEGRATION=NOT_IMPLEMENTED`.
 
 | Typed outcome | Meaning | `entry_classifications` rows |
 |---|---|---|

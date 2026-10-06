@@ -50,11 +50,7 @@ OLD_FILE_MAPPING table row are preserved verbatim as historical milestone
 labels, and prior validation receipts, test counts and historical handoffs are
 unchanged.
 
-**`ADR-034 IMPLEMENTATION=PENDING`.** No enum case, parser branch, runtime
-mapping, UI current-result handling or permanent test exists yet. The filetype
-native feasibility task029 remains INCOMPLETE and **may be retried only after**
-the accepted ADR-034 semantics are implemented and their tests are accepted.
-This amendment selects and integrates no provider.
+**`ADR-034 IMPLEMENTATION=ACCEPTED_TASK031`.** Task031 publication `de8484e203b8b6e259dac90349d44069fc5a6ed0` implemented and BRAIN-accepted the enum case, parser branch, runtime mapping, UI current-result handling and permanent tests. Task029 original STOP remains historical evidence; the authorized retry already occurred via task029R then task029S, and task029S feasibility closure is accepted `PASS_WITH_ADVISORY`. This amendment selects and integrates no provider.
 
 ## Sequence and independent boundaries
 
@@ -212,7 +208,7 @@ Establish the security boundary FSD must own: reliable source-root capture for n
 - The source-reader contract remains `0...4096` bytes. An eligible zero-byte regular file may reach a provider with empty `Data`, and the provider may truthfully return `.noMatch` when it successfully processes that bounded input and recognizes nothing. A zero-byte regular file must **not** be reclassified as source unavailable merely because it contains zero bytes. (ADR-034.)
 - Outcome mapping before provider invocation: detached/missing at initial resolution → `.unavailable`; identity mismatch or disappearance/substitution after initial validation → `.sourceChanged`; permission/read failure on a still-identified source → `.failed`; non-regular kind → `.unsupportedEntry`; observed cancellation at any boundary → `.cancelled`.
 - Replace `LocalClassificationRequest.sourceURL` and caller-controlled `byteBudget` with a request whose **only stored field** is immutable bounded `Data`. It has no entry/source metadata, URL/path/handle, read callback, range callback, resolver, or public initializer that bypasses the FSD reader.
-- `LocalClassificationProviderResult` contains all seven locked cases: classified, failed, sourceChanged, unsupportedEntry, unavailable, cancelled, noMatch. Providers will normally produce classified/failed/unavailable/cancelled/noMatch; FSD preflight produces sourceChanged/unsupportedEntry. `noMatch` means the provider ran successfully and recognized no type; it is not an unavailable/failed/cancelled alias and it is never expressed as "unknown". `.busy` is not a provider-result case. (ADR-034; `IMPLEMENTATION=PENDING`.)
+- `LocalClassificationProviderResult` contains all seven locked cases: classified, failed, sourceChanged, unsupportedEntry, unavailable, cancelled, noMatch. Providers will normally produce classified/failed/unavailable/cancelled/noMatch; FSD preflight produces sourceChanged/unsupportedEntry. `noMatch` means the provider ran successfully and recognized no type; it is not an unavailable/failed/cancelled alias and it is never expressed as "unknown". `.busy` is not a provider-result case. (ADR-034; `IMPLEMENTATION=ACCEPTED_TASK031`.)
 - The provider call is async and cancellation-aware. The disabled provider remains side-effect-free and returns unavailable.
 - Observe cancellation immediately after the pre-read object barrier and immediately before the single payload call. Once the payload attempt begins, observed cancellation wins over every later validation/error mapping to failed/sourceChanged, including fd stat, source detection, directory walk and final stat. No payload retry; genuine earlier pre-read outcomes reached without cancellation keep their meaning.
 
@@ -374,7 +370,7 @@ If safe bounded pipe draining, cancellation, or child reaping cannot be implemen
 
 ## Slice 04 — Runtime orchestration, cancellation, and six outcomes
 
-> **Historical task title, preserved.** The section heading and the deleted-TODO mapping table above keep the original "six outcomes" milestone name as a historical lookup key. **ADR-034 semantic amendment (2026-10-06):** the *current* contract in this slice is **seven typed outcomes** — `classified`, `failed`, `sourceChanged`, `unsupportedEntry`, `unavailable`, `cancelled`, `noMatch` — where `noMatch` writes no row and `busy` remains runtime control state outside the provider-result enum. Wherever this slice still says "six outcomes" in a present-tense contract sentence, read it as seven per ADR-034. `ADR-034 IMPLEMENTATION=PENDING`.
+> **Historical task title, preserved.** The section heading and the deleted-TODO mapping table above keep the original "six outcomes" milestone name as a historical lookup key. **ADR-034 semantic amendment (2026-10-06):** the *current* contract in this slice is **seven typed outcomes** — `classified`, `failed`, `sourceChanged`, `unsupportedEntry`, `unavailable`, `cancelled`, `noMatch` — where `noMatch` writes no row and `busy` remains runtime control state outside the provider-result enum. Wherever this slice still says "six outcomes" in a present-tense contract sentence, read it as seven per ADR-034. `ADR-034 IMPLEMENTATION=ACCEPTED_TASK031` (task031 `de8484e203b8b6e259dac90349d44069fc5a6ed0`).
 
 ### Purpose
 

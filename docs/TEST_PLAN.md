@@ -529,7 +529,7 @@ It independently reproduced the full Debug suite (293 executed, 290 passed,
 and the Auditor's 59-test selection are distinct historical runs, not counts
 to merge. Deferred manual acceptance and inactive runtime remain unchanged.
 
-## 9. Local classifier runtime test plan (not yet implemented)
+## 9. Local classifier runtime test plan (ADR-034 noMatch accepted task031; ADR-035 forward-looking)
 
 The forward-looking classifier requirements below cover the **seven typed
 outcomes** locked by ADR-034 (2026-10-06, Accepted): `classified`, `failed`,
@@ -537,8 +537,7 @@ outcomes** locked by ADR-034 (2026-10-06, Accepted): `classified`, `failed`,
 `busy` remains runtime control state, is not a provider-result case and writes no
 row. `ROW_WRITING_OUTCOMES=4` and `NO_ROW_TYPED_OUTCOMES=3`. Historical completed
 test receipts earlier in this plan describe earlier milestones and are not
-rewritten. **`ADR-034 IMPLEMENTATION=PENDING`**: none of the requirements below is
-implemented yet.
+rewritten. **`ADR-034 IMPLEMENTATION=ACCEPTED_TASK031`**: the ADR-034 noMatch implementation requirements in the dedicated subsection below were implemented and accepted by task031 at `de8484e203b8b6e259dac90349d44069fc5a6ed0`; accepted earlier Slice02–06/task031 test receipts remain historical evidence; the ADR-035 real-helper integration/audit subsection remains `FORWARD-LOOKING / NOT_IMPLEMENTED / NOT_AUDITED`.
 
 - exact byte ceiling enforcement (4096 bytes)
 - exact byte boundary (a file of exactly the ceiling size vs. one byte over)
@@ -574,8 +573,7 @@ implemented yet.
 
 ### Required `noMatch` outcome tests (ADR-034)
 
-These are permanent required tests, to be implemented in the later runtime
-implementation task and not in the ADR-034 canonicalization task:
+These became permanent requirements and were implemented/accepted by task031 at `de8484e203b8b6e259dac90349d44069fc5a6ed0` (not in the ADR-034 canonicalization task):
 
 - the provider enum exposes a `noMatch` case
 - the helper parser maps `resultKind="no_match"` to `.noMatch`
