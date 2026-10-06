@@ -461,11 +461,11 @@ The runtime operates strictly on bounded byte reads:
 3. The read layer concurrency is `1` (single classification at a time) (PROPOSED).
 4. **Bytes read for classification are never persisted, never hashed, never logged to any diagnostic surface, in any outcome.**
 5. The provider-facing request will carry only a bounded `Data` (or equivalent already-read byte buffer) — no `URL`, no path, no file handle. (The `LocalClassificationRequest.sourceURL` property is flagged for removal before this is implemented).
-6. Small-file behavior: a file smaller than the ceiling is read in full (its actual size), not padded or treated as an error.
+6. Small-file behavior: a file smaller than the ceiling is read in full (its actual size), not padded or treated as an error. The contract is `0...4096` bytes: an eligible zero-byte regular file may reach a provider with empty `Data`, and the provider may truthfully return `noMatch`; a zero-byte regular file is not source unavailable merely because it is empty (ADR-034).
 7. Large-file behavior: only the first `4096` bytes are ever read; the rest of the file is never touched.
 8. Unreadable files: disappearing-source, inaccessible-source, directory, symlink, and special-file outcomes are handled exactly as defined in the "Source Resolution and Identity" subsection.
 9. The exact pipeline is: FSD source resolution → FSD source identity validation → FSD bounded reader → bounded bytes → provider → typed result. The provider receives no `URL`, path, or file handle at any stage.
-10. The `LocalClassificationProviderResult` enum currently contains three cases (`classified`, `unavailable`, `failed`). Against the six required outcomes (success, unavailable, failed, cancelled, source-changed, unsupported-entry), there are three currently missing from the live enum: `cancelled`, `source-changed`, and `unsupported-entry`.
+10. **Historical design-correction evidence (2026-08-04), not current source.** At that milestone the `LocalClassificationProviderResult` enum contained three cases (`classified`, `unavailable`, `failed`) against the six then-required outcomes (success, unavailable, failed, cancelled, source-changed, unsupported-entry), and three were missing from the live enum: `cancelled`, `source-changed` and `unsupported-entry`. This paragraph records that past gap only. It does **not** describe current source: the complete locked set is now **seven** typed outcomes per ADR-034 — `classified`, `failed`, `sourceChanged`, `unsupportedEntry`, `unavailable`, `cancelled`, `noMatch` — and a no production protocol change was implemented by that design-correction slice.
 11. No production protocol change is implemented in this design correction slice.
 
 ### Lifecycle and Cancellation
@@ -485,13 +485,29 @@ Append-only semantics and `(entry_id, classification_run_id)` duplicate-rejectio
 
 ### Outcomes and Schema Impact
 
-There are exactly **six** outcomes:
-1. `success/classified`: Row written with `classified` status.
-2. `failed`: Row written with `failed` status.
-3. `source-changed`: Row written with `failed` status.
-4. `unsupported-entry`: Row written with `failed` status.
-5. `unavailable`: No row written.
-6. `cancelled`: No row written (runtime-only).
+**Canonical result semantics (ADR-034, Accepted 2026-10-06):** the provider/runtime classification contract has **seven typed outcomes**. `IMPLEMENTATION=PENDING` — this is the canonical contract, not a claim of shipped code.
+
+| Typed outcome | Meaning | `entry_classifications` rows |
+|---|---|---|
+| `classified` | Provider recognized a type. | 1 row, status `classified` |
+| `failed` | Classification operation/provider/process failed. | 1 row, status `failed` |
+| `sourceChanged` | Source identity/object changed before provider truth could be trusted. | 1 row, status `failed` |
+| `unsupportedEntry` | Entry kind is not eligible for classification. | 1 row, status `failed` |
+| `unavailable` | Classification cannot be performed because the required source/provider/helper capability is unavailable. | 0 rows |
+| `cancelled` | Classification was cancelled. | 0 rows |
+| `noMatch` | Classification **was performed successfully**, but the detector recognized no type. | 0 rows |
+
+`ROW_WRITING_OUTCOMES=4` and `NO_ROW_TYPED_OUTCOMES=3`, totalling `TOTAL_TYPED_OUTCOMES=7`.
+
+`busy` is runtime admission/control state only. It is **not** a `LocalClassificationProviderResult` case and writes no row.
+
+`noMatch` is successful detection execution without recognition: `PROVIDER_RAN=YES`, `TYPE_RECOGNIZED=NO`. It is not `classified` (nothing was recognized), not `failed` (the operation did not fail), not `unavailable` (capability was available and used), not `cancelled`, not `sourceChanged`, and not `unsupportedEntry`. Because it writes no row, it persists no detected type, MIME type, confidence, detector version, model version, provider identifier, sampled bytes or diagnostics. No persisted `no_match` detection_status is created.
+
+Helper IPC token mapping: `resultKind="classified"`, `"no_match"`, `"unavailable"`, `"failed"`. For `no_match`, all of `detectedType`, `mimeType`, `confidence`, `detectorVersion`, `modelVersion` must be null; provider identity remains host-owned and is never emitted by the helper. Unknown or malformed wire `resultKind` values remain `failed`.
+
+Timeout remains `failed`; malformed helper output remains `failed`; a missing helper remains `unavailable`.
+
+**Superseded prior statement (preserved as historical text):** "There are exactly **six** outcomes: success/classified → classified row; failed → failed row; source-changed → failed row; unsupported-entry → failed row; unavailable → no row; cancelled → no row (runtime-only)." That six-outcome statement was the complete locked set until ADR-034 added `noMatch`. Its four row-writing rows remain current and unchanged; the six-outcome completeness claim does not.
 
 **Schema Verdict:**
 1. What does `detector_version` identify? Per `EntryClassificationRepository.swift` and ADR-031, it identifies the detection algorithm version, serving as one of the explicitly "persisted provenance fields".
@@ -507,6 +523,7 @@ Exactly one minimal missing field, `provider_identifier`, is required to record 
 
 For the future runtime, classification must be presented as inferred metadata, never as content verification. The UI must follow the established pattern in `SnapshotBrowserView.swift`:
 - Absence of classification is presented as a neutral state ("Not classified" or equivalent), never fabricated as an error.
+- A current `noMatch` completion for the explicitly executing user action may additionally show a bounded transient runtime message equivalent to "No file type recognized." That message is not a persisted classification, is not an error, invents no detected type and does not survive as historical classification truth. It never renders as "Failed", "Unavailable" or "Inferred file type: Unknown".
 - Confidence is shown only when actually present in the data, never fabricated.
 - No raw provider diagnostic, stack trace, or internal path ever reaches visible text.
 

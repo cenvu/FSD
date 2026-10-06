@@ -10,6 +10,52 @@ requirements; [SECURITY_AND_READ_ONLY_POLICY.md](SECURITY_AND_READ_ONLY_POLICY.m
 owns source safety. Numeric runtime limits remain proposed implementation
 constraints, not measurements of actual classifier behavior.
 
+## ADR-034 semantic amendment (2026-10-06) — seven typed outcomes
+
+**Canonical current contract.** The complete locked classification
+provider/runtime outcome set is **seven typed outcomes**:
+`classified`, `failed`, `sourceChanged`, `unsupportedEntry`, `unavailable`,
+`cancelled`, `noMatch`. `busy` remains runtime admission/control state only and
+is **not** a `LocalClassificationProviderResult` case.
+
+`noMatch` means the provider executed successfully on the exact bounded `Data`
+supplied by FSD and recognized no file type. It is distinct from `unavailable`,
+`failed`, `cancelled`, `sourceChanged`, `unsupportedEntry` and `classified`, and
+is never expressed as "unknown". Helper IPC token: `resultKind="no_match"`,
+requiring all of `detectedType`, `mimeType`, `confidence`, `detectorVersion`,
+`modelVersion` to be null; no envelope version bump is required for this
+recognized kind, and unknown/malformed kinds remain `failed`.
+
+Persistence mapping (unchanged for the four row-writing outcomes):
+
+1. `classified` → one `classified` row
+2. `failed` → one `failed` row
+3. `sourceChanged` → one `failed` row
+4. `unsupportedEntry` → one `failed` row
+5. `unavailable` → no row
+6. `cancelled` → no row
+7. `noMatch` → no row
+
+`busy` → control state, no row, not an enum case.
+`ROW_WRITING_OUTCOMES=4`, `NO_ROW_TYPED_OUTCOMES=3`, `TOTAL_TYPED_OUTCOMES=7`.
+No schema migration is required; no persisted `no_match` detection_status is
+created. Timeout stays `failed`; malformed helper output stays `failed`; a
+missing helper stays `unavailable`. Source/read-only/security/process
+boundaries are unchanged.
+
+**Supersession and preservation.** This amendment supersedes every active
+"six locked outcomes" / "all six persistence outcomes" / "exactly six-outcome
+persistence mapping" claim in this plan. The Slice 04 section heading and the
+OLD_FILE_MAPPING table row are preserved verbatim as historical milestone
+labels, and prior validation receipts, test counts and historical handoffs are
+unchanged.
+
+**`ADR-034 IMPLEMENTATION=PENDING`.** No enum case, parser branch, runtime
+mapping, UI current-result handling or permanent test exists yet. The filetype
+native feasibility task029 remains INCOMPLETE and **may be retried only after**
+the accepted ADR-034 semantics are implemented and their tests are accepted.
+This amendment selects and integrates no provider.
+
 ## Sequence and independent boundaries
 
 Execute only a separately authorized bounded task from a freshly verified base.
@@ -163,9 +209,10 @@ Establish the security boundary FSD must own: reliable source-root capture for n
 - Candidate paths are constructed only from validated root/entry relative components. After no-follow file open and regular-file `fstat`, a **PRE-READ OBJECT BARRIER** re-resolves exact volume/mount identity, performs a fresh no-follow walk from the physical mount through root + parent components, matches every directory by st_dev **and** st_ino, and binds the fresh final regular-file path to the opened fd by exact object identity. Any failed authority check performs zero payload reads. A successful barrier authorizes the **opened object**, not perpetual pathname stability: a later rename cannot redirect its fd; post-read source/path revalidation may still return sourceChanged.
 - Only positively confirmed regular files are read. Snapshot directory/package/symlink/other entries and live directory/symlink/special files return `.unsupportedEntry` before content I/O.
 - Exactly one prefix range is read. Allocate at most 4096 bytes and perform one bounded read at offset zero; small files return their actual bytes, exact-size files return 4096, and larger files return only 4096. No tail/adaptive read, hashing, persistence, or logging.
+- The source-reader contract remains `0...4096` bytes. An eligible zero-byte regular file may reach a provider with empty `Data`, and the provider may truthfully return `.noMatch` when it successfully processes that bounded input and recognizes nothing. A zero-byte regular file must **not** be reclassified as source unavailable merely because it contains zero bytes. (ADR-034.)
 - Outcome mapping before provider invocation: detached/missing at initial resolution → `.unavailable`; identity mismatch or disappearance/substitution after initial validation → `.sourceChanged`; permission/read failure on a still-identified source → `.failed`; non-regular kind → `.unsupportedEntry`; observed cancellation at any boundary → `.cancelled`.
 - Replace `LocalClassificationRequest.sourceURL` and caller-controlled `byteBudget` with a request whose **only stored field** is immutable bounded `Data`. It has no entry/source metadata, URL/path/handle, read callback, range callback, resolver, or public initializer that bypasses the FSD reader.
-- `LocalClassificationProviderResult` contains all six locked cases: classified, failed, sourceChanged, unsupportedEntry, unavailable, cancelled. Providers will normally produce classified/failed/unavailable/cancelled; FSD preflight produces sourceChanged/unsupportedEntry.
+- `LocalClassificationProviderResult` contains all seven locked cases: classified, failed, sourceChanged, unsupportedEntry, unavailable, cancelled, noMatch. Providers will normally produce classified/failed/unavailable/cancelled/noMatch; FSD preflight produces sourceChanged/unsupportedEntry. `noMatch` means the provider ran successfully and recognized no type; it is not an unavailable/failed/cancelled alias and it is never expressed as "unknown". `.busy` is not a provider-result case. (ADR-034; `IMPLEMENTATION=PENDING`.)
 - The provider call is async and cancellation-aware. The disabled provider remains side-effect-free and returns unavailable.
 - Observe cancellation immediately after the pre-read object barrier and immediately before the single payload call. Once the payload attempt begins, observed cancellation wins over every later validation/error mapping to failed/sourceChanged, including fd stat, source detection, directory walk and final stat. No payload retry; genuine earlier pre-read outcomes reached without cancellation keep their meaning.
 
@@ -259,6 +306,7 @@ Implement and test the FSD-side process boundary for a locally bundled helper wi
 - Before real integration, Slice 07 must verify nested-helper signing/packaging, bundle placement, real artifact identity and distribution integrity, plus absence of persistent helper descendants. This seam supplies no process-tree containment guarantee.
 - The 0–4096 input bytes are written as raw stdin once, then stdin is closed. Do not base64/hex/JSON-wrap the sample, write it to disk, pass it in argv/environment, or expose the source path.
 - Stdout is a small versioned metadata envelope only: schema version, result kind, detected type, MIME type, confidence, detector version, model version. Lock a 4096-byte stdout cap and a 4096-byte stderr drain cap; stderr is never stored or shown. Oversize/malformed/unknown output is `.failed`.
+- Valid helper `resultKind` values are exactly `classified`, `no_match`, `unavailable` and `failed` (ADR-034). For `resultKind="no_match"`, all of `detectedType`, `mimeType`, `confidence`, `detectorVersion`, `modelVersion` must be null; `no_match` carrying any non-null metadata field is rejected as `.failed`. `unknown`, `unrecognized` and `not_classified` are not valid wire tokens. Any unknown or malformed `resultKind` remains `.failed`. Adding the recognized `no_match` kind does not require an envelope version bump.
 - `providerIdentifier` is a host-defined stable adapter identifier, independent from helper-reported detector/model versions. Helper output cannot override it.
 - Launch authorization and cancellation linearize under the same lock after side-effect-free runner creation. Cancellation winning before authorization forbids launch; authorization winning first permits launch, with later cancellation terminating any launched child, closing pipes, reaping and returning `.cancelled` if it wins before completion. Completion winning first preserves the deterministic result. The boundary is launch authorization, not the kernel's child-creation instruction; the lock is never held across `Process.run`. Crash/non-zero exit/malformed output returns `.failed`. Timeout policy is enforced by Slice 04's runtime, but cancellation must reliably stop the process.
 - No persistent helper daemon, background watcher, telemetry, network API, sampled-byte persistence, or automatic launch.
@@ -285,7 +333,7 @@ Add a narrow internal runner that validates the bundle-contained executable, sta
 
 #### Step 2 — Implement the typed bundled-helper provider adapter
 
-Parse the locked versioned metadata envelope with strict field/count/length/confidence validation, keep provider/detector/model provenance separate, and deterministically map missing helper, success, declared unavailable, failure, crash, malformed/oversized output, and cancellation to the approved typed results. Do not add a fallback classifier.
+Parse the locked versioned metadata envelope with strict field/count/length/confidence validation, keep provider/detector/model provenance separate, and deterministically map missing helper, success, declared unavailable, no-match (`no_match` with all-null metadata), failure, crash, malformed/oversized output, and cancellation to the approved typed results. Do not add a fallback classifier.
 
 #### Step 3 — Prove process-boundary failure handling and scope
 
@@ -326,9 +374,11 @@ If safe bounded pipe draining, cancellation, or child reaping cannot be implemen
 
 ## Slice 04 — Runtime orchestration, cancellation, and six outcomes
 
+> **Historical task title, preserved.** The section heading and the deleted-TODO mapping table above keep the original "six outcomes" milestone name as a historical lookup key. **ADR-034 semantic amendment (2026-10-06):** the *current* contract in this slice is **seven typed outcomes** — `classified`, `failed`, `sourceChanged`, `unsupportedEntry`, `unavailable`, `cancelled`, `noMatch` — where `noMatch` writes no row and `busy` remains runtime control state outside the provider-result enum. Wherever this slice still says "six outcomes" in a present-tense contract sentence, read it as seven per ADR-034. `ADR-034 IMPLEMENTATION=PENDING`.
+
 ### Purpose
 
-Implement the explicit runtime service that joins the audited source reader, Data-only provider, and append-only repository. It enforces one in-flight request, no queue, cancellation/stale-result protection, a five-second inference timeout, and exactly the approved persistence behavior for six outcomes. It does not expose UI or automatically classify anything.
+Implement the explicit runtime service that joins the audited source reader, Data-only provider, and append-only repository. It enforces one in-flight request, no queue, cancellation/stale-result protection, a five-second inference timeout, and exactly the approved persistence behavior for the seven typed outcomes. It does not expose UI or automatically classify anything.
 
 ### Prerequisites
 
@@ -337,7 +387,7 @@ Implement the explicit runtime service that joins the audited source reader, Dat
 
 ### Locked implementation decisions
 
-- Implement one app-scoped actor/service. At most one classification is active globally. A concurrent second start returns typed `.busy` immediately; `.busy` is runtime control state, not a seventh classification outcome, and writes no row.
+- Implement one app-scoped actor/service. At most one classification is active globally. A concurrent second start returns typed `.busy` immediately; `.busy` is runtime control state, is **not** a `LocalClassificationProviderResult` outcome and writes no row. The provider-result enum's seven typed outcomes are the six listed below plus `.noMatch`.
 - No queue, retry, batch, backfill, watcher, launch-time work, or implicit trigger.
 - Call order is fixed: repository context → source identity/reader → bounded Data request → provider → typed result → generation/cancellation check → optional append.
 - Timeout is exactly 5 seconds around inference. Timeout cancels/terminates the provider and maps to provider `.failed`; it writes one failed row only if the request is still current and not user-cancelled.
@@ -349,7 +399,9 @@ Implement the explicit runtime service that joins the audited source reader, Dat
   3. `.sourceChanged` → append `.failed` with no fabricated provider/detector/model identity;
   4. `.unsupportedEntry` → append `.failed` with no fabricated provider/detector/model identity;
   5. `.unavailable` → no row;
-  6. `.cancelled` → no row.
+  6. `.cancelled` → no row;
+  7. `.noMatch` → no row, with no detected type, MIME type, confidence, detector version, model version, provider identifier, sampled bytes or diagnostics persisted. `noMatch` means the provider executed successfully and recognized no type; it must never be persisted as `classified`, as a fabricated type, or as a new `no_match` detection_status.
+- The persistence split is `ROW_WRITING_OUTCOMES=4` and `NO_ROW_TYPED_OUTCOMES=3`, totalling `TOTAL_TYPED_OUTCOMES=7` (ADR-034).
 - The service mints a unique run ID at explicit start and never retries it. Duplicate-run errors remain visible typed failures; no overwrite.
 - Bounded bytes exist only for the active call and are released after completion. At most two 4096-byte payload buffers may coexist across the host/IPC handoff; no encoded copy.
 
@@ -378,13 +430,13 @@ Add the app-scoped actor/service with explicit `start` and `cancel/invalidate`, 
 
 Execute the locked pipeline, race inference against the injected five-second deadline, propagate cancellation into the reader/provider process, and gate every result/persistence action on the current generation. Ensure late provider success after cancel/timeout cannot persist.
 
-#### Step 3 — Implement exact six-outcome persistence mapping
+#### Step 3 — Implement exact seven-outcome persistence mapping
 
-Append only the four row-writing outcomes with semantically honest provenance, return no row for unavailable/cancelled, preserve repository validation and duplicate-run behavior, and keep raw errors/diagnostics/bytes/paths out of stored and visible result types.
+Append only the four row-writing outcomes with semantically honest provenance, return no row for unavailable/cancelled/noMatch, preserve repository validation and duplicate-run behavior, and keep raw errors/diagnostics/bytes/paths out of stored and visible result types.
 
 #### Step 4 — Prove concurrency and race behavior
 
-Test one in flight, second-request rejection/no queue, every cancellation boundary, timeout, provider crash/failure, stale late completion, cancel-vs-success and timeout-vs-success races, all six persistence outcomes, exact row counts/status/provenance, memory-buffer bounds, and unchanged snapshots/entries.
+Test one in flight, second-request rejection/no queue, every cancellation boundary, timeout, provider crash/failure, stale late completion, cancel-vs-success and timeout-vs-success races, all seven persistence outcomes, exact row counts/status/provenance, memory-buffer bounds, and unchanged snapshots/entries.
 
 ### Required build/test commands
 
@@ -405,7 +457,7 @@ Then run the full Debug suite.
 ### Completion checks
 
 - Single-flight/backpressure, five-second timeout, cancellation, and generation rules are enforced by production code and deterministic tests.
-- Exactly four outcomes can append; unavailable/cancelled/busy cannot.
+- Exactly four outcomes can append (`classified`, `failed`, `sourceChanged`, `unsupportedEntry`); unavailable/cancelled/noMatch/busy cannot.
 - Late/stale work cannot persist or publish success.
 - Provider/preflight provenance is truthful and detector/model/provider fields remain independent.
 - No UI, automatic caller, actual Magika binary, new dependency, or forbidden persistence was added.
@@ -437,7 +489,8 @@ Expose the approved runtime only as an explicit action for the currently selecte
 - Selection change, snapshot close, or browser replacement calls cancel/invalidate. A stale completion cannot alter the new selection or its inspector.
 - A second action while busy is disabled and also protected by service `.busy`; there is no queue or bulk action.
 - Show a progress/cancel affordance only after 0.5 seconds if still running. Fast completion does not flash progress. UI timing is injectable/deterministic in model tests.
-- Absence remains neutral “Not classified.” Failed/source-changed/unsupported persisted rows use bounded status text only. Unavailable/cancelled/busy are runtime messages and do not fabricate a row.
+- Absence remains neutral "Not classified." Failed/source-changed/unsupported persisted rows use bounded status text only. Unavailable/cancelled/busy are runtime messages and do not fabricate a row.
+- A current `noMatch` completion for the explicitly executing action may show a bounded transient runtime message equivalent to "No file type recognized." The persistent inspector classification stays neutral/absent, the message is not a persisted classification and not an error, it invents no detected type, and it never renders as "Failed", "Unavailable" or "Inferred file type: Unknown". A stale `noMatch` completion cannot alter the new selection or its inspector. No automatic, bulk or new classification workflow is added.
 - Confidence is shown only when present. Provider stderr/raw errors/stack traces/private paths never reach visible text.
 - Replace the now-false blanket statement “FSD never read this file's contents” with accurate bounded wording: snapshot metadata is not byte proof; optional classification samples at most the 4096-byte prefix of the currently attached source and is not historical verification.
 - No new destination, sheet, bulk list, automatic retry, backfill control, or classification in comparison/export.
@@ -548,7 +601,7 @@ Use a shared counting spy and row-count assertions to prove zero classification 
 
 #### Step 2 — Complete persistence and isolation regressions
 
-Prove successful/failed/source-changed/unsupported/unavailable/cancelled row behavior, no cancellation success row, no payload/sample/hash/absolute-path columns or values, no `entries`/`snapshots` mutation, append-only duplicate-run behavior, independent provenance, comparison outcome isolation, deterministic JSON format/version stability, and detached-source offline browsing without crash/hang.
+Prove successful/failed/source-changed/unsupported/unavailable/cancelled/noMatch row behavior (noMatch writing zero rows), no cancellation success row, no payload/sample/hash/absolute-path columns or values, no `entries`/`snapshots` mutation, append-only duplicate-run behavior, independent provenance, comparison outcome isolation, deterministic JSON format/version stability, and detached-source offline browsing without crash/hang.
 
 #### Step 3 — Consolidate source/provider/process adversarial coverage
 
@@ -709,7 +762,7 @@ Run clean Debug and Release arm64 builds, all focused classification suites, the
 
 #### Step 2 — Synchronize proven status and write the canonical Handoff
 
-Update only the allowlisted status paragraphs so they agree on schema version, implementation state, six outcomes, explicit-only UI, external artifact/version/license facts, test evidence, remaining limitations, and KI-025 disposition. Write the one canonical historical Handoff and full `CURRENT_HANDOFF.md`; include exact files changed, audit verdicts, evidence labels, manual state, no false content-verification claim, and one Worker proposal for BRAIN adjudication.
+Update only the allowlisted status paragraphs so they agree on schema version, implementation state, seven outcomes, explicit-only UI, external artifact/version/license facts, test evidence, remaining limitations, and KI-025 disposition. Write the one canonical historical Handoff and full `CURRENT_HANDOFF.md`; include exact files changed, audit verdicts, evidence labels, manual state, no false content-verification claim, and one Worker proposal for BRAIN adjudication.
 
 ### Required build/test commands
 

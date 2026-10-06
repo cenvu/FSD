@@ -213,6 +213,20 @@ Preserve existing P15 boundaries:
 - no automatic whole-library classification;
 - no snapshot/diff truth dependency.
 
+No-match presentation (ADR-034, Accepted 2026-10-06):
+- when an explicit classification completes with `noMatch`, the persistent
+  inspector classification stays neutral/absent — "Not classified.";
+- the current operation may state "No file type recognized." or the exact
+  approved equivalent, as a bounded transient current-result message;
+- it must never show "Failed", "Unavailable" or "Inferred file type: Unknown"
+  for a `noMatch`;
+- this message is not a persisted classification, invents no detected type and
+  does not survive as historical classification truth;
+- stale-result suppression on selection/snapshot/browser change is unchanged;
+- no automatic classification, no new workflow and no bulk action is added;
+- implementation is pending and is owned by the runtime implementation task,
+  not by this specification.
+
 ## 13. COMPARE
 
 Canonical:

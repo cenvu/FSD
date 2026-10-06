@@ -1,7 +1,5 @@
 UPDATED_AT: 2026-10-06T18:24:16+07:00
 
-UPDATED_AT: 2026-10-06T18:24:16+07:00
-
 # noMatch semantics canonicalization — docs/ADR only
 
 ## HOT

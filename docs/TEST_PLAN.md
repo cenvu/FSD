@@ -531,6 +531,15 @@ to merge. Deferred manual acceptance and inactive runtime remain unchanged.
 
 ## 9. Local classifier runtime test plan (not yet implemented)
 
+The forward-looking classifier requirements below cover the **seven typed
+outcomes** locked by ADR-034 (2026-10-06, Accepted): `classified`, `failed`,
+`sourceChanged`, `unsupportedEntry`, `unavailable`, `cancelled`, `noMatch`.
+`busy` remains runtime control state, is not a provider-result case and writes no
+row. `ROW_WRITING_OUTCOMES=4` and `NO_ROW_TYPED_OUTCOMES=3`. Historical completed
+test receipts earlier in this plan describe earlier milestones and are not
+rewritten. **`ADR-034 IMPLEMENTATION=PENDING`**: none of the requirements below is
+implemented yet.
+
 - exact byte ceiling enforcement (4096 bytes)
 - exact byte boundary (a file of exactly the ceiling size vs. one byte over)
 - small file (below the ceiling)
@@ -562,6 +571,31 @@ to merge. Deferred manual acceptance and inactive runtime remain unchanged.
 - no automatic invocation (capture, application launch, history open, snapshot reopen, browsing, search, comparison, JSON export)
 - offline history/snapshot usability (classification of a detached-source entry behaves per the `.source-changed`/`.unavailable` rule, not by crashing or hanging)
 - schema/`ExpectedState` safety when the provider identity schema change is implemented
+
+### Required `noMatch` outcome tests (ADR-034)
+
+These are permanent required tests, to be implemented in the later runtime
+implementation task and not in the ADR-034 canonicalization task:
+
+- the provider enum exposes a `noMatch` case
+- the helper parser maps `resultKind="no_match"` to `.noMatch`
+- `no_match` requires all of `detectedType`, `mimeType`, `confidence`, `detectorVersion`, `modelVersion` to be null
+- `no_match` carrying any non-null metadata field is rejected (`.failed`)
+- an unknown/other wire result kind still fails (no silent fallback to `noMatch`)
+- runtime `noMatch` writes zero `entry_classifications` rows
+- `noMatch` never mints, infers or fabricates a detected type
+- `noMatch` stores no provider identifier, detector version or model version
+- provider timeout remains `.failed`, never `noMatch`
+- a missing helper remains `.unavailable`, never `noMatch`
+- cancellation remains `.cancelled`, never `noMatch`
+- `busy` remains control-only and is not a provider-result case
+- a zero-byte eligible regular file may truthfully return `noMatch` and is not
+  reclassified as source unavailable merely because it is empty
+- persistent inspector classification details remain "Not classified" when no
+  row exists
+- the current explicit action may show a bounded neutral no-match message for a
+  current `noMatch` completion; it is not an error and shows no detected type
+- a stale `noMatch` completion cannot alter the new selection or browser
 
 ### Adversarial Provider Test
 
