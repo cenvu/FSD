@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-06T17:35:01+07:00
-
 # Classifier provider alternatives research — Architect fact packet
 
 ## HOT
