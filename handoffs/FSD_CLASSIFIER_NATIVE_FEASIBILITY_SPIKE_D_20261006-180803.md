@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-06T18:08:03+07:00
-
 # filetype native feasibility — mandatory semantic STOP
 
 ## HOT
