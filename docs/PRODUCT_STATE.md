@@ -10,9 +10,9 @@ Neither this baseline nor historical product evidence authorizes product work.
 
 **Supported foundations:** Read-only metadata capture; immutable snapshots; interrupted capture; SQLite history/browse; lazy trees; selected-entry detail; snapshot/snapshot comparison persistence; bounded comparison paging; classification append-only storage.
 
-**Partial foundations:** Offline state requires visual redesign; capture lacks connected-drive UX; identity lacks strong/ambiguous service; missing dashboard facade for recent data; search lacks scope abstraction; classification lacks runtime; compare navigation lacks ancestor projection.
+**Partial foundations:** Offline state requires visual redesign; capture lacks connected-drive UX; identity lacks strong/ambiguous service; missing dashboard facade for recent data; search lacks scope abstraction; explicit selected-entry classification runtime is implemented (final acceptance pending); compare navigation lacks ancestor projection.
 
-**Exact gaps:** Real classifier runtime; schema v9 provider identifier; Data-only classification; mount detection; optional Auto Capture; strong volume identity service; paged per-drive history; bounded dashboard aggregates; This Drive/Library search; classification search; compare hierarchy projection; exact reveal chain; Drive Set implementation; durable live-comparison retention; multi-Library/cloud; rendered-window/VoiceOver acceptance.
+**Exact gaps:** Mount detection; optional Auto Capture; strong volume identity service; paged per-drive history; bounded dashboard aggregates; This Drive/Library search; classification search; compare hierarchy projection; exact reveal chain; Drive Set implementation; durable live-comparison retention; multi-Library/cloud; rendered-window/VoiceOver acceptance.
 
 **ADR needed:**
 1. PHYSICAL_DRIVE_IDENTITY_AND_MOUNT_POLICY
@@ -24,8 +24,8 @@ See canonical target details in [UX_UI_SPEC.md](UX_UI_SPEC.md).
 ## Implemented capabilities
 
 - Native macOS 15+ arm64 SwiftUI app and XCTest target in `FSD.xcodeproj`.
-- SQLite catalog schema **v8**; explicit transactional v4→v5 (both known v4
-  variants), v5→v6, v6→v7 and v7→v8 migrations. Fresh and migrated catalogs
+- SQLite catalog schema **v9**; explicit transactional v4→v5 (both known v4
+  variants), v5→v6, v6→v7, v7→v8 and v8→v9 migrations. The v9 change appends nullable/no-default `provider_identifier`; legacy rows retain NULL without backfill. Fresh and migrated catalogs
   converge. `schema.sql` creates fresh catalogs only; `CatalogMigrations` moves
   existing ones. Complete ExpectedState inventory detects damaged/substituted
   schemas; per-connection foreign-key enforcement, normalization completion
@@ -52,8 +52,12 @@ See canonical target details in [UX_UI_SPEC.md](UX_UI_SPEC.md).
   separate. v8's dedicated `comparison_results(parent_result_id)` index bounds
   final-scale disposal. Collision groups have a 100,000-member cap and fail typed
   beyond it (`ComparisonError.collisionGroupTooLarge`).
-- Nullable optional classification preparation: typed local-only provider seam,
-  disabled provider, explicit enrichment service, append-only classification
+- Optional explicit selected-entry classification runtime: FSD-owned Data-only
+  request and one no-follow 0...4096-byte current-source prefix read; app-scoped
+  single-flight runtime, five-second inference-only deadline, cancellation/generation
+  suppression, bounded helper process and selected-entry UI. BRAIN-accepted
+  production provider is filetype v1.1.3 through audited ADR-035 integration;
+  disabled provider remains available. Append-only classification
   repository, unique `(entry_id, classification_run_id)` rejection, nullable
   round-trip, bounded latest/history/visible-page and selected-entry presentation.
   Ordinary capture/browse/search/export/comparison never invoke inference.
@@ -68,16 +72,22 @@ See canonical target details in [UX_UI_SPEC.md](UX_UI_SPEC.md).
 - HTML export, automatic mount detection/capture, login-item support, full volume
   identity service, EmbeddedRawProvider/reader-helper production integration and
   physical raw-device access. These remain scoped roadmap requirements, not claims.
-- **Local classifier runtime NOT STARTED / INACTIVE.** No provider is selected;
-  the current strategy is provider-neutral and Magika remains a blocked,
-  non-exclusive candidate with its task-025 verification evidence preserved.
-  No installed/downloaded model,
-  dependency or inference. The present provider seam still exposes `sourceURL`
-  and `byteBudget`; it is not the future Data-only reader/runtime. Schema v8 has
-  detector/model provenance but no `provider_identifier`; provider identity is
-  runtime-only. ADR-032 requires **SCHEMA CHANGE REQUIRED BEFORE RUNTIME** under
-  separate authorization. [P15_RUNTIME_PLAN.md](P15_RUNTIME_PLAN.md) owns all eight
-  future slice contracts; no v9 migration or runtime slice is claimed implemented.
+
+## Phase 1.5 runtime verification status
+
+filetype v1.1.3 is the BRAIN-accepted production provider; ADR-035 integration is implemented by task033A (`556872844b90640cc2a64e40d99594a78cef61af`) and independently audited by task034 (accepted `PASS_WITH_ADVISORY` at publication `9d1a8ea237c6c2941895b1c3640118371d2e2d4d`). Task035 verifies the physical runtime and synchronizes status; final independent implementation audit and Phase 1.5 BRAIN acceptance remain pending. Task035 current verification: clean Debug/Release arm64 builds passed; full Debug 494 executed / 491 passed / 0 failed / 3 existing external-probe skips; focused classification/isolation/schema 242 executed / 242 passed / 0 failed / 0 skipped; supplemental schema-safety 18 executed / 18 passed / 0 failed / 0 skipped. Exact commands, durations and per-suite counts: [FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md](../handoffs/FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md).
+
+Helper `FSD/Helpers/FSDClassificationHostSeam`, accepted SHA256 `665a6569ee60614313e50629c4166358b89859f15dac4c522905ee5a730752e7`; exact detector `github.com/h2non/filetype@v1.1.3`; host-owned provider `fsd.bundled-helper-host.v1`; classified model version/confidence nil. Fresh Debug/Release unsigned bundles contain byte-identical arm64/minos 13.0 helper at `Contents/Helpers/FSDClassificationHostSeam` and exact `Contents/Resources/THIRD_PARTY_NOTICES.txt`, with no Go construction/download/network in normal builds and no bundled Go cache/module/model/database. Scratch-copy ad-hoc deep/strict signing passed; no distribution readiness follows.
+
+Seven typed outcomes remain classified, failed, sourceChanged, unsupportedEntry, unavailable, cancelled, noMatch. Four write rows; unavailable/cancelled/noMatch write none; busy remains control-only. noMatch fabricates no type or provenance row. Classification is offline inferred current-source metadata only; no sample/path/content-hash persistence, snapshot mutation, comparison-semantic influence or JSON format change. Explicit selected-entry action remains the sole trigger; no automatic invocation across the eight workflows, bulk/background action, queue, automatic retry, watcher or backfill. Detached-source browsing/history/export remains usable in automated deletion-fixture coverage; no physical unmount is claimed.
+
+General realistic legacy DOC/XLS/PPT determinism remains unproven.
+Available pinned realistic PNG/DOCX/XLSX/PPTX bounded fixtures were single-valued in accepted implementation/audit evidence.
+The demonstrated short legacy-CFB ambiguity is neutralized by the guard.
+
+Magika remains a blocked, non-exclusive candidate; its task025 evidence is preserved.
+
+Residual limits: synthetic CFB discriminants prove adapter routing, not realistic legacy-file coverage; network/process observations cover six current real-helper runs only, corroborated by accepted historical static closure. Task033A/task034 controlled rebuild and notice/dependency closure are accepted historical evidence, not task035 reruns. Task034 Reviewer-only Go introspection telemetry counter is a process advisory, not a product defect; task035 invokes no Go and changes no Owner-global Go configuration/telemetry mode. Source authority is a point-in-time dev+ino proof, not a namespace lock. The accepted schema/provider whitespace-normalization advisory remains historical and is not repaired here. Manual UI, VoiceOver and physical-media acceptance remain **NOT PERFORMED — DEFERRED BY OWNER**. Independent final runtime audit and BRAIN Phase 1.5 acceptance are still required.
 
 ## Product limitations
 
@@ -100,7 +110,7 @@ This section is implementation baseline, not a parallel control issue ledger.
 | KI-016, KI-019, KI-023 | Aggregate-signature skipping and matched-subtree visual collapse are unimplemented. Per-entry matched evidence is correct. Public collision-member detail query is still absent. Over-cap equal-key groups fail typed and bounded; they cannot complete. |
 | KI-017 | Live-side comparisons are workspace-scoped: cancel/dispose comparison then delete transient snapshots on close. Only snapshot/snapshot records persist in recent comparisons. Keep-live promotion requires an explicit design. |
 | KI-020 | Rendered-window appearance, VoiceOver and focus traversal await owner observation; no XCUITest target exists. Manual requirements/backlog are owned by [TEST_PLAN.md](TEST_PLAN.md) §8. |
-| KI-025 | Nullable enrichment is implemented; runtime, durable separate provider identity and real external helper verification are absent, as described above. |
+| KI-025 | Implementation gap CLOSED by task035 physical verification: runtime implemented, schema-v9 durable separate provider identity verified, and actual filetype helper integration independently audited/BRAIN-accepted. This disposition satisfies the three existing absence conditions without redefining them. Independent final runtime audit, Phase 1.5 BRAIN acceptance and deferred manual acceptance remain separate gates. Evidence: [FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md](../handoffs/FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md). |
 
 The separately recorded legacy **startup-error wording** finding remains unresolved;
 it is distinct from fixed capture and comparison error mappers. The ignored

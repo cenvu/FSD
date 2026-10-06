@@ -529,15 +529,27 @@ It independently reproduced the full Debug suite (293 executed, 290 passed,
 and the Auditor's 59-test selection are distinct historical runs, not counts
 to merge. Deferred manual acceptance and inactive runtime remain unchanged.
 
-## 9. Local classifier runtime test plan (ADR-034 noMatch accepted task031; ADR-035 forward-looking)
+## 9. Local classifier runtime test plan (verified task035; independent final audit pending)
 
-The forward-looking classifier requirements below cover the **seven typed
+The binding classifier requirements below cover the **seven typed
 outcomes** locked by ADR-034 (2026-10-06, Accepted): `classified`, `failed`,
 `sourceChanged`, `unsupportedEntry`, `unavailable`, `cancelled`, `noMatch`.
 `busy` remains runtime control state, is not a provider-result case and writes no
 row. `ROW_WRITING_OUTCOMES=4` and `NO_ROW_TYPED_OUTCOMES=3`. Historical completed
 test receipts earlier in this plan describe earlier milestones and are not
-rewritten. **`ADR-034 IMPLEMENTATION=ACCEPTED_TASK031`**: the ADR-034 noMatch implementation requirements in the dedicated subsection below were implemented and accepted by task031 at `de8484e203b8b6e259dac90349d44069fc5a6ed0`; accepted earlier Slice02–06/task031 test receipts remain historical evidence; the ADR-035 real-helper integration/audit subsection remains `FORWARD-LOOKING / NOT_IMPLEMENTED / NOT_AUDITED`.
+rewritten. **`ADR-034 IMPLEMENTATION=ACCEPTED_TASK031`**: the ADR-034 noMatch implementation requirements in the dedicated subsection below were implemented and accepted by task031 at `de8484e203b8b6e259dac90349d44069fc5a6ed0`; accepted earlier Slice02–06/task031 test receipts remain historical evidence; ADR-035 integration was implemented by task033A and independently audited by task034; BRAIN accepted filetype v1.1.3 as production provider in the supplied task035 decision. The requirements below remain unchanged.
+
+**Current task035 evidence (AUTOMATED VERIFIED):** Task035 current verification: clean Debug/Release arm64 builds passed; full Debug 494 executed / 491 passed / 0 failed / 3 existing external-probe skips; focused classification/isolation/schema 242 executed / 242 passed / 0 failed / 0 skipped; supplemental schema-safety 18 executed / 18 passed / 0 failed / 0 skipped. Exact commands, durations and per-suite counts: [FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md](../handoffs/FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md). filetype v1.1.3 is the BRAIN-accepted production provider; ADR-035 integration is implemented by task033A (`556872844b90640cc2a64e40d99594a78cef61af`) and independently audited by task034 (accepted `PASS_WITH_ADVISORY` at publication `9d1a8ea237c6c2941895b1c3640118371d2e2d4d`). Task035 verifies the physical runtime and synchronizes status; final independent implementation audit and Phase 1.5 BRAIN acceptance remain pending.
+
+The focused run includes the eight classification suites, ComparisonSemanticsTests, JSONExportTests and SchemaMigrationTests/CatalogDatabaseTests; the supplemental schema-safety run explicitly selects ExpectedStateInventoryTests and TerminalCollisionEvidenceTests declared in SchemaSafetyCorrectionTests.swift. The ineffective file-named selector in the first focused command selected zero tests; it is not counted as coverage. All mandatory real-helper cases reran against the accepted committed helper; missing helper is failure, not skip. Full-suite skips are only FSDProbeSeedTests/testSeedIsolatedProbeCatalog (`FSD_PROBE_CATALOG` absent), FilesystemMatrixTests/testCaptureExternallyPreparedMountedFilesystem (`FSD_MATRIX_SOURCE` absent) and testReopenCapturedSnapshotWithTheSourceDetached (`FSD_MATRIX_OFFLINE_CATALOG` absent); none hides classifier coverage. The current full run also repeats the previously disclosed test-sampler QoS diagnostic at M5PeakSampler.stop; the related test passes and no repair is claimed.
+
+**AGENT-OBSERVED:** six current actual-helper PNG runs had zero sockets/descendants. Both fresh unsigned bundles match helper SHA256 `665a6569ee60614313e50629c4166358b89859f15dac4c522905ee5a730752e7`, arm64/minos 13.0, exact notices and no Go/module/model/database artifacts; scratch Release ad-hoc copy passes deep/strict verification. Detector `github.com/h2non/filetype@v1.1.3`, provider `fsd.bundled-helper-host.v1`, nil model/confidence are verified at the provider/mapping/repository boundaries. No Go command or controlled rebuild was run by task035; historical task033A/task034 reproducibility, dependency/notice inventories remain accepted historical evidence.
+
+General realistic legacy DOC/XLS/PPT determinism remains unproven.
+Available pinned realistic PNG/DOCX/XLSX/PPTX bounded fixtures were single-valued in accepted implementation/audit evidence.
+The demonstrated short legacy-CFB ambiguity is neutralized by the guard.
+
+**INFERRED:** observed offline behavior is corroborated by the accepted artifact hash and audited static API/dependency closure; bounded observations do not prove universal determinism or every future schedule. **MANUAL NOT PERFORMED:** **NOT PERFORMED — DEFERRED BY OWNER**; automated/agent evidence does not replace visual UI, VoiceOver or physical-media acceptance. No final Phase 1.5 BRAIN acceptance, Developer ID, notarization or App Store readiness is claimed.
 
 - exact byte ceiling enforcement (4096 bytes)
 - exact byte boundary (a file of exactly the ceiling size vs. one byte over)
@@ -597,9 +609,7 @@ These became permanent requirements and were implemented/accepted by task031 at 
 
 ### Required filetype v1.1.3 real-helper integration and audit tests (ADR-035)
 
-Forward-looking only (`INTEGRATION=NOT_IMPLEMENTED`, `NOT_AUDITED`). These are required
-of the later bounded implementation task and its independent audit; historical counts
-above are not rewritten. Full contract: `docs/CLASSIFIER_FILETYPE_INTEGRATION_CONTRACT.md`
+Implemented by task033A, independently audited by task034, BRAIN-accepted production provider, and rerun by task035 (`INTEGRATION=IMPLEMENTED`, `INDEPENDENTLY_AUDITED`). These remain required cases; historical counts above are not rewritten. Full contract: `docs/CLASSIFIER_FILETYPE_INTEGRATION_CONTRACT.md`
 sections 19-22. All run the actual committed helper (directly and through the Swift host
 seam); no fake-runner result substitutes, and a missing helper fails rather than skips.
 

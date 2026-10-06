@@ -430,7 +430,9 @@ audit of this boundary.
 APPROVE WITH CONDITIONS**, per
 `handoffs/FSD_P15_MAGIKA_NULLABLE_ENRICHMENT_AUDIT_R_20260807-142313.md`.
 This supersedes the original audit-next gate. Its deferred manual acceptance,
-inactive runtime and separately tracked limitations remain unchanged.
+then-inactive runtime and separately tracked limitations are historical preparation state.
+
+**Implementation/status amendment (task035):** schema v9 now durably separates nullable `provider_identifier` from detector/model versions; legacy v8 rows retain NULL without backfill. Append-only, unique-run, immutability, comparison and export semantics above remain binding. filetype v1.1.3 is the BRAIN-accepted production provider; ADR-035 integration is implemented by task033A (`556872844b90640cc2a64e40d99594a78cef61af`) and independently audited by task034 (accepted `PASS_WITH_ADVISORY` at publication `9d1a8ea237c6c2941895b1c3640118371d2e2d4d`). Task035 verifies the physical runtime and synchronizes status; final independent implementation audit and Phase 1.5 BRAIN acceptance remain pending. Task035 current verification: clean Debug/Release arm64 builds passed; full Debug 494 executed / 491 passed / 0 failed / 3 existing external-probe skips; focused classification/isolation/schema 242 executed / 242 passed / 0 failed / 0 skipped; supplemental schema-safety 18 executed / 18 passed / 0 failed / 0 skipped. Exact commands, durations and per-suite counts: [FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md](../handoffs/FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md).
 
 ## ADR-032 — Magika Runtime Adapter Design
 
@@ -438,15 +440,15 @@ inactive runtime and separately tracked limitations remain unchanged.
 
 **Completion amendment (2026-08-07): runtime design COMPLETE**, per
 `handoffs/FSD_P15_MAGIKA_RUNTIME_DESIGN_A_20260807-155630.md`.
-Runtime implementation is **NOT STARTED / INACTIVE**, current schema remains
-**v8**, and the schema change required below needs separate authorization
-before runtime implementation. No migration or runtime is implemented by this ADR.
+At that design milestone, runtime implementation was **NOT STARTED / INACTIVE** and schema was **v8**; the schema change required below needed separate authorization. No migration or runtime was implemented by this ADR.
+
+**Implementation/status amendment (task035):** the separately authorized schema-v9 prerequisite and Data-only runtime are implemented. filetype v1.1.3 is the BRAIN-accepted production provider; ADR-035 integration is implemented by task033A (`556872844b90640cc2a64e40d99594a78cef61af`) and independently audited by task034 (accepted `PASS_WITH_ADVISORY` at publication `9d1a8ea237c6c2941895b1c3640118371d2e2d4d`). Task035 verifies the physical runtime and synchronizes status; final independent implementation audit and Phase 1.5 BRAIN acceptance remain pending. Task035 current verification: clean Debug/Release arm64 builds passed; full Debug 494 executed / 491 passed / 0 failed / 3 existing external-probe skips; focused classification/isolation/schema 242 executed / 242 passed / 0 failed / 0 skipped; supplemental schema-safety 18 executed / 18 passed / 0 failed / 0 skipped. Exact commands, durations and per-suite counts: [FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md](../handoffs/FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md). Seven typed outcomes retain the 4-row/3-no-row split; `busy` is control-only. The explicit selected-entry action alone reads one 0...4096-byte current-source prefix; normal workflows stay metadata-only. JSON format version 1 still excludes classification; inference means no historical content verification. Manual acceptance remains **NOT PERFORMED — DEFERRED BY OWNER**.
 
 The Magika file-type enrichment adapter packaging was evaluated across four shapes.
 
 **Outcome-vocabulary amendment (2026-10-06, ADR-034):** this ADR's classification outcome vocabulary is superseded. The complete locked provider/runtime set is now **seven** typed outcomes — `classified`, `failed`, `sourceChanged`, `unsupportedEntry`, `unavailable`, `cancelled`, `noMatch` — with `busy` as runtime control state outside the provider-result enum. ADR-032's packaging, bounded-byte, process-isolation, provenance and schema verdicts below are unchanged.
 
-**Supersession amendment (2026-10-06, ADR-033): provider commitment superseded, packaging decision retained.** ADR-032's Magika-specific provider commitment is superseded: no provider is currently selected and future selection is provider-neutral. Magika remains a blocked, non-exclusive candidate; its task-025 verification STOP is preserved as prior candidate evidence and is neither a rejection nor an approval. ADR-032's packaging/process-isolation decision — a locally bundled helper executable inside `FSD.app`, arm64, offline, self-contained, separately crash-isolated — remains accepted, now against a macOS 15+ floor. The historical four-option evaluation below is preserved as the basis of that packaging decision and records the macOS 13 floor current when it was written; it defines no current compatibility claim and no candidate may assume macOS 15 compatibility before the Slice 07 gate verifies it. All bounded-byte, read-only, provenance and snapshot-isolation invariants below are unchanged.
+**Supersession amendment (2026-10-06, ADR-033): provider commitment superseded, packaging decision retained.** ADR-032's Magika-specific provider commitment was superseded by a provider-neutral selection gate; filetype v1.1.3 was subsequently accepted through ADR-035 and task034. Magika remains a blocked, non-exclusive candidate; its task-025 verification STOP is preserved as prior candidate evidence and is neither a rejection nor an approval. ADR-032's packaging/process-isolation decision — a locally bundled helper executable inside `FSD.app`, arm64, offline, self-contained, separately crash-isolated — remains accepted, now against a macOS 15+ floor. The historical four-option evaluation below is preserved as the basis of that packaging decision and records the macOS 13 floor current when it was written; it defines no current compatibility claim and no candidate may assume macOS 15 compatibility before the Slice 07 gate verifies it. All bounded-byte, read-only, provenance and snapshot-isolation invariants below are unchanged.
 
 1. **Native in-process library/model embedding:**
    - **Offline behavior:** Fully offline.
@@ -498,16 +500,16 @@ Shape 3 was ruled out because bundling a Python runtime violates the "minimal de
 Shape 4 was ruled out because it requires user installation, which violates the platform invariant of a single self-contained `.app`.
 Regardless of the packaging, zero network traffic and the metadata-only default are strictly preserved.
 
-Classification will be bounded to a single 4096-byte prefix read per file (PROPOSED). The provider API will receive only the bounded `Data` buffer, never a `URL` or path, ensuring it cannot independently traverse the filesystem. Bytes read for classification are unconditionally never persisted, hashed, or logged.
+Classification is implemented as a single 4096-byte prefix read per selected file. The provider API receives only the bounded `Data` buffer, never a `URL` or path, ensuring it cannot independently traverse the filesystem. Bytes read for classification are unconditionally never persisted, hashed, or logged.
 
 **Schema Verdict:**
 1. What does `detector_version` identify? Per `EntryClassificationRepository.swift` and ADR-031, it identifies the detection algorithm version, serving as one of the explicitly "persisted provenance fields".
 2. What does `model_version` identify? Per the same sources, it identifies the model version used, serving as the other explicit "persisted provenance field".
 3. What independent fact does provider/adapter identity represent, and how is it different from both of the above? Provider/adapter identity represents which packaging shape or process produced the row (e.g., a locally bundled helper executable). This is a distinct dimension because the same detector/model version can run under different packaging shapes over the adapter's lifetime.
 4. Why must those three facts remain separately, durably recoverable rather than merged into one field? A future reader needs to answer "which detector version produced this row" and "which adapter produced this row" as two independent questions, without depending on an undocumented, unenforced string convention to disentangle them.
-5. Can schema v8 — as it actually exists today, not as a hypothetical encoding convention — represent all three facts without semantic overloading? No. The real column list in `schema.sql` provides only `detector_version` and `model_version`, meaning the adapter identifier remains "runtime-only" without semantic overloading.
+5. Could schema v8 — as it existed at design time, not as a hypothetical encoding convention — represent all three facts without semantic overloading? No. The design-time schema-v8 column list provided only `detector_version` and `model_version`, so adapter identity was "runtime-only" without semantic overloading.
 
-Conclusion: `SCHEMA CHANGE REQUIRED BEFORE RUNTIME`.
+Original design conclusion: `SCHEMA CHANGE REQUIRED BEFORE RUNTIME`; the separately authorized schema-v9 provider column now satisfies that prerequisite without changing this decision.
 Exactly one minimal missing field, `provider_identifier`, is required to record which adapter/process produced the row, independent of the algorithm and model versions. `detector_version` must not be overloaded to carry this fact because it would merge two orthogonal facts, forcing future queries to rely on an undocumented string convention to disentangle "which adapter" from "which detector".
 
 ## ADR-033 — macOS 15+ deployment floor and provider-neutral classification strategy
@@ -573,6 +575,8 @@ Tasks 029R and 029S established native feasibility for `github.com/h2non/filetyp
 
 ### Decision
 
+The following target-only status records the contract-time decision (2026-10-06); current acceptance is in the task035 implementation/status amendment below.
+
 1. filetype v1.1.3 is selected as the **sole integration TARGET** (`INTEGRATION_TARGET=filetype_v1.1.3`). It is **NOT yet an accepted production provider** (`PRODUCTION_PROVIDER_ACCEPTED=NO`). Selection of a target authorizes no integration (`INTEGRATION_AUTHORIZED=NO`).
 2. Tasks 029R/029S established native feasibility and closed external facts. They do not establish production acceptance.
 3. The short ambiguous-CFB nondeterminism is real and is retained as a documented advisory. The production adapter neutralizes it before upstream matching: if the bounded input is at most 513 bytes and begins `D0 CF 11 E0`, the helper returns `no_match` (all metadata null) **without calling** `filetype.Match`. This is consistent with ADR-034 (successful execution, no single type truthfully recognizable) and requires no schema change.
@@ -586,4 +590,14 @@ Tasks 029R and 029S established native feasibility for `github.com/h2non/filetyp
 
 ### Consequences
 
+**Contract-time consequences (2026-10-06, historical):**
+
 `IMPLEMENTATION=NOT_IMPLEMENTED` and `AUDIT=NOT_AUDITED`: no helper source, binary, rename, Xcode phase, test or notice file exists, and this ADR claims none. ADR-033 decision 8 (rename only after a provider is selected) is satisfied for the rename in task033 only. Magika remains preserved historical candidate evidence (`BLOCKED_NON_EXCLUSIVE_CANDIDATE`). `FILETYPE_SELECTED_FOR_PRODUCTION=NO` stands until BRAIN accepts a passing independent audit.
+
+The contract-time `NOT_IMPLEMENTED` / `NOT_AUDITED` gates and target-only selection in the decision above describe task032, before the separately authorized integration and audit. **Current implementation/status amendment (task035):** `IMPLEMENTATION=IMPLEMENTED`; `AUDIT=INDEPENDENTLY_AUDITED`; `PRODUCTION_PROVIDER_ACCEPTED=YES`. filetype v1.1.3 is the BRAIN-accepted production provider; ADR-035 integration is implemented by task033A (`556872844b90640cc2a64e40d99594a78cef61af`) and independently audited by task034 (accepted `PASS_WITH_ADVISORY` at publication `9d1a8ea237c6c2941895b1c3640118371d2e2d4d`). Task035 verifies the physical runtime and synchronizes status; final independent implementation audit and Phase 1.5 BRAIN acceptance remain pending. Helper SHA256 `665a6569ee60614313e50629c4166358b89859f15dac4c522905ee5a730752e7`, detector `github.com/h2non/filetype@v1.1.3`, provider `fsd.bundled-helper-host.v1`, unsigned bundle `Contents/Helpers/FSDClassificationHostSeam`, arm64/minos 13.0; notices at `Contents/Resources/THIRD_PARTY_NOTICES.txt`. Normal builds need no Go construction/download/network. Accepted engineering notice/reproducibility closure comes from task033A/task034 and is not claimed as re-executed by task035.
+
+General realistic legacy DOC/XLS/PPT determinism remains unproven.
+Available pinned realistic PNG/DOCX/XLSX/PPTX bounded fixtures were single-valued in accepted implementation/audit evidence.
+The demonstrated short legacy-CFB ambiguity is neutralized by the guard.
+
+The guard remains only `len(input) <= 513 && prefix D0 CF 11 E0 -> noMatch before Match`; synthetic discriminants are not realistic legacy fixtures. Manual acceptance remains **NOT PERFORMED — DEFERRED BY OWNER**; local ad-hoc checks establish no Developer ID, notarization or App Store readiness. Magika remains historical blocked-candidate evidence. The final independent runtime audit remains required.

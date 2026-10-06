@@ -90,8 +90,7 @@ in immutable handoffs. [TEST_PLAN.md](TEST_PLAN.md) owns validation/manual backl
 Runtime follows the provenance/schema prerequisite and eight bounded slices in
 [P15_RUNTIME_PLAN.md](P15_RUNTIME_PLAN.md). Preparation and inference are separate;
 optional runtime inference does not block core MVP criteria. ADR-031/032 own the
-design. JSON export format version 1 excludes classification. No runtime or schema
-work is authorized by this roadmap.
+design; ADR-035 owns the accepted filetype v1.1.3 integration. The schema-v9 provenance prerequisite and independent task034 integration gate are satisfied; task035 Slice08 verification evidence and implementation status are recorded in [PRODUCT_STATE.md](PRODUCT_STATE.md) and [FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md](../handoffs/FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md). Independent final runtime audit and BRAIN acceptance remain pending. JSON export format version 1 excludes classification. Manual acceptance remains **NOT PERFORMED — DEFERRED BY OWNER**. No runtime or schema work is authorized by this roadmap.
 
 - **Requirements binding on this phase:**
   - fully offline execution, no network access;

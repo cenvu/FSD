@@ -313,13 +313,10 @@ To support live folder/volume comparison seamlessly within the snapshot-backed d
 - Transient snapshots are excluded from standard capture history and user-facing lists.
 - **Lifecycle:** Transient snapshots are automatically deleted from SQLite when the comparison session is closed, or cleaned up on application launch if abandoned during a crash. Promotion to a user snapshot may be offered in the future but is deferred.
 
-## 9. Nullable enrichment boundary — `LocalFileClassificationProvider` (Phase 1.5 preparation)
+## 9. Nullable enrichment boundary — `LocalFileClassificationProvider` (implemented Phase 1.5 runtime)
 
-This section is the binding boundary for the Phase 1.5 preparation slice.
-`FSD/Catalog/EntryClassificationRepository.swift` implements the typed
-`LocalFileClassificationProvider`, `DisabledFileClassificationProvider` and
-explicit `ClassificationEnrichmentService` seam. No classifier inference is
-implemented, installed or executed, and no provider is selected.
+This section is the binding derived-enrichment boundary.
+`FSD/Classification/LocalFileClassificationProvider.swift` owns the Data-only protocol and disabled provider; `ClassificationRuntimeService` owns explicit single-flight orchestration; `FSD/Catalog/EntryClassificationRepository.swift` owns append-only persistence. filetype v1.1.3 is the BRAIN-accepted production provider; ADR-035 integration is implemented by task033A (`556872844b90640cc2a64e40d99594a78cef61af`) and independently audited by task034 (accepted `PASS_WITH_ADVISORY` at publication `9d1a8ea237c6c2941895b1c3640118371d2e2d4d`). Task035 verifies the physical runtime and synchronizes status; final independent implementation audit and Phase 1.5 BRAIN acceptance remain pending.
 
 ### Boundary rule
 
@@ -330,27 +327,14 @@ MVP paths, `TreeDiffEngine`, or search/export. Metadata Match, comparison
 classification, and snapshot completeness are computed with zero knowledge
 that this interface exists.
 
-The production protocol shape is:
-
-```text
-protocol LocalFileClassificationProvider {
-    func classify(_ request: LocalClassificationRequest) throws -> LocalClassificationProviderResult
-}
-
-enum ClassificationResult {
-    case notRequested
-    case disabled
-    case classified(detectedType, mimeType, confidence, detectorVersion, modelVersion)
-    case failed
-}
-```
+The verified production protocol is async, cancellation-aware and `Sendable`. Its only request field is immutable `Data`, capped by FSD at 4096 bytes; provider identifier, detector version and model version are independent protocol properties. The exact typed outcomes are `classified`, `failed`, `sourceChanged`, `unsupportedEntry`, `unavailable`, `cancelled`, `noMatch`; `busy` is runtime admission state only.
 
 ### Default implementation: `DisabledFileClassificationProvider`
 
-The only built-in provider in this slice is a disabled/no-op default. It must:
+The disabled/no-op provider remains available for explicit callers. The production selected-entry action constructs `BundledFiletypeClassificationProvider`; ordinary workflows invoke neither. The disabled provider must:
 
 - perform no filesystem access;
-- receive no payload bytes;
+- never inspect its bounded request bytes;
 - open no files;
 - read no byte ranges;
 - compute no hashes;
@@ -358,27 +342,27 @@ The only built-in provider in this slice is a disabled/no-op default. It must:
 - produce no database rows when explicitly queried through the enrichment service;
 - produce no UI state;
 - produce no diff input;
-- return `.disabled` (or `.notRequested`) only when explicitly queried, and otherwise do nothing;
+- return `.unavailable` without a row when explicitly queried, and otherwise do nothing;
 - have effectively zero runtime cost while unused — no allocation, no thread, no I/O on the MVP's hot paths.
 
 The MVP scanner remains fully functional without a provider. Capture, history
 open, tree browsing, search, export and comparison never invoke the enrichment
 service and remain payload-free.
 
-### Future Phase 1.5 constraints (binding on any later real implementation)
+### Phase 1.5 constraints (implemented; binding on later providers)
 
 - fully offline operation, no network access;
 - only bounded byte-range reads, never full-file reads and never full-file hashing;
 - no sampled-byte persistence — bytes read for classification are never written to storage;
 - no modification of the source volume;
 - append-only/versioned results through the repository API (see `entry_classifications` in `database/schema.sql`) — a later run never rewrites or reinterprets an earlier run's stored result;
-- detector and model versions are recorded with every result and remain traceable;
+- provenance fields remain independently traceable where present; classified filetype rows carry its exact detector version, host-owned provider ID, nil model version and nil confidence;
 - classification never mutates immutable snapshot metadata (`entries`, `snapshots` aggregate fields) and never alters a historical Metadata Match or diff conclusion, past or future;
 - classification failure never changes a snapshot's `complete`/`interrupted`/`failed` status.
 
-## 9a. Local Classifier Runtime (Not Yet Implemented)
+## 9a. Local Classifier Runtime (verified implementation; final acceptance pending)
 
-This section documents the resolved design for the future Phase 1.5 local classifier runtime adapter. **This is a design constraint only; the runtime is not yet built.**
+This section preserves the resolved design and records the verified runtime status. Task035 current verification: clean Debug/Release arm64 builds passed; full Debug 494 executed / 491 passed / 0 failed / 3 existing external-probe skips; focused classification/isolation/schema 242 executed / 242 passed / 0 failed / 0 skipped; supplemental schema-safety 18 executed / 18 passed / 0 failed / 0 skipped. Exact commands, durations and per-suite counts: [FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md](../handoffs/FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md).
 
 ### Current provider status
 
@@ -386,17 +370,17 @@ CURRENT_PROVIDER_STRATEGY=PROVIDER_NEUTRAL_LOCAL_CLASSIFIER
 MAGIKA_PROVIDER_SELECTION=CURRENTLY_NONE
 MAGIKA_STATUS=BLOCKED_CANDIDATE (blocked, non-exclusive; not rejected, not approved)
 
-The packaging decision below remains accepted and provider-independent: the classifier runs as a locally bundled helper process inside `FSD.app`, arm64, macOS 15+ compatible, offline and self-contained. No provider is selected here; provider selection requires a separate authoritative external research gate (`P15_RUNTIME_PLAN.md` Slice 07) and no compatibility may be assumed for any candidate before that gate verifies it (ADR-033).
+The packaging decision below remains accepted and provider-independent: the classifier runs as a locally bundled helper process inside `FSD.app`, arm64, macOS 15+ compatible, offline and self-contained. filetype v1.1.3 is the BRAIN-accepted production provider; ADR-035 integration is implemented by task033A (`556872844b90640cc2a64e40d99594a78cef61af`) and independently audited by task034 (accepted `PASS_WITH_ADVISORY` at publication `9d1a8ea237c6c2941895b1c3640118371d2e2d4d`). Task035 verifies the physical runtime and synchronizes status; final independent implementation audit and Phase 1.5 BRAIN acceptance remain pending.
 
-### Integration target (ADR-035, not an accepted provider)
+### Accepted production provider (ADR-035)
 
 ```text
 INTEGRATION_TARGET=filetype_v1.1.3
-PRODUCTION_PROVIDER_ACCEPTED=NO
-INTEGRATION=NOT_IMPLEMENTED;NOT_AUDITED
+PRODUCTION_PROVIDER_ACCEPTED=YES
+INTEGRATION=IMPLEMENTED;INDEPENDENTLY_AUDITED
 ```
 
-Intended layering (design constraint; nothing below exists yet):
+Verified physical layering:
 
 ```text
 FSD Swift host (BoundedClassificationSourceReader reads <=4096 bytes, owns Data)
@@ -405,7 +389,15 @@ FSD Swift host (BoundedClassificationSourceReader reads <=4096 bytes, owns Data)
   -> filetype.Match (v1.1.3, unmodified, at most one call)
 ```
 
-The guard receives no additional authority and reads no additional bytes. It is an FSD adapter truthfulness guard against a demonstrated upstream map-order ambiguity, not a forked detector. No universal classifier determinism is claimed: available pinned PNG/DOCX/XLSX/PPTX fixtures were single-valued, and legacy-Office determinism is not proven. Normal Xcode builds consume one committed native helper and require no Go or network. Full contract: `docs/CLASSIFIER_FILETYPE_INTEGRATION_CONTRACT.md`.
+The guard receives no additional authority and reads no additional bytes. It is an FSD adapter truthfulness guard against a demonstrated upstream map-order ambiguity, not a forked detector. No universal classifier determinism is claimed: available pinned PNG/DOCX/XLSX/PPTX fixtures were single-valued, and legacy-Office determinism is not proven. Normal Xcode builds consume one committed native helper and require no Go or network. Full contract: `docs/CLASSIFIER_FILETYPE_INTEGRATION_CONTRACT.md` (its task032 creation-time gates remain historical contract state; current acceptance is recorded above and in STATE).
+
+Helper `FSD/Helpers/FSDClassificationHostSeam`, SHA256 `665a6569ee60614313e50629c4166358b89859f15dac4c522905ee5a730752e7`; exact detector `github.com/h2non/filetype@v1.1.3`; host-owned provider `fsd.bundled-helper-host.v1`. Fresh unsigned Debug/Release bundles preserve its bytes at `Contents/Helpers/FSDClassificationHostSeam` and the notice at `Contents/Resources/THIRD_PARTY_NOTICES.txt`; arm64, minos 13.0. Six current observed helper runs had zero sockets/descendants. Normal builds construct/download nothing through Go. The scratch Release copy passed deep/strict ad-hoc signing verification; no Developer ID, notarization or App Store readiness claim.
+
+General realistic legacy DOC/XLS/PPT determinism remains unproven.
+Available pinned realistic PNG/DOCX/XLSX/PPTX bounded fixtures were single-valued in accepted implementation/audit evidence.
+The demonstrated short legacy-CFB ambiguity is neutralized by the guard.
+
+Manual acceptance: **NOT PERFORMED — DEFERRED BY OWNER**. Optional current-source inference proves neither historical content nor byte identity.
 
 ### Historical Magika packaging evaluation (retained as evidence; superseded as provider selection by ADR-033)
 
@@ -475,11 +467,11 @@ The stored classification represents time-of-classification metadata about curre
 ### Bounded Byte Contract
 
 The runtime operates strictly on bounded byte reads:
-1. The byte-ceiling is `4096` bytes (PROPOSED). The accounting definition: the ceiling bounds the single prefix read from the resolved live file; nothing else — no directory-listing bytes, no metadata bytes — counts against it.
-2. Range count is exactly `1` single prefix range. No tail reads and no adaptive additional reads (PROPOSED).
-3. The read layer concurrency is `1` (single classification at a time) (PROPOSED).
+1. The byte-ceiling is `4096` bytes (IMPLEMENTED). The accounting definition: the ceiling bounds the single prefix read from the resolved live file; nothing else — no directory-listing bytes, no metadata bytes — counts against it.
+2. Range count is exactly `1` single prefix range. No tail reads and no adaptive additional reads (IMPLEMENTED).
+3. The read layer concurrency is `1` (single classification at a time) (IMPLEMENTED).
 4. **Bytes read for classification are never persisted, never hashed, never logged to any diagnostic surface, in any outcome.**
-5. The provider-facing request will carry only a bounded `Data` (or equivalent already-read byte buffer) — no `URL`, no path, no file handle. (The `LocalClassificationRequest.sourceURL` property is flagged for removal before this is implemented).
+5. The implemented provider-facing request carries only bounded `Data` — no `URL`, path, descriptor, file handle, resolver, callback, range callback or second source-read capability. `sourceURL` and caller-controlled `byteBudget` are absent.
 6. Small-file behavior: a file smaller than the ceiling is read in full (its actual size), not padded or treated as an error. The contract is `0...4096` bytes: an eligible zero-byte regular file may reach a provider with empty `Data`, and the provider may truthfully return `noMatch`; a zero-byte regular file is not source unavailable merely because it is empty (ADR-034).
 7. Large-file behavior: only the first `4096` bytes are ever read; the rest of the file is never touched.
 8. Unreadable files: disappearing-source, inaccessible-source, directory, symlink, and special-file outcomes are handled exactly as defined in the "Source Resolution and Identity" subsection.
@@ -489,12 +481,12 @@ The runtime operates strictly on bounded byte reads:
 
 ### Lifecycle and Cancellation
 
-1. Concurrency: exactly `1` classification in flight at a time (PROPOSED). Kept as it strictly bounds resource contention.
-2. Trigger scope: single selected-entry action only (PROPOSED). Kept to avoid unintentional background load. The following workflows must **never** trigger classification automatically: capture, application launch, history open, snapshot reopen, browsing, search, comparison, JSON export.
-3. Inference timeout: `5` seconds (PROPOSED). Kept as a reasonable UX bound for a single file.
+1. Concurrency: exactly `1` classification in flight at a time (IMPLEMENTED). Kept as it strictly bounds resource contention.
+2. Trigger scope: single selected-entry action only (IMPLEMENTED). Kept to avoid unintentional background load. The following workflows must **never** trigger classification automatically: capture, application launch, history open, snapshot reopen, browsing, search, comparison, JSON export.
+3. Inference timeout: `5` seconds (IMPLEMENTED; actual suspended-child timeout test passed). Kept as a reasonable UX bound for a single file.
 4. Memory high-water delta: `2x` the byte ceiling (8192 bytes) (PROPOSED). Kept for strict memory budgeting.
-5. Queue/backpressure: no queue in the first implementation. A second request is rejected if one is in flight (PROPOSED). Kept to ensure simplicity and single-action UI.
-6. UI latency expectation: show progress/cancel affordance after `0.5` seconds (PROPOSED). Kept for responsive feedback.
+5. Queue/backpressure: no queue in the first implementation. A second request receives `busy` if one is in flight (IMPLEMENTED). Kept to ensure simplicity and single-action UI.
+6. UI latency expectation: show progress/cancel affordance after `0.5` seconds (IMPLEMENTED; automated model evidence, manual visual acceptance deferred). Kept for responsive feedback.
 7. Cancellation mechanism: The cancellation contract reuses the existing `generation`/`invalidate()` idiom implemented in `SnapshotTreeDataSource.swift`.
 
 **Cancellation Persistence:**
@@ -504,7 +496,7 @@ Append-only semantics and `(entry_id, classification_run_id)` duplicate-rejectio
 
 ### Outcomes and Schema Impact
 
-**Canonical result semantics (ADR-034, Accepted 2026-10-06):** the provider/runtime classification contract has **seven typed outcomes**. `IMPLEMENTATION=ACCEPTED_BY_TASK031` — ADR-034 seven-outcome provider/runtime semantics are implemented and accepted at task031 publication `de8484e203b8b6e259dac90349d44069fc5a6ed0`. `ADR034_RUNTIME_SEMANTICS=IMPLEMENTED`; `FILETYPE_REAL_HELPER_INTEGRATION=NOT_IMPLEMENTED`.
+**Canonical result semantics (ADR-034, Accepted 2026-10-06):** the provider/runtime classification contract has **seven typed outcomes**. `IMPLEMENTATION=ACCEPTED_BY_TASK031` — ADR-034 seven-outcome provider/runtime semantics are implemented and accepted at task031 publication `de8484e203b8b6e259dac90349d44069fc5a6ed0`. `ADR034_RUNTIME_SEMANTICS=IMPLEMENTED`; `FILETYPE_REAL_HELPER_INTEGRATION=IMPLEMENTED_AND_INDEPENDENTLY_AUDITED`.
 
 | Typed outcome | Meaning | `entry_classifications` rows |
 |---|---|---|
@@ -533,14 +525,14 @@ Timeout remains `failed`; malformed helper output remains `failed`; a missing he
 2. What does `model_version` identify? Per the same sources, it identifies the model version used, serving as the other explicit "persisted provenance field".
 3. What independent fact does provider/adapter identity represent, and how is it different from both of the above? Provider/adapter identity represents which packaging shape or process produced the row (e.g., a locally bundled helper executable). This is a distinct dimension because the same detector/model version can run under different packaging shapes over the adapter's lifetime.
 4. Why must those three facts remain separately, durably recoverable rather than merged into one field? A future reader needs to answer "which detector version produced this row" and "which adapter produced this row" as two independent questions, without depending on an undocumented, unenforced string convention to disentangle them.
-5. Can schema v8 — as it actually exists today, not as a hypothetical encoding convention — represent all three facts without semantic overloading? No. The real column list in `schema.sql` provides only `detector_version` and `model_version`, meaning the adapter identifier remains "runtime-only" without semantic overloading.
+5. Could schema v8 — as it existed at design time, not as a hypothetical encoding convention — represent all three facts without semantic overloading? No. The design-time schema-v8 column list provided only `detector_version` and `model_version`, so adapter identity was "runtime-only" without semantic overloading.
 
-Conclusion: `SCHEMA CHANGE REQUIRED BEFORE RUNTIME`.
+Original design conclusion: `SCHEMA CHANGE REQUIRED BEFORE RUNTIME`. **Implemented prerequisite:** schema v9 appends nullable/no-default `provider_identifier`; task035 reran fresh/migrated equivalence, legacy NULL preservation, rollback/version-last, ExpectedState, integrity/foreign-key, append-only and duplicate-run tests. No schema change occurs in task035.
 Exactly one minimal missing field, `provider_identifier`, is required to record which adapter/process produced the row, independent of the algorithm and model versions. `detector_version` must not be overloaded to carry this fact because it would merge two orthogonal facts, forcing future queries to rely on an undocumented string convention to disentangle "which adapter" from "which detector".
 
 ### UI Contract
 
-For the future runtime, classification must be presented as inferred metadata, never as content verification. The UI must follow the established pattern in `SnapshotBrowserView.swift`:
+For the implemented runtime, classification must be presented as inferred metadata, never as content verification. The UI must follow the established pattern in `SnapshotBrowserView.swift`:
 - Absence of classification is presented as a neutral state ("Not classified" or equivalent), never fabricated as an error.
 - A current `noMatch` completion for the explicitly executing user action may additionally show a bounded transient runtime message equivalent to "No file type recognized." That message is not a persisted classification, is not an error, invents no detected type and does not survive as historical classification truth. It never renders as "Failed", "Unavailable" or "Inferred file type: Unknown".
 - Confidence is shown only when actually present in the data, never fabricated.

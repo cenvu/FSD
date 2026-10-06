@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-07T02:36:10+07:00
-
 # Canonical Phase 1.5 runtime — Slice 08 whole-runtime verification
 
 ## HOT
