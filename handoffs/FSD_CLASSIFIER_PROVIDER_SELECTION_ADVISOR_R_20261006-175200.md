@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-06T17:52:00+07:00
-
 # Classifier provider selection — Advisor decision
 
 ## HOT
