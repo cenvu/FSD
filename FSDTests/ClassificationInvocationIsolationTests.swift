@@ -183,7 +183,7 @@ final class ClassificationInvocationIsolationTests: XCTestCase {
         XCTAssertEqual(after.classificationRows - before.classificationRows, 0)
         assertNoInvocation("application launch", before: before, after: after)
         try assertNoClassificationCapability(in: "FSD/App/FSDApp.swift", forbidden: [
-            "classificationRuntime.start(", "classifySelectedFile()", "BundledMagikaClassificationProvider(",
+            "classificationRuntime.start(", "classifySelectedFile()", "BundledFiletypeClassificationProvider(",
             "LocalClassificationRequest", "BoundedClassificationSourceReader", "EntryClassificationRepository"
         ])
     }

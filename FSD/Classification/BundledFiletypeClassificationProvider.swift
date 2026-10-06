@@ -1,10 +1,10 @@
 import Foundation
 import Darwin
 
-/// FSD's future bundled-helper HOST contract, not an upstream Magika API.
+/// FSD's filetype-backed bundled-helper provider using the bounded host contract.
 /// Construction is inert. Only classify launches, and only from the app bundle.
-struct BundledMagikaClassificationProvider: LocalFileClassificationProvider, @unchecked Sendable {
-    // Internal placeholder: no real helper, upstream filename or CLI is asserted.
+struct BundledFiletypeClassificationProvider: LocalFileClassificationProvider, @unchecked Sendable {
+    // Stable provider-neutral protocol location inside the application bundle.
     static let helperRelativePath = "Contents/Helpers/FSDClassificationHostSeam"
     static let stdoutCap = 4096
     static let stderrCap = 4096
@@ -166,7 +166,8 @@ private enum HelperProcessFault: Error { case io }
 
 /// All methods execute on the single owned worker operation. No readability
 /// handlers, background children or competing close/read/write callbacks.
-private final class FoundationHelperProcessRunner: HelperProcessRunner {
+// Internal visibility permits tests to exercise the actual runner and child.
+final class FoundationHelperProcessRunner: HelperProcessRunner {
     private let process = Process()
     private let input = Pipe()
     private let output = Pipe()
@@ -331,7 +332,7 @@ private struct HelperMetadataEnvelope {
     private var index = 0
 
     static func parse(_ data: Data) -> LocalClassificationProviderResult {
-        guard data.count <= BundledMagikaClassificationProvider.stdoutCap else { return .failed }
+        guard data.count <= BundledFiletypeClassificationProvider.stdoutCap else { return .failed }
         var parser = Self(bytes: Array(data))
         guard let fields = parser.object(), fields.count == 7,
               case .number("1")? = fields["schemaVersion"],

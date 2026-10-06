@@ -354,7 +354,7 @@ final class ClassificationSecurityIntegrationTests: XCTestCase {
             "LocalFileClassificationProvider.swift",
             "BoundedClassificationSourceReader.swift",
             "ClassificationRuntimeService.swift",
-            "BundledMagikaClassificationProvider.swift"
+            "BundledFiletypeClassificationProvider.swift"
         ]
         let forbidden = [
             "import FoundationNetworking", "URLSession", "URLSessionConfiguration", "URLRequest", "HTTPURLResponse",

@@ -560,7 +560,7 @@ final class ClassificationRuntimeServiceTests: XCTestCase {
         let reaping = expectation(description: "owned fake child reaping")
         let reapRelease = DispatchSemaphore(value: 0)
         let runner = RuntimeTestHelperRunner(active: active, reaping: reaping, release: reapRelease)
-        let provider = BundledMagikaClassificationProvider(
+        let provider = BundledFiletypeClassificationProvider(
             bundleRoot: URL(fileURLWithPath: "/Applications/FSD.app"), makeRunner: { runner },
             canonicalize: { $0 }, isExecutable: { _ in true }
         )

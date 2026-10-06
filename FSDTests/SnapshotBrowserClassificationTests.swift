@@ -596,18 +596,18 @@ final class SnapshotBrowserClassificationTests: XCTestCase {
         XCTAssertEqual(try EntrySnapshotProbe.classificationRowCount(database: database), 0)
     }
 
-    func testProductionProviderConstructionIsInertAndUnavailableWithoutHelper() async throws {
-        let provider = BundledMagikaClassificationProvider()
+    func testProductionProviderConstructionIsInertAndDetachedSourceIsUnavailable() async throws {
+        let provider = BundledFiletypeClassificationProvider()
         XCTAssertEqual(provider.providerIdentifier, "fsd.bundled-helper-host.v1")
-        // No real helper exists in a normal build; production start through the
-        // real runtime must correctly return unavailable with no row and no
-        // simulated success.
+        // This synthetic snapshot has no attached source. The real helper is
+        // bundled, but source resolution must still return unavailable before
+        // inference and write no row. Construction itself starts no process.
         let runtime = ClassificationRuntimeService.shared
         await runtime.cancel()
         await runtime.waitForCleanup()
         let outcome = await SnapshotBrowserModel.productionStart(entryID: 2, database: database, runtime: runtime)
         await runtime.waitForCleanup()
-        XCTAssertEqual(outcome, .unavailable, "missing helper must be unavailable, never simulated success")
+        XCTAssertEqual(outcome, .unavailable, "detached source must be unavailable even with a bundled helper")
         XCTAssertEqual(try EntrySnapshotProbe.classificationRowCount(database: database), 0)
     }
 }

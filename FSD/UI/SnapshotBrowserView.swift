@@ -108,7 +108,7 @@ final class SnapshotBrowserModel: ObservableObject {
 
     static func productionStart(entryID: Int64, database: CatalogDatabase,
                                 runtime: ClassificationRuntimeService) async -> SelectedEntryClassificationResult {
-        let provider = BundledMagikaClassificationProvider()
+        let provider = BundledFiletypeClassificationProvider()
         let started = await runtime.start(entryID: entryID, database: database, provider: provider)
         return selectedEntryResult(started)
     }
