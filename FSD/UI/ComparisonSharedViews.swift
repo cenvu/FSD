@@ -1,26 +1,72 @@
 import SwiftUI
 
 enum FSDDesignTokens {
-    static let window = Color(red: 0.055, green: 0.067, blue: 0.083)
-    static let sidebar = Color(red: 0.043, green: 0.053, blue: 0.067)
-    static let panel = Color(red: 0.082, green: 0.098, blue: 0.12)
-    static let raisedPanel = Color(red: 0.105, green: 0.125, blue: 0.15)
-    static let hover = Color(red: 0.12, green: 0.145, blue: 0.18)
-    static let selected = Color(red: 0.08, green: 0.22, blue: 0.39)
-    static let separator = Color(red: 0.14, green: 0.165, blue: 0.20)
-    static let primaryText = Color(red: 0.92, green: 0.94, blue: 0.97)
-    static let secondaryText = Color(red: 0.62, green: 0.67, blue: 0.73)
-    static let mutedText = Color(red: 0.43, green: 0.49, blue: 0.56)
-    static let accent = Color(red: 0.20, green: 0.55, blue: 0.98)
-    static let connected = Color(red: 0.28, green: 0.78, blue: 0.55)
-    static let warning = Color(red: 0.95, green: 0.68, blue: 0.24)
-    static let destructive = Color(red: 0.96, green: 0.35, blue: 0.37)
+    static let window = Color(hex: 0x161A1F)
+    static let sidebar = Color(hex: 0x11161C)
+    static let inset = Color(hex: 0x11161C)
+    static let panel = Color(hex: 0x20252C)
+    static let raisedPanel = Color(hex: 0x2A3038)
+    static let hover = raisedPanel
+    static let toolbar = Color(hex: 0x1B2027)
+    static let titlebar = Color(hex: 0x191E24)
+    static let captureSurface = Color(hex: 0x202832)
+    static let captureBorder = Color(hex: 0x384755)
+    static let separator = Color(hex: 0x343C47)
+    static let primaryText = Color(hex: 0xEDF1F6)
+    static let mutedText = Color(hex: 0xA7B1BD)
+    static let secondaryText = mutedText
+    static let accent = Color(hex: 0x7AB6FF)
+    static let primaryAction = Color(hex: 0x2463AA)
+    static let selected = primaryAction.opacity(0.30)
+    static let connected = Color(hex: 0x70D8A0)
+    static let success = Color(hex: 0x70D8A0)
+    static let warning = Color(hex: 0xFFD080)
+    static let destructive = Color(hex: 0xFF9094)
+    static let uncertain = Color(hex: 0xC7B8DE)
 
-    static let sidebarWidth: CGFloat = 194
-    static let toolbarHeight: CGFloat = 47
-    static let cornerRadius: CGFloat = 8
-    static let smallCornerRadius: CGFloat = 6
-    static let pageSpacing: CGFloat = 14
+    static let sidebarBreakpoint: CGFloat = 1280
+    static let compactSidebarWidth: CGFloat = 198
+    static let desktopSidebarWidth: CGFloat = 224
+    static let toolbarHeight: CGFloat = 50
+    static let titlebarReferenceHeight: CGFloat = 38
+    static let cornerRadius: CGFloat = 4
+    static let smallCornerRadius: CGFloat = 4
+    static let pageMaxContentWidth: CGFloat = 1540
+    static let pageInsetHorizontal: CGFloat = 28
+    static let pageInsetTop: CGFloat = 24
+    static let pageInsetBottom: CGFloat = 32
+    static let pageSpacing: CGFloat = 20
+    static let homeGridGap: CGFloat = 28
+    static let homeGridLeftWeight: CGFloat = 1.13
+    static let homeGridRightWeight: CGFloat = 0.87
+    static let homeGridMinimumRightWidth: CGFloat = 330
+    static let recentDrivesSpacing: CGFloat = 19
+    static let sidebarRowHeight: CGFloat = 34
+    static let brandTileSize: CGFloat = 25
+    static let overviewTitleSize: CGFloat = 22
+    static let overviewSubtitleSize: CGFloat = 12
+    static let sectionTitleSize: CGFloat = 13.5
+    static let bodySize: CGFloat = 13
+    static let labelSize: CGFloat = 10
+    static let toolbarLabelSize: CGFloat = 12
+    static let metricValueSize: CGFloat = 21
+    static let metricLabelSize: CGFloat = 11
+
+    static func sidebarWidth(for viewportWidth: CGFloat) -> CGFloat {
+        viewportWidth < sidebarBreakpoint ? compactSidebarWidth : desktopSidebarWidth
+    }
+}
+
+private extension Color {
+    init(hex: UInt32) {
+        self.init(
+            .sRGB,
+            red: Double((hex >> 16) & 0xFF) / 255,
+            green: Double((hex >> 8) & 0xFF) / 255,
+            blue: Double(hex & 0xFF) / 255,
+            opacity: 1
+        )
+    }
 }
 
 private enum FSDDestination: Hashable {
@@ -59,25 +105,28 @@ struct FSDAppShellView: View {
     }
 
     var body: some View {
-        HStack(spacing: 0) {
-            FSDSidebarView(selection: $selection)
-                .frame(width: FSDDesignTokens.sidebarWidth)
+        GeometryReader { geometry in
+            HStack(spacing: 0) {
+                FSDSidebarView(selection: $selection)
+                    .frame(width: FSDDesignTokens.sidebarWidth(for: geometry.size.width))
 
-            Rectangle()
-                .fill(FSDDesignTokens.separator)
-                .frame(width: 1)
-
-            VStack(spacing: 0) {
-                FSDTopBarView(selection: selection) { destination in
-                    selection = destination
-                }
                 Rectangle()
                     .fill(FSDDesignTokens.separator)
-                    .frame(height: 1)
-                destinationView
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(width: 1)
+
+                VStack(spacing: 0) {
+                    FSDTopBarView(selection: selection) { destination in
+                        selection = destination
+                    }
+                    Rectangle()
+                        .fill(FSDDesignTokens.separator)
+                        .frame(height: 1)
+                    destinationView
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(FSDDesignTokens.window)
         }
         .background(FSDDesignTokens.window)
         .foregroundStyle(FSDDesignTokens.primaryText)
@@ -134,12 +183,12 @@ private struct FSDSidebarView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             brand
-                .padding(.horizontal, 14)
-                .padding(.top, 14)
-                .padding(.bottom, 14)
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 12)
 
             ScrollView(.vertical) {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 8) {
                     sectionTitle("HOME")
                     navigationRow("Library Overview", icon: "square.grid.2x2", destination: .libraryOverview)
 
@@ -181,7 +230,7 @@ private struct FSDSidebarView: View {
                         .accessibilityElement(children: .combine)
                 }
                 .padding(.horizontal, 12)
-                .padding(.bottom, 14)
+                .padding(.bottom, 12)
             }
             .scrollIndicators(.hidden)
 
@@ -196,9 +245,9 @@ private struct FSDSidebarView: View {
                         .foregroundStyle(FSDDesignTokens.accent.opacity(0.72))
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Auto Capture")
-                            .font(.system(size: 11.5, weight: .medium))
+                            .font(.system(size: FSDDesignTokens.bodySize, weight: .medium))
                         Text("Unavailable")
-                            .font(.system(size: 9.5))
+                            .font(.system(size: FSDDesignTokens.labelSize))
                     }
                     Spacer()
                     Image(systemName: "lock.fill")
@@ -207,15 +256,15 @@ private struct FSDSidebarView: View {
                 .foregroundStyle(FSDDesignTokens.secondaryText.opacity(0.72))
                 .padding(.horizontal, 9)
                 .padding(.vertical, 8)
-                .background(FSDDesignTokens.selected.opacity(0.22), in: RoundedRectangle(cornerRadius: FSDDesignTokens.smallCornerRadius))
-                .overlay(RoundedRectangle(cornerRadius: FSDDesignTokens.smallCornerRadius).stroke(FSDDesignTokens.accent.opacity(0.20), lineWidth: 1))
+                .background(FSDDesignTokens.selected.opacity(0.22), in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
+                .overlay(RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius).stroke(FSDDesignTokens.accent.opacity(0.20), lineWidth: 1))
             }
             .buttonStyle(.plain)
             .disabled(true)
             .help("Auto Capture is unavailable until a connected-drive service exists.")
             .accessibilityLabel("Auto Capture, unavailable")
             .accessibilityHint("Automatic capture is not available yet.")
-            .padding(10)
+            .padding(8)
         }
         .background(FSDDesignTokens.sidebar)
     }
@@ -225,15 +274,15 @@ private struct FSDSidebarView: View {
             Text("F")
                 .font(.system(size: 14, weight: .bold, design: .rounded))
                 .foregroundStyle(FSDDesignTokens.accent)
-                .frame(width: 28, height: 28)
-                .background(FSDDesignTokens.selected.opacity(0.38), in: RoundedRectangle(cornerRadius: 6))
-                .overlay(RoundedRectangle(cornerRadius: 6).stroke(FSDDesignTokens.accent.opacity(0.34), lineWidth: 1))
+                .frame(width: FSDDesignTokens.brandTileSize, height: FSDDesignTokens.brandTileSize)
+                .background(FSDDesignTokens.selected, in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
+                .overlay(RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius).stroke(FSDDesignTokens.accent.opacity(0.34), lineWidth: 1))
             VStack(alignment: .leading, spacing: 2) {
                 Text("FSD")
-                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
                     .tracking(0.5)
                 Text("FISHSOCK DIFFER")
-                    .font(.system(size: 8, weight: .medium))
+                    .font(.system(size: FSDDesignTokens.labelSize, weight: .medium))
                     .tracking(0.75)
                     .foregroundStyle(FSDDesignTokens.mutedText)
             }
@@ -245,10 +294,10 @@ private struct FSDSidebarView: View {
 
     private func sectionTitle(_ title: String) -> some View {
         Text(title)
-            .font(.system(size: 9, weight: .bold))
+            .font(.system(size: FSDDesignTokens.labelSize, weight: .bold))
             .tracking(1.05)
             .foregroundStyle(FSDDesignTokens.mutedText)
-            .padding(.horizontal, 8)
+            .padding(.horizontal, 10)
             .padding(.top, 0)
     }
 
@@ -274,23 +323,24 @@ private struct SidebarNavigationRow: View {
         Button(action: action) {
             HStack(spacing: 9) {
                 Image(systemName: icon)
-                    .font(.system(size: 12, weight: isSelected ? .semibold : .regular))
+                    .font(.system(size: FSDDesignTokens.bodySize, weight: isSelected ? .semibold : .regular))
                     .frame(width: 16)
                 Text(title)
-                    .font(.system(size: 11.5, weight: isSelected ? .semibold : .regular))
+                    .font(.system(size: FSDDesignTokens.bodySize, weight: isSelected ? .semibold : .regular))
                     .lineLimit(1)
                 Spacer(minLength: 0)
             }
             .foregroundStyle(isSelected ? FSDDesignTokens.primaryText : FSDDesignTokens.secondaryText)
-            .padding(.horizontal, 8)
-            .frame(height: 29)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .frame(minHeight: FSDDesignTokens.sidebarRowHeight)
             .background(
                 isSelected ? FSDDesignTokens.selected : (isHovered ? FSDDesignTokens.hover : .clear),
-                in: RoundedRectangle(cornerRadius: FSDDesignTokens.smallCornerRadius)
+                in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius)
             )
             .overlay(alignment: .leading) {
                 if isSelected {
-                    Capsule().fill(FSDDesignTokens.accent).frame(width: 2, height: 16)
+                    Rectangle().fill(FSDDesignTokens.accent).frame(width: 2, height: 16)
                 }
             }
         }
@@ -309,10 +359,10 @@ private struct FSDTopBarView: View {
         HStack(spacing: 8) {
             HStack(spacing: 7) {
                 Image(systemName: "square.grid.2x2.fill")
-                    .font(.system(size: 10))
+                    .font(.system(size: FSDDesignTokens.labelSize, weight: .semibold))
                     .foregroundStyle(FSDDesignTokens.accent)
                 Text(selection.breadcrumb)
-                    .font(.system(size: 10.5, weight: .medium))
+                    .font(.system(size: FSDDesignTokens.toolbarLabelSize, weight: .medium))
                     .foregroundStyle(FSDDesignTokens.secondaryText)
                     .lineLimit(1)
             }
@@ -323,12 +373,11 @@ private struct FSDTopBarView: View {
                 }
                 Button {} label: {
                     Label("Search", systemImage: "magnifyingglass")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(FSDDesignTokens.mutedText)
-                        .padding(.horizontal, 8)
-                        .frame(height: 27)
-                        .background(FSDDesignTokens.panel.opacity(0.55), in: RoundedRectangle(cornerRadius: 5))
-                        .frame(minHeight: 36)
+                        .font(.system(size: FSDDesignTokens.toolbarLabelSize, weight: .medium))
+                        .foregroundStyle(FSDDesignTokens.mutedText.opacity(0.68))
+                        .padding(.horizontal, 10)
+                        .frame(height: 30)
+                        .frame(minHeight: 44)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -344,9 +393,9 @@ private struct FSDTopBarView: View {
                 }
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 20)
         .frame(height: FSDDesignTokens.toolbarHeight)
-        .background(FSDDesignTokens.window)
+        .background(FSDDesignTokens.toolbar)
     }
 
     private func toolbarButton(_ title: String, icon: String, isActive: Bool, action: @escaping () -> Void) -> some View {
@@ -364,15 +413,15 @@ private struct TopBarActionButton: View {
     var body: some View {
         Button(action: action) {
             Label(title, systemImage: icon)
-                .font(.system(size: 10, weight: .medium))
+                .font(.system(size: FSDDesignTokens.toolbarLabelSize, weight: .medium))
                 .foregroundStyle(isActive ? FSDDesignTokens.primaryText : FSDDesignTokens.secondaryText)
-                .padding(.horizontal, 8)
-                .frame(height: 27)
+                .padding(.horizontal, 10)
+                .frame(height: 30)
                 .background(
                     isActive ? FSDDesignTokens.selected : (isHovered ? FSDDesignTokens.hover : FSDDesignTokens.panel),
-                    in: RoundedRectangle(cornerRadius: 5)
+                    in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius)
                 )
-                .frame(minHeight: 36)
+                .frame(minHeight: 44)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -393,11 +442,12 @@ private struct LibraryOverviewView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: FSDDesignTokens.pageSpacing) {
-                VStack(alignment: .leading, spacing: 5) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text("Library Overview")
-                        .font(.system(size: 24, weight: .semibold))
+                        .font(.system(size: FSDDesignTokens.overviewTitleSize, weight: .semibold))
+                        .tracking(-0.2)
                     Text("Browse saved captures and compare changes across snapshots.")
-                        .font(.system(size: 12.5))
+                        .font(.system(size: FSDDesignTokens.overviewSubtitleSize))
                         .foregroundStyle(FSDDesignTokens.secondaryText)
                 }
 
@@ -405,19 +455,23 @@ private struct LibraryOverviewView: View {
 
                 metricsSection
 
-                HStack(alignment: .top, spacing: 20) {
+                FSDWeightedColumnsLayout(
+                    leftWeight: FSDDesignTokens.homeGridLeftWeight,
+                    rightWeight: FSDDesignTokens.homeGridRightWeight,
+                    minimumRightWidth: FSDDesignTokens.homeGridMinimumRightWidth,
+                    spacing: FSDDesignTokens.homeGridGap
+                ) {
                     recentComparisonsPanel
-                        .frame(maxWidth: .infinity, alignment: .topLeading)
-                    VStack(alignment: .leading, spacing: FSDDesignTokens.pageSpacing) {
+                    VStack(alignment: .leading, spacing: FSDDesignTokens.recentDrivesSpacing) {
                         recentCapturesPanel
                         recentDrivesPanel
                     }
-                    .frame(maxWidth: .infinity, alignment: .topLeading)
                 }
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 18)
-            .frame(maxWidth: 1120, alignment: .leading)
+            .padding(.horizontal, FSDDesignTokens.pageInsetHorizontal)
+            .padding(.top, FSDDesignTokens.pageInsetTop)
+            .padding(.bottom, FSDDesignTokens.pageInsetBottom)
+            .frame(maxWidth: FSDDesignTokens.pageMaxContentWidth, alignment: .leading)
             .frame(maxWidth: .infinity, alignment: .center)
         }
         .scrollIndicators(.hidden)
@@ -426,11 +480,11 @@ private struct LibraryOverviewView: View {
     }
 
     private var captureCard: some View {
-        HStack(spacing: 13) {
+        HStack(spacing: 16) {
             ZStack {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(FSDDesignTokens.selected)
-                    .frame(width: 44, height: 44)
+                RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius)
+                    .fill(FSDDesignTokens.primaryAction.opacity(0.30))
+                    .frame(width: 48, height: 48)
                 Image(systemName: "externaldrive.badge.plus")
                     .font(.system(size: 18, weight: .medium))
                     .foregroundStyle(FSDDesignTokens.accent)
@@ -438,69 +492,73 @@ private struct LibraryOverviewView: View {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 7) {
                     Text("Choose a source to capture")
-                        .font(.system(size: 13.5, weight: .semibold))
+                        .font(.system(size: FSDDesignTokens.bodySize, weight: .semibold))
                     Text("MANUAL")
-                        .font(.system(size: 7.5, weight: .bold))
+                        .font(.system(size: FSDDesignTokens.labelSize, weight: .bold))
                         .tracking(0.7)
                         .foregroundStyle(FSDDesignTokens.accent)
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 2)
-                        .background(FSDDesignTokens.selected, in: Capsule())
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                    .background(FSDDesignTokens.primaryAction.opacity(0.30), in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
                 }
                 Text("Select a folder when you are ready. FSD records filesystem metadata only.")
-                    .font(.system(size: 10.5))
+                    .font(.system(size: 12))
                     .foregroundStyle(FSDDesignTokens.secondaryText)
                     .fixedSize(horizontal: false, vertical: true)
                 Text("Metadata only  ·  Content Not Verified")
-                    .font(.system(size: 9.5, weight: .medium))
+                    .font(.system(size: FSDDesignTokens.labelSize, weight: .medium))
                     .foregroundStyle(FSDDesignTokens.mutedText)
             }
             Spacer(minLength: 8)
             Button(action: onCapture) {
                 Label("Capture", systemImage: "arrow.right")
-                    .font(.system(size: 10.5, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 11)
-                    .frame(height: 31)
-                    .background(FSDDesignTokens.accent, in: RoundedRectangle(cornerRadius: 6))
+                    .font(.system(size: FSDDesignTokens.toolbarLabelSize, weight: .semibold))
+                    .foregroundStyle(FSDDesignTokens.primaryText)
+                    .padding(.horizontal, 14)
+                    .frame(height: 34)
+                    .background(FSDDesignTokens.primaryAction, in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Open manual capture")
             .accessibilityHint("Opens the existing folder selection and metadata capture workflow.")
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 11)
-        .frame(minHeight: 78)
-        .background(FSDDesignTokens.raisedPanel, in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
-        .overlay(RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius).stroke(FSDDesignTokens.separator, lineWidth: 1))
+        .padding(.horizontal, 18)
+        .padding(.vertical, 16)
+        .frame(minHeight: 84)
+        .background(FSDDesignTokens.captureSurface, in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
+        .overlay(RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius).stroke(FSDDesignTokens.captureBorder, lineWidth: 1))
         .accessibilityElement(children: .contain)
     }
 
     private var metricsSection: some View {
-        VStack(alignment: .leading, spacing: 7) {
+        VStack(alignment: .leading, spacing: 8) {
             Text("Library Overview")
-                .font(.system(size: 12.5, weight: .semibold))
+                .font(.system(size: FSDDesignTokens.sectionTitleSize, weight: .semibold))
                 .foregroundStyle(FSDDesignTokens.primaryText)
 
-            HStack(spacing: 0) {
-                OverviewMetricCell(title: "Drives", value: "—", note: "Registry unavailable")
-                metricDivider
-                OverviewMetricCell(title: "Snapshots", value: "\(model.history.count)", note: "Saved captures")
-                metricDivider
-                OverviewMetricCell(title: "Items", value: "—", note: "Aggregate unavailable")
-                metricDivider
-                OverviewMetricCell(title: "Storage", value: "—", note: "Aggregate unavailable")
+            VStack(spacing: 0) {
+                overviewSeparator
+                HStack(spacing: 0) {
+                    OverviewMetricCell(title: "Drives", value: "—", note: "Registry unavailable")
+                    metricDivider
+                    OverviewMetricCell(title: "Snapshots", value: "\(model.history.count)", note: "Saved captures")
+                    metricDivider
+                    OverviewMetricCell(title: "Items", value: "—", note: "Aggregate unavailable")
+                    metricDivider
+                    OverviewMetricCell(title: "Storage", value: "—", note: "Aggregate unavailable")
+                }
+                .frame(minHeight: 76)
+                overviewSeparator
             }
-            .padding(.vertical, 2)
-            .background(FSDDesignTokens.panel, in: RoundedRectangle(cornerRadius: FSDDesignTokens.smallCornerRadius))
-            .overlay(RoundedRectangle(cornerRadius: FSDDesignTokens.smallCornerRadius).stroke(FSDDesignTokens.separator, lineWidth: 1))
         }
     }
 
     private var metricDivider: some View {
         Rectangle()
             .fill(FSDDesignTokens.separator)
-            .frame(width: 1, height: 43)
+            .frame(width: 1, height: 48)
     }
 
     private var recentComparisonsPanel: some View {
@@ -518,13 +576,13 @@ private struct LibraryOverviewView: View {
                                     .font(.system(size: 12))
                                     .foregroundStyle(FSDDesignTokens.accent)
                                     .frame(width: 25, height: 25)
-                                    .background(FSDDesignTokens.selected.opacity(0.7), in: RoundedRectangle(cornerRadius: 6))
+                                    .background(FSDDesignTokens.selected, in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(record.mode.label)
-                                        .font(.system(size: 11, weight: .medium))
+                                        .font(.system(size: FSDDesignTokens.bodySize, weight: .medium))
                                         .lineLimit(1)
                                     Text("\(record.totalDifferences) differences  ·  \(record.startedAt)")
-                                        .font(.system(size: 9.5))
+                                        .font(.system(size: FSDDesignTokens.labelSize))
                                         .foregroundStyle(FSDDesignTokens.secondaryText)
                                         .lineLimit(1)
                                 }
@@ -533,7 +591,7 @@ private struct LibraryOverviewView: View {
                                     .font(.system(size: 9, weight: .semibold))
                                     .foregroundStyle(FSDDesignTokens.mutedText)
                             }
-                            .padding(.vertical, 6)
+                            .frame(minHeight: 52)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -562,13 +620,13 @@ private struct LibraryOverviewView: View {
                                     .font(.system(size: 12))
                                     .foregroundStyle(FSDDesignTokens.accent)
                                     .frame(width: 25, height: 25)
-                                    .background(FSDDesignTokens.selected.opacity(0.7), in: RoundedRectangle(cornerRadius: 6))
+                                    .background(FSDDesignTokens.selected, in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(summary.displayName)
-                                        .font(.system(size: 11, weight: .medium))
+                                        .font(.system(size: FSDDesignTokens.bodySize, weight: .medium))
                                         .lineLimit(1)
                                     Text("\(snapshotStatus(summary.status))  ·  \(summary.startedAt)")
-                                        .font(.system(size: 9.5))
+                                        .font(.system(size: FSDDesignTokens.labelSize))
                                         .foregroundStyle(FSDDesignTokens.secondaryText)
                                         .lineLimit(1)
                                 }
@@ -577,7 +635,7 @@ private struct LibraryOverviewView: View {
                                     .font(.system(size: 9, weight: .semibold))
                                     .foregroundStyle(FSDDesignTokens.mutedText)
                             }
-                            .padding(.vertical, 6)
+                            .frame(minHeight: 52)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -623,6 +681,46 @@ private struct LibraryOverviewView: View {
     }
 }
 
+private struct FSDWeightedColumnsLayout: Layout {
+    let leftWeight: CGFloat
+    let rightWeight: CGFloat
+    let minimumRightWidth: CGFloat
+    let spacing: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        guard subviews.count >= 2 else { return .zero }
+        let proposedWidth = proposal.width ?? (minimumRightWidth + spacing)
+        let (leftWidth, rightWidth) = columnWidths(for: proposedWidth)
+        let leftSize = subviews[0].sizeThatFits(ProposedViewSize(width: leftWidth, height: proposal.height))
+        let rightSize = subviews[1].sizeThatFits(ProposedViewSize(width: rightWidth, height: proposal.height))
+        return CGSize(width: proposedWidth, height: max(leftSize.height, rightSize.height))
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        guard subviews.count >= 2 else { return }
+        let (leftWidth, rightWidth) = columnWidths(for: bounds.width)
+        subviews[0].place(
+            at: CGPoint(x: bounds.minX, y: bounds.minY),
+            anchor: .topLeading,
+            proposal: ProposedViewSize(width: leftWidth, height: nil)
+        )
+        subviews[1].place(
+            at: CGPoint(x: bounds.minX + leftWidth + spacing, y: bounds.minY),
+            anchor: .topLeading,
+            proposal: ProposedViewSize(width: rightWidth, height: nil)
+        )
+    }
+
+    private func columnWidths(for totalWidth: CGFloat) -> (left: CGFloat, right: CGFloat) {
+        let availableWidth = max(0, totalWidth - spacing)
+        guard availableWidth > 0 else { return (0, 0) }
+        let weightTotal = leftWeight + rightWeight
+        let weightedRight = availableWidth * rightWeight / weightTotal
+        let rightWidth = min(availableWidth, max(minimumRightWidth, weightedRight))
+        return (availableWidth - rightWidth, rightWidth)
+    }
+}
+
 private struct OverviewMetricCell: View {
     let title: String
     let value: String
@@ -631,19 +729,19 @@ private struct OverviewMetricCell: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title.uppercased())
-                .font(.system(size: 8.5, weight: .bold))
+                .font(.system(size: FSDDesignTokens.metricLabelSize, weight: .semibold))
                 .tracking(0.8)
                 .foregroundStyle(FSDDesignTokens.mutedText)
             Text(value)
-                .font(.system(size: 18, weight: .semibold, design: .rounded))
+                .font(.system(size: FSDDesignTokens.metricValueSize, weight: .semibold, design: .rounded))
                 .foregroundStyle(value == "—" ? FSDDesignTokens.mutedText : FSDDesignTokens.primaryText)
             Text(note)
-                .font(.system(size: 8.5))
+                .font(.system(size: 9))
                 .foregroundStyle(FSDDesignTokens.secondaryText)
                 .lineLimit(1)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 12)
+        .padding(.horizontal, 16)
         .padding(.vertical, 8)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title): \(value). \(note)")
@@ -667,24 +765,26 @@ private struct OverviewSection<Content: View>: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text(title)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: FSDDesignTokens.sectionTitleSize, weight: .semibold))
                     .foregroundStyle(FSDDesignTokens.primaryText)
                 Spacer()
                 if let trailingTitle, let action {
                     Button(trailingTitle, action: action)
-                        .font(.system(size: 9.5, weight: .medium))
+                        .font(.system(size: FSDDesignTokens.labelSize, weight: .medium))
                         .foregroundStyle(FSDDesignTokens.accent)
                         .buttonStyle(.plain)
                         .accessibilityLabel("\(trailingTitle) \(title)")
                 }
             }
-            .padding(.bottom, 7)
+            .padding(.bottom, 8)
             Rectangle()
                 .fill(FSDDesignTokens.separator)
                 .frame(height: 1)
             content
-                .frame(maxWidth: .infinity, minHeight: 28, alignment: .topLeading)
-                .padding(.top, 5)
+                .frame(maxWidth: .infinity, minHeight: 52, alignment: .topLeading)
+            Rectangle()
+                .fill(FSDDesignTokens.separator)
+                .frame(height: 1)
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
     }
@@ -700,12 +800,11 @@ private struct OverviewMessageRow: View {
                 .font(.system(size: 12))
                 .foregroundStyle(FSDDesignTokens.mutedText)
                 .frame(width: 22, height: 22)
-                .background(FSDDesignTokens.raisedPanel.opacity(0.76), in: RoundedRectangle(cornerRadius: 5))
+                .background(FSDDesignTokens.raisedPanel, in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
             Text(text)
-                .font(.system(size: 10.5))
+                .font(.system(size: 12))
                 .foregroundStyle(FSDDesignTokens.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 4)
         }
         .accessibilityElement(children: .combine)
     }

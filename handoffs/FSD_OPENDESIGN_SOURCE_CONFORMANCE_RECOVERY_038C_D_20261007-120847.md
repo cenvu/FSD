@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-07T12:13:39+07:00
-
 # OpenDesign source-conformance recovery — task038C
 
 ## HOT

@@ -33,13 +33,10 @@ private final class FSDWindowAppearanceView: NSView {
     func configureWindow() {
         guard let window else { return }
         window.appearance = NSAppearance(named: .darkAqua)
-        window.backgroundColor = NSColor(
-            calibratedRed: 0.055,
-            green: 0.067,
-            blue: 0.083,
-            alpha: 1
-        )
+        window.styleMask.insert(.fullSizeContentView)
+        window.backgroundColor = NSColor(FSDDesignTokens.titlebar)
         window.titlebarAppearsTransparent = true
+        window.titlebarSeparatorStyle = .none
     }
 }
 
