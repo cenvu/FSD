@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-07T10:22:43+07:00
-
 # OpenDesign production UI shell — visual-authority discovery STOP
 
 ## HOT
