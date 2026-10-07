@@ -4,16 +4,16 @@ STATE_VERSION=1.0.0
 PROJECT=FSD
 CURRENT_PHASE=DEMO_SPRINT
 ACTIVE_WORKSTREAM=FSD_DEMO_CRITICAL_PATH
-STATUS=RUSH_SPRINT_LEAN;P15_RUNTIME_FINAL_ACCEPTED
-CURRENT_GATE=P15_RUNTIME_FINAL_ACCEPTED
-BLOCKERS=NONE
-LAST_ACCEPTED_TASK=FSD_P15_RUNTIME_FINAL_AUDIT_036
-LAST_ACCEPTED_HEAD=f14d989c9537302b87586a6b9ba34a4af15e0816
+STATUS=RUSH_SPRINT_LEAN;P15_RUNTIME_FINAL_ACCEPTED;OPENDESIGN_UI_CANDIDATE_ACCEPTED
+CURRENT_GATE=OPENDESIGN_OWNER_VISUAL_REVIEW
+BLOCKERS=OWNER_VISUAL_ACCEPTANCE_PENDING
+LAST_ACCEPTED_TASK=FSD_OPENDESIGN_SOURCE_CONFORMANCE_RECOVERY_038C
+LAST_ACCEPTED_HEAD=daf1ebef73fe9370f49708ae8fd9acc749a5f756
 AUTHORITY_PTRS=AGENTS.md|docs/BRAIN_OPERATOR.md|docs/AGENT.md|docs/UX_UI_SPEC.md|docs/PRD.md|docs/PRODUCT_STATE.md|docs/MVP_PLAN.md|docs/ARCHITECTURE.md|docs/DECISIONS.md|docs/DEPENDENCY_AND_LICENSE_REVIEW.md|docs/SECURITY_AND_READ_ONLY_POLICY.md|docs/TEST_PLAN.md|docs/P15_RUNTIME_PLAN.md|docs/CLASSIFIER_FILETYPE_INTEGRATION_CONTRACT.md
-PARKED_PRODUCT_WORKSTREAM=MAGIKA_INTEGRATION_BLOCKED_AT_025
+PARKED_PRODUCT_WORKSTREAM=NONE
 EXACTLY_ONE_NEXT_DECISION=OWNER_DECISION
 
-Accepted-state provenance: explicit BRAIN decision supplied for task036 and projected at 2026-10-07T10:07:23+07:00; accepted audit publication f14d989c9537302b87586a6b9ba34a4af15e0816; the finalizer schema blocker was repaired in BRAIN control-state commit 9322e02c14d4458cd171e38fd2b39cd7ebb82dfd; canonical prepublication and postpublication checks passed.
+Historical accepted-state provenance: explicit BRAIN decision supplied for task036 and projected at 2026-10-07T10:07:23+07:00; accepted audit publication f14d989c9537302b87586a6b9ba34a4af15e0816; the finalizer schema blocker was repaired in BRAIN control-state commit 9322e02c14d4458cd171e38fd2b39cd7ebb82dfd; canonical prepublication and postpublication checks passed.
 Task035 remains accepted PASS_WITH_ADVISORY at publication 869f93243ecff7d008546fe2ccebc1d531e1993d. Task036 is BRAIN-accepted PASS_WITH_ADVISORY at publication f14d989c9537302b87586a6b9ba34a4af15e0816; its immutable technical audit evidence is accepted. The outer STOP was caused only by the unsupported BRAIN-authored PROJECT_STATE assignment rejected by canonical finalization and repaired separately in 9322e02c14d4458cd171e38fd2b39cd7ebb82dfd. The Reviewer made no product, docs, schema, test, Xcode or helper repair. Reviewed production implementation remains 556872844b90640cc2a64e40d99594a78cef61af.
 Phase 1.5 runtime has final BRAIN technical acceptance. The audit evidence accounts for 30 requirements: 29 evidenced, 1 not applicable, 0 unproven. Debug and Release clean builds passed; full Debug XCTest was 494 executed / 491 passed / 0 failed / 3 known external-environment skips; fresh focused audit was 260 / 260 / 0 / 0. Schema v9/integrity/foreign-key, source-authority/read-only, actual helper/provider/runtime, noMatch/persistence/provenance, eight forbidden auto-invocation workflows, comparison/export/snapshot isolation, current helper/bundle/provenance, bounded process/network observations, scratch ad-hoc signing, and canonical six-document semantic audit gates passed.
 Production gates remain: INTEGRATION_AUDITED=YES; PRODUCTION_PROVIDER_ACCEPTED=YES; PRODUCTION_PROVIDER=filetype_v1.1.3; SLICE08_UNBLOCKED=YES. Accepted helper SHA256: 665a6569ee60614313e50629c4166358b89859f15dac4c522905ee5a730752e7; detector github.com/h2non/filetype@v1.1.3; host provider fsd.bundled-helper-host.v1. These provider/helper identities are unchanged.
@@ -24,3 +24,4 @@ Task036 process advisory: Reviewer model-family separation was unavailable becau
 MANUAL_ACCEPTANCE: NOT PERFORMED — DEFERRED BY OWNER. Manual UI, VoiceOver and physical-media acceptance remain unperformed and deferred. No Developer ID, notarization, App Store or distribution readiness is accepted.
 No historical content verification, byte-identity guarantee or universal classifier determinism is accepted. P15 runtime workstream is technically accepted and closed; this projection authorizes no automatic product next. The Owner chooses the next workstream/task. Exactly one current decision is OWNER_DECISION; no auto-next.
 ADR-034/ADR-035 and docs/CLASSIFIER_FILETYPE_INTEGRATION_CONTRACT.md remain binding without semantic changes. Task033 historical STOP and all prior decisions remain preserved in the ledger/events. Owner-authorized RUSH/SPRINT/LEAN progression remains active.
+OpenDesign BRAIN catch-up (2026-10-07): task037 is accepted STOP as the correct discovery stop at 082d5816e9397bfab3e88e0d5aadeff95061a4b0; task037A is accepted PASS_WITH_ADVISORY at 266d057b12bf2dc9a5df44b2fa9684828d1c05bd with Owner visual acceptance still pending; task038A is accepted PASS_WITH_ADVISORY at 96d45c40b232efd1c77a7d7c94d23ee36494a75f, and the later exact-source repair does not reinterpret it as failure; task038C is accepted PASS_WITH_ADVISORY at daf1ebef73fe9370f49708ae8fd9acc749a5f756, technically accepting the exact-source UI candidate. Backend semantics remain unchanged. The native system-gray titlebar remains a visual advisory; Owner visual acceptance is pending. Manual VoiceOver and physical-media acceptance remain deferred. No distribution, notarization or App Store claim is made. The current gate is OPENDESIGN_OWNER_VISUAL_REVIEW; exactly one next decision is OWNER_DECISION.
