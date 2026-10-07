@@ -23,6 +23,6 @@ The guard is only len(input) <= 513 && prefix D0 CF 11 E0 -> noMatch before Matc
 Task034 process advisory: Reviewer-only Homebrew Go introspection recorded one Owner-local telemetry counter; this was not shipped-helper/runtime/Xcode/controlled-rebuild behavior and changed no Go configuration. Later tasks must avoid uncontrolled Go introspection and Owner-global Go configuration/telemetry changes.
 Task035 test-instrumentation advisory: the existing M5PeakSampler Thread Performance Checker QoS diagnostic is test instrumentation evidence; the related test passes.
 MANUAL_ACCEPTANCE: NOT PERFORMED — DEFERRED BY OWNER.
-PHASE15_FINAL_ACCEPTANCE=NO_YET. Phase 1.5 runtime is NOT terminally accepted; the mandatory independent final implementation audit FSD_P15_RUNTIME_FINAL_AUDIT_036 is authorized as this cycle's read/test-only Reviewer work. The Reviewer does not set final acceptance. Exactly one current decision is ACTION(FSD_P15_RUNTIME_FINAL_AUDIT_036); no auto-next.
+Phase 1.5 runtime is NOT terminally accepted; the mandatory independent final implementation audit FSD_P15_RUNTIME_FINAL_AUDIT_036 is authorized as this cycle's read/test-only Reviewer work. The Reviewer does not set final acceptance. Exactly one current decision is ACTION(FSD_P15_RUNTIME_FINAL_AUDIT_036); no auto-next.
 ADR-034/ADR-035 and docs/CLASSIFIER_FILETYPE_INTEGRATION_CONTRACT.md remain binding without semantic changes. Task033 historical STOP and all prior decisions remain preserved in the ledger/events.
 Owner-authorized RUSH/SPRINT/LEAN progression remains active.
