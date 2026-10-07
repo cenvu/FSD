@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-07T10:53:44+07:00
-
 # Screenshot-authorized native FSD shell — task037A
 
 ## HOT
