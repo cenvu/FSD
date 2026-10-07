@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-07T15:23:36+07:00
-
 # OpenDesign core-route visual conformance — task039
 
 ## HOT

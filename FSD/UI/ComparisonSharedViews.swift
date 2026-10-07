@@ -57,6 +57,41 @@ enum FSDDesignTokens {
     }
 }
 
+struct FSDPrimaryActionButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: FSDDesignTokens.bodySize, weight: .semibold))
+            .foregroundStyle(FSDDesignTokens.primaryText)
+            .padding(.horizontal, 14)
+            .frame(minHeight: 34)
+            .background(FSDDesignTokens.primaryAction, in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
+            .overlay(RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius).stroke(FSDDesignTokens.accent.opacity(0.22), lineWidth: 1))
+            .opacity(isEnabled ? (configuration.isPressed ? 0.84 : 1) : 0.48)
+            .contentShape(RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
+    }
+}
+
+struct FSDSecondaryActionButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: FSDDesignTokens.bodySize, weight: .medium))
+            .foregroundStyle(FSDDesignTokens.primaryText)
+            .padding(.horizontal, 12)
+            .frame(minHeight: 34)
+            .background(
+                configuration.isPressed ? FSDDesignTokens.raisedPanel : FSDDesignTokens.panel,
+                in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius)
+            )
+            .overlay(RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius).stroke(FSDDesignTokens.separator, lineWidth: 1))
+            .opacity(isEnabled ? 1 : 0.48)
+            .contentShape(RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
+    }
+}
+
 private extension Color {
     init(hex: UInt32) {
         self.init(
@@ -839,16 +874,41 @@ private struct FSDCaptureHistoryView: View {
 
     var body: some View {
         HSplitView {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Snapshot history").font(.system(size: 17, weight: .semibold)).padding(.horizontal, 12).padding(.top, 14)
-                Text("Stored in the catalog. Browsing works with the source disconnected.")
-                    .font(.caption).foregroundStyle(.secondary).padding(.horizontal, 12)
+            VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text("Recent Captures")
+                            .font(.system(size: FSDDesignTokens.overviewTitleSize, weight: .semibold))
+                            .foregroundStyle(FSDDesignTokens.primaryText)
+                        Spacer(minLength: 8)
+                        Text("\(model.history.count) saved")
+                            .font(.system(size: FSDDesignTokens.labelSize, weight: .medium))
+                            .foregroundStyle(FSDDesignTokens.mutedText)
+                    }
+                    Text("Saved metadata snapshots remain available when the source is disconnected.")
+                        .font(.system(size: FSDDesignTokens.overviewSubtitleSize))
+                        .foregroundStyle(FSDDesignTokens.secondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 18)
+                .padding(.bottom, 14)
+
+                Rectangle()
+                    .fill(FSDDesignTokens.separator)
+                    .frame(height: 1)
+
                 if model.history.isEmpty {
-                    EmptyStateView(
-                        title: "No snapshots yet",
-                        systemImage: "square.stack.3d.up.slash",
-                        detail: "Use Capture to record the first metadata snapshot."
-                    )
+                    VStack(alignment: .leading, spacing: 8) {
+                        Label("No captures yet", systemImage: "square.stack.3d.up.slash")
+                            .font(.system(size: FSDDesignTokens.bodySize, weight: .semibold))
+                            .foregroundStyle(FSDDesignTokens.primaryText)
+                        Text("Choose Capture to record the first metadata snapshot.")
+                            .font(.system(size: FSDDesignTokens.bodySize))
+                            .foregroundStyle(FSDDesignTokens.secondaryText)
+                    }
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 } else {
                     List(model.history, selection: Binding(
                         get: { model.selectedSnapshotID },
@@ -862,21 +922,38 @@ private struct FSDCaptureHistoryView: View {
                     )) { summary in
                         SnapshotHistoryRow(summary: summary).tag(summary.id)
                     }
+                    .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
+                    .listRowInsets(EdgeInsets(top: 5, leading: 12, bottom: 5, trailing: 12))
+                    .listRowSeparatorTint(FSDDesignTokens.separator)
+                    .background(FSDDesignTokens.window)
                 }
                 Spacer()
             }
-            .frame(minWidth: 300, idealWidth: 340)
+            .frame(minWidth: 300, idealWidth: 360)
+            .background(FSDDesignTokens.window)
+
             if let browser = model.browser {
                 SnapshotBrowserView(model: browser)
                     .id(browser.summary.id)
                     .frame(minWidth: 560)
             } else {
-                EmptyStateView(
-                    title: "Select a snapshot",
-                    systemImage: "sidebar.right",
-                    detail: "Choose a capture to browse its stored metadata offline."
-                )
+                VStack(spacing: 9) {
+                    Image(systemName: "square.stack.3d.up")
+                        .font(.system(size: 26, weight: .regular))
+                        .foregroundStyle(FSDDesignTokens.accent)
+                    Text("Select a capture")
+                        .font(.system(size: FSDDesignTokens.sectionTitleSize, weight: .semibold))
+                        .foregroundStyle(FSDDesignTokens.primaryText)
+                    Text("Choose a saved capture to browse its stored metadata offline.")
+                        .font(.system(size: FSDDesignTokens.bodySize))
+                        .foregroundStyle(FSDDesignTokens.secondaryText)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: 340)
+                }
                 .frame(minWidth: 560)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(FSDDesignTokens.window)
             }
         }
         .background(FSDDesignTokens.window)
@@ -887,65 +964,156 @@ private struct FSDCaptureScreen: View {
     @ObservedObject var model: ApplicationModel
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack {
-                Text("Metadata Capture").font(.system(size: 20, weight: .semibold))
-                Spacer()
-                Button("Choose Source…", action: model.chooseSource)
-                    .disabled(model.captureState.isActive)
-                    .accessibilityLabel("Choose source folder")
-            }
-            if let recoveryMessage = model.recoveryMessage {
-                Label(recoveryMessage, systemImage: "arrow.clockwise.circle")
-                    .foregroundStyle(FSDDesignTokens.warning)
-            }
-            GroupBox("Capture") {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text(model.selectedSource?.path ?? "No folder selected")
-                        .font(.callout)
-                        .foregroundStyle(model.selectedSource == nil ? FSDDesignTokens.secondaryText : FSDDesignTokens.primaryText)
-                        .lineLimit(2)
-                    HStack {
-                        Button("Start Metadata Capture", action: model.startCapture)
-                            .disabled(model.selectedSource == nil || model.captureState.isActive)
-                        if model.captureState.isActive {
-                            Button("Cancel", action: model.cancelCapture)
-                        }
-                        Spacer()
-                        Text(model.captureState.title).foregroundStyle(FSDDesignTokens.secondaryText)
-                        if case let .failed(message) = model.captureState {
-                            Text(message)
-                                .font(.caption)
-                                .foregroundStyle(FSDDesignTokens.destructive)
-                        }
+        ScrollView {
+            VStack(alignment: .leading, spacing: FSDDesignTokens.pageSpacing) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Capture")
+                        .font(.system(size: FSDDesignTokens.overviewTitleSize, weight: .semibold))
+                        .foregroundStyle(FSDDesignTokens.primaryText)
+                    Text("Choose a source folder when you are ready. FSD records filesystem metadata only.")
+                        .font(.system(size: FSDDesignTokens.overviewSubtitleSize))
+                        .foregroundStyle(FSDDesignTokens.secondaryText)
+                }
+
+                if let recoveryMessage = model.recoveryMessage {
+                    HStack(alignment: .top, spacing: 9) {
+                        Image(systemName: "arrow.clockwise.circle")
+                            .foregroundStyle(FSDDesignTokens.warning)
+                        Text(recoveryMessage)
+                            .font(.system(size: FSDDesignTokens.bodySize))
+                            .foregroundStyle(FSDDesignTokens.primaryText)
                     }
-                    if model.captureState.isActive || model.captureProgress.processedEntries > 0 {
-                        ProgressView()
-                        Text("\(model.captureProgress.processedEntries) entries — \(model.captureProgress.phase)")
-                            .font(.caption)
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(FSDDesignTokens.panel, in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
+                    .overlay(RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius).stroke(FSDDesignTokens.separator, lineWidth: 1))
+                }
+
+                captureSurface
+            }
+            .padding(.horizontal, FSDDesignTokens.pageInsetHorizontal)
+            .padding(.top, FSDDesignTokens.pageInsetTop)
+            .padding(.bottom, FSDDesignTokens.pageInsetBottom)
+            .frame(maxWidth: FSDDesignTokens.pageMaxContentWidth, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+        }
+        .background(FSDDesignTokens.window)
+        .foregroundStyle(FSDDesignTokens.primaryText)
+        .tint(FSDDesignTokens.accent)
+    }
+
+    private var captureSurface: some View {
+        VStack(alignment: .leading, spacing: 13) {
+            HStack(spacing: 12) {
+                Image(systemName: "externaldrive")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundStyle(FSDDesignTokens.accent)
+                    .frame(width: 42, height: 42)
+                    .background(FSDDesignTokens.selected, in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(model.selectedSource == nil ? "Choose a source" : "Source selected")
+                        .font(.system(size: FSDDesignTokens.sectionTitleSize, weight: .semibold))
+                        .foregroundStyle(FSDDesignTokens.primaryText)
+                    Text(selectedSourceLabel)
+                        .font(.system(size: FSDDesignTokens.bodySize))
+                        .foregroundStyle(model.selectedSource == nil ? FSDDesignTokens.secondaryText : FSDDesignTokens.primaryText)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .accessibilityLabel(model.selectedSource == nil ? "No source selected" : "Selected source: \(selectedSourceLabel)")
+                }
+
+                Spacer(minLength: 12)
+
+                Button(action: model.chooseSource) {
+                    Label("Choose Source", systemImage: "folder")
+                }
+                .buttonStyle(FSDSecondaryActionButtonStyle())
+                .disabled(model.captureState.isActive)
+                .accessibilityLabel("Choose Source")
+            }
+
+            Rectangle()
+                .fill(FSDDesignTokens.separator)
+                .frame(height: 1)
+
+            HStack(spacing: 10) {
+                Label("Metadata only · Content Not Verified", systemImage: "checkmark.shield")
+                    .font(.system(size: FSDDesignTokens.labelSize, weight: .medium))
+                    .foregroundStyle(FSDDesignTokens.mutedText)
+
+                Spacer(minLength: 10)
+
+                HStack(spacing: 6) {
+                    Circle().fill(statusTint).frame(width: 7, height: 7)
+                    Text(model.captureState.title)
+                        .font(.system(size: FSDDesignTokens.bodySize, weight: .medium))
+                        .foregroundStyle(statusTint)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Capture status: \(model.captureState.title)")
+
+                if model.captureState.isActive {
+                    Button("Cancel", action: model.cancelCapture)
+                        .buttonStyle(FSDSecondaryActionButtonStyle())
+                        .accessibilityLabel("Cancel metadata capture")
+                }
+
+                Button(action: model.startCapture) {
+                    Label("Start Metadata Capture", systemImage: "arrow.right")
+                }
+                .buttonStyle(FSDPrimaryActionButtonStyle())
+                .disabled(model.selectedSource == nil || model.captureState.isActive)
+                .accessibilityLabel("Start Metadata Capture")
+                .accessibilityHint(model.selectedSource == nil ? "Choose a source folder before starting capture." : "Records filesystem metadata only.")
+            }
+
+            if model.captureState.isActive || model.captureProgress.processedEntries > 0 {
+                VStack(alignment: .leading, spacing: 7) {
+                    ProgressView().tint(FSDDesignTokens.accent)
+                    HStack(spacing: 8) {
+                        Text("\(model.captureProgress.processedEntries) entries · \(model.captureProgress.phase)")
+                            .font(.system(size: FSDDesignTokens.bodySize))
                             .foregroundStyle(FSDDesignTokens.secondaryText)
+                        Spacer()
                         if !model.captureProgress.currentPath.isEmpty {
-                            Text(model.captureProgress.currentPath)
-                                .font(.caption2)
-                                .foregroundStyle(FSDDesignTokens.secondaryText)
+                            Text(URL(fileURLWithPath: model.captureProgress.currentPath).lastPathComponent)
+                                .font(.system(size: FSDDesignTokens.labelSize))
+                                .foregroundStyle(FSDDesignTokens.mutedText)
                                 .lineLimit(1)
                         }
                     }
-                    Text("Metadata only. Content Not Verified.")
-                        .font(.caption)
-                        .foregroundStyle(FSDDesignTokens.secondaryText)
                 }
-                .padding(4)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Capture progress: \(model.captureProgress.processedEntries) entries, \(model.captureProgress.phase)")
             }
-            Text(model.catalogDiagnostics)
-                .font(.caption2)
-                .foregroundStyle(FSDDesignTokens.secondaryText)
-                .textSelection(.enabled)
-            Spacer()
+
+            if case let .failed(message) = model.captureState {
+                Text(message)
+                    .font(.system(size: FSDDesignTokens.bodySize))
+                    .foregroundStyle(FSDDesignTokens.destructive)
+                    .accessibilityLabel("Capture failed: \(message)")
+            }
         }
-        .padding(24)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(FSDDesignTokens.window)
+        .padding(16)
+        .background(FSDDesignTokens.captureSurface, in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
+        .overlay(RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius).stroke(FSDDesignTokens.captureBorder, lineWidth: 1))
+    }
+
+    private var selectedSourceLabel: String {
+        guard let selectedSource = model.selectedSource else { return "No source selected" }
+        let name = selectedSource.lastPathComponent
+        return name.isEmpty ? "Filesystem root" : name
+    }
+
+    private var statusTint: Color {
+        switch model.captureState {
+        case .idle: return FSDDesignTokens.secondaryText
+        case .scanning: return FSDDesignTokens.accent
+        case .cancelling, .interrupted, .cancelled, .completeWithWarnings: return FSDDesignTokens.warning
+        case .complete: return FSDDesignTokens.success
+        case .failed: return FSDDesignTokens.destructive
+        }
     }
 }
 
@@ -953,22 +1121,49 @@ private struct SnapshotHistoryRow: View {
     let summary: SnapshotSummary
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(summary.displayName).font(.headline).lineLimit(1)
-            HStack(spacing: 6) {
-                Image(systemName: icon).foregroundStyle(tint)
-                Text(statusText).foregroundStyle(tint)
-                Text("·").foregroundStyle(.secondary)
-                Text(summary.startedAt).foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(spacing: 9) {
+                Image(systemName: "square.stack.3d.up.fill")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(FSDDesignTokens.accent)
+                    .frame(width: 26, height: 26)
+                    .background(FSDDesignTokens.selected, in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(summary.displayName)
+                        .font(.system(size: FSDDesignTokens.bodySize, weight: .semibold))
+                        .foregroundStyle(FSDDesignTokens.primaryText)
+                        .lineLimit(1)
+                    HStack(spacing: 6) {
+                        Image(systemName: icon).foregroundStyle(tint)
+                        Text(statusText).foregroundStyle(tint)
+                        Text("·").foregroundStyle(FSDDesignTokens.mutedText)
+                        Text(summary.startedAt).foregroundStyle(FSDDesignTokens.secondaryText)
+                    }
+                    .font(.system(size: FSDDesignTokens.labelSize))
+                    .lineLimit(1)
+                }
             }
-            .font(.caption)
-            Text("\(summary.totalFiles) files · \(summary.totalFolders) folders · "
-                 + ByteCountFormatter.string(fromByteCount: summary.totalLogicalBytes, countStyle: .file))
-                .font(.caption2).foregroundStyle(.secondary)
+
+            HStack(spacing: 5) {
+                Text("\(summary.totalFiles) files")
+                Text("·")
+                Text("\(summary.totalFolders) folders")
+                Text("·")
+                Text(ByteCountFormatter.string(fromByteCount: summary.totalLogicalBytes, countStyle: .file))
+            }
+            .font(.system(size: FSDDesignTokens.labelSize))
+            .foregroundStyle(FSDDesignTokens.secondaryText)
+            .lineLimit(1)
+
             Text("Source at capture: \(summary.capture.displayNameForHistory)")
-                .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                .font(.system(size: FSDDesignTokens.labelSize))
+                .foregroundStyle(FSDDesignTokens.mutedText)
+                .lineLimit(1)
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, 3)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(summary.displayName), \(statusText), started \(summary.startedAt), \(summary.totalFiles) files, \(summary.totalFolders) folders, source at capture \(summary.capture.displayNameForHistory)")
     }
 
     private var statusText: String {
