@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-07T09:46:54+07:00
-
 # Phase 1.5 runtime — independent final implementation audit continuation
 
 ## HOT
