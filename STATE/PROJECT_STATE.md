@@ -4,11 +4,11 @@ STATE_VERSION=1.0.0
 PROJECT=FSD
 CURRENT_PHASE=DEMO_SPRINT
 ACTIVE_WORKSTREAM=FSD_DEMO_CRITICAL_PATH
-STATUS=RUSH_SPRINT_LEAN;P15_RUNTIME_FINAL_ACCEPTED;OPENDESIGN_UI_CANDIDATE_ACCEPTED
+STATUS=RUSH_SPRINT_LEAN;P15_RUNTIME_FINAL_ACCEPTED;OPENDESIGN_CORE_ROUTES_TECHNICALLY_ACCEPTED
 CURRENT_GATE=OPENDESIGN_OWNER_VISUAL_REVIEW
 BLOCKERS=OWNER_VISUAL_ACCEPTANCE_PENDING
-LAST_ACCEPTED_TASK=FSD_OPENDESIGN_SOURCE_CONFORMANCE_RECOVERY_038C
-LAST_ACCEPTED_HEAD=daf1ebef73fe9370f49708ae8fd9acc749a5f756
+LAST_ACCEPTED_TASK=FSD_OPENDESIGN_CORE_ROUTE_VISUAL_CONFORMANCE_039
+LAST_ACCEPTED_HEAD=8606a114930fc366cbf6def1e72e3f7d25e2d305
 AUTHORITY_PTRS=AGENTS.md|docs/BRAIN_OPERATOR.md|docs/AGENT.md|docs/UX_UI_SPEC.md|docs/PRD.md|docs/PRODUCT_STATE.md|docs/MVP_PLAN.md|docs/ARCHITECTURE.md|docs/DECISIONS.md|docs/DEPENDENCY_AND_LICENSE_REVIEW.md|docs/SECURITY_AND_READ_ONLY_POLICY.md|docs/TEST_PLAN.md|docs/P15_RUNTIME_PLAN.md|docs/CLASSIFIER_FILETYPE_INTEGRATION_CONTRACT.md
 PARKED_PRODUCT_WORKSTREAM=NONE
 EXACTLY_ONE_NEXT_DECISION=OWNER_DECISION
@@ -25,3 +25,4 @@ MANUAL_ACCEPTANCE: NOT PERFORMED — DEFERRED BY OWNER. Manual UI, VoiceOver and
 No historical content verification, byte-identity guarantee or universal classifier determinism is accepted. P15 runtime workstream is technically accepted and closed; this projection authorizes no automatic product next. The Owner chooses the next workstream/task. Exactly one current decision is OWNER_DECISION; no auto-next.
 ADR-034/ADR-035 and docs/CLASSIFIER_FILETYPE_INTEGRATION_CONTRACT.md remain binding without semantic changes. Task033 historical STOP and all prior decisions remain preserved in the ledger/events. Owner-authorized RUSH/SPRINT/LEAN progression remains active.
 OpenDesign BRAIN catch-up (2026-10-07): task037 is accepted STOP as the correct discovery stop at 082d5816e9397bfab3e88e0d5aadeff95061a4b0; task037A is accepted PASS_WITH_ADVISORY at 266d057b12bf2dc9a5df44b2fa9684828d1c05bd with Owner visual acceptance still pending; task038A is accepted PASS_WITH_ADVISORY at 96d45c40b232efd1c77a7d7c94d23ee36494a75f, and the later exact-source repair does not reinterpret it as failure; task038C is accepted PASS_WITH_ADVISORY at daf1ebef73fe9370f49708ae8fd9acc749a5f756, technically accepting the exact-source UI candidate. Backend semantics remain unchanged. The native system-gray titlebar remains a visual advisory; Owner visual acceptance is pending. Manual VoiceOver and physical-media acceptance remain deferred. No distribution, notarization or App Store claim is made. The current gate is OPENDESIGN_OWNER_VISUAL_REVIEW; exactly one next decision is OWNER_DECISION.
+Task039 is BRAIN-accepted PASS_WITH_ADVISORY at 8606a114930fc366cbf6def1e72e3f7d25e2d305, technically accepting Capture/Compare/Recent Captures visual conformance. Backend semantics remain unchanged. The native system-gray titlebar remains a visual advisory; Owner visual acceptance is pending. Manual VoiceOver and physical-media acceptance remain deferred. No distribution, notarization or App Store claim is made. The current gate is OPENDESIGN_OWNER_VISUAL_REVIEW; exactly one next decision is OWNER_DECISION.
