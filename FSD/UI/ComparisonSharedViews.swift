@@ -7,7 +7,7 @@ enum FSDDesignTokens {
     static let raisedPanel = Color(red: 0.105, green: 0.125, blue: 0.15)
     static let hover = Color(red: 0.12, green: 0.145, blue: 0.18)
     static let selected = Color(red: 0.08, green: 0.22, blue: 0.39)
-    static let separator = Color(red: 0.16, green: 0.19, blue: 0.23)
+    static let separator = Color(red: 0.14, green: 0.165, blue: 0.20)
     static let primaryText = Color(red: 0.92, green: 0.94, blue: 0.97)
     static let secondaryText = Color(red: 0.62, green: 0.67, blue: 0.73)
     static let mutedText = Color(red: 0.43, green: 0.49, blue: 0.56)
@@ -16,11 +16,11 @@ enum FSDDesignTokens {
     static let warning = Color(red: 0.95, green: 0.68, blue: 0.24)
     static let destructive = Color(red: 0.96, green: 0.35, blue: 0.37)
 
-    static let sidebarWidth: CGFloat = 226
-    static let toolbarHeight: CGFloat = 54
-    static let cornerRadius: CGFloat = 10
-    static let smallCornerRadius: CGFloat = 7
-    static let pageSpacing: CGFloat = 18
+    static let sidebarWidth: CGFloat = 194
+    static let toolbarHeight: CGFloat = 47
+    static let cornerRadius: CGFloat = 8
+    static let smallCornerRadius: CGFloat = 6
+    static let pageSpacing: CGFloat = 14
 }
 
 private enum FSDDestination: Hashable {
@@ -32,7 +32,7 @@ private enum FSDDestination: Hashable {
 
     var breadcrumb: String {
         switch self {
-        case .libraryOverview: return "Library  /  Overview"
+        case .libraryOverview: return "FSD  ›  Library"
         case .allDrives: return "Library  /  All Drives"
         case .recentCaptures: return "Library  /  Recent Captures"
         case .comparisons: return "Compare  /  Comparisons"
@@ -134,12 +134,12 @@ private struct FSDSidebarView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             brand
-                .padding(.horizontal, 16)
-                .padding(.top, 18)
-                .padding(.bottom, 20)
+                .padding(.horizontal, 14)
+                .padding(.top, 14)
+                .padding(.bottom, 14)
 
             ScrollView(.vertical) {
-                VStack(alignment: .leading, spacing: 17) {
+                VStack(alignment: .leading, spacing: 12) {
                     sectionTitle("HOME")
                     navigationRow("Library Overview", icon: "square.grid.2x2", destination: .libraryOverview)
 
@@ -163,9 +163,9 @@ private struct FSDSidebarView: View {
                     }
                     .padding(.top, 1)
                     Text("Drive Sets unavailable")
-                        .font(.system(size: 11))
+                        .font(.system(size: 10.5))
                         .foregroundStyle(FSDDesignTokens.mutedText)
-                        .padding(.leading, 10)
+                        .padding(.leading, 8)
                         .accessibilityLabel("Drive Sets unavailable. Drive Set support is not available yet.")
 
                     sectionTitle("COMPARE")
@@ -192,49 +192,50 @@ private struct FSDSidebarView: View {
             Button {} label: {
                 HStack(spacing: 10) {
                     Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(FSDDesignTokens.accent.opacity(0.72))
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Auto Capture")
-                            .font(.system(size: 12, weight: .medium))
+                            .font(.system(size: 11.5, weight: .medium))
                         Text("Unavailable")
-                            .font(.system(size: 10))
+                            .font(.system(size: 9.5))
                     }
                     Spacer()
                     Image(systemName: "lock.fill")
-                        .font(.system(size: 9))
+                        .font(.system(size: 8.5))
                 }
-                .foregroundStyle(FSDDesignTokens.mutedText)
-                .padding(.horizontal, 11)
-                .padding(.vertical, 10)
-                .background(FSDDesignTokens.panel.opacity(0.7), in: RoundedRectangle(cornerRadius: FSDDesignTokens.smallCornerRadius))
+                .foregroundStyle(FSDDesignTokens.secondaryText.opacity(0.72))
+                .padding(.horizontal, 9)
+                .padding(.vertical, 8)
+                .background(FSDDesignTokens.selected.opacity(0.22), in: RoundedRectangle(cornerRadius: FSDDesignTokens.smallCornerRadius))
+                .overlay(RoundedRectangle(cornerRadius: FSDDesignTokens.smallCornerRadius).stroke(FSDDesignTokens.accent.opacity(0.20), lineWidth: 1))
             }
             .buttonStyle(.plain)
             .disabled(true)
             .help("Auto Capture is unavailable until a connected-drive service exists.")
             .accessibilityLabel("Auto Capture, unavailable")
             .accessibilityHint("Automatic capture is not available yet.")
-            .padding(12)
+            .padding(10)
         }
         .background(FSDDesignTokens.sidebar)
     }
 
     private var brand: some View {
         HStack(spacing: 10) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 7)
-                    .fill(FSDDesignTokens.selected)
-                    .frame(width: 30, height: 30)
-                Image(systemName: "externaldrive.fill")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(FSDDesignTokens.accent)
-            }
-            VStack(alignment: .leading, spacing: 1) {
+            Text("F")
+                .font(.system(size: 14, weight: .bold, design: .rounded))
+                .foregroundStyle(FSDDesignTokens.accent)
+                .frame(width: 28, height: 28)
+                .background(FSDDesignTokens.selected.opacity(0.38), in: RoundedRectangle(cornerRadius: 6))
+                .overlay(RoundedRectangle(cornerRadius: 6).stroke(FSDDesignTokens.accent.opacity(0.34), lineWidth: 1))
+            VStack(alignment: .leading, spacing: 2) {
                 Text("FSD")
                     .font(.system(size: 13, weight: .bold, design: .rounded))
                     .tracking(0.5)
-                Text("FishSock Differ")
-                    .font(.system(size: 10))
-                    .foregroundStyle(FSDDesignTokens.secondaryText)
+                Text("FISHSOCK DIFFER")
+                    .font(.system(size: 8, weight: .medium))
+                    .tracking(0.75)
+                    .foregroundStyle(FSDDesignTokens.mutedText)
             }
             Spacer()
         }
@@ -247,8 +248,8 @@ private struct FSDSidebarView: View {
             .font(.system(size: 9, weight: .bold))
             .tracking(1.05)
             .foregroundStyle(FSDDesignTokens.mutedText)
-            .padding(.horizontal, 10)
-            .padding(.top, 1)
+            .padding(.horizontal, 8)
+            .padding(.top, 0)
     }
 
     private func navigationRow(_ title: String, icon: String, destination: FSDDestination) -> some View {
@@ -281,8 +282,8 @@ private struct SidebarNavigationRow: View {
                 Spacer(minLength: 0)
             }
             .foregroundStyle(isSelected ? FSDDesignTokens.primaryText : FSDDesignTokens.secondaryText)
-            .padding(.horizontal, 10)
-            .frame(height: 31)
+            .padding(.horizontal, 8)
+            .frame(height: 29)
             .background(
                 isSelected ? FSDDesignTokens.selected : (isHovered ? FSDDesignTokens.hover : .clear),
                 in: RoundedRectangle(cornerRadius: FSDDesignTokens.smallCornerRadius)
@@ -305,28 +306,30 @@ private struct FSDTopBarView: View {
     let onSelect: (FSDDestination) -> Void
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 8) {
             HStack(spacing: 7) {
                 Image(systemName: "square.grid.2x2.fill")
                     .font(.system(size: 10))
                     .foregroundStyle(FSDDesignTokens.accent)
                 Text(selection.breadcrumb)
-                    .font(.system(size: 11.5, weight: .medium))
+                    .font(.system(size: 10.5, weight: .medium))
                     .foregroundStyle(FSDDesignTokens.secondaryText)
                     .lineLimit(1)
             }
             Spacer(minLength: 12)
-            HStack(spacing: 7) {
+            HStack(spacing: 6) {
                 toolbarButton("Capture", icon: "plus", isActive: selection == .capture) {
                     onSelect(.capture)
                 }
                 Button {} label: {
                     Label("Search", systemImage: "magnifyingglass")
-                        .font(.system(size: 10.5, weight: .medium))
+                        .font(.system(size: 10, weight: .medium))
                         .foregroundStyle(FSDDesignTokens.mutedText)
-                        .padding(.horizontal, 10)
-                        .frame(height: 29)
-                        .background(FSDDesignTokens.panel.opacity(0.55), in: RoundedRectangle(cornerRadius: 6))
+                        .padding(.horizontal, 8)
+                        .frame(height: 27)
+                        .background(FSDDesignTokens.panel.opacity(0.55), in: RoundedRectangle(cornerRadius: 5))
+                        .frame(minHeight: 36)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .disabled(true)
@@ -341,7 +344,7 @@ private struct FSDTopBarView: View {
                 }
             }
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, 16)
         .frame(height: FSDDesignTokens.toolbarHeight)
         .background(FSDDesignTokens.window)
     }
@@ -361,14 +364,16 @@ private struct TopBarActionButton: View {
     var body: some View {
         Button(action: action) {
             Label(title, systemImage: icon)
-                .font(.system(size: 10.5, weight: .medium))
+                .font(.system(size: 10, weight: .medium))
                 .foregroundStyle(isActive ? FSDDesignTokens.primaryText : FSDDesignTokens.secondaryText)
-                .padding(.horizontal, 10)
-                .frame(height: 29)
+                .padding(.horizontal, 8)
+                .frame(height: 27)
                 .background(
                     isActive ? FSDDesignTokens.selected : (isHovered ? FSDDesignTokens.hover : FSDDesignTokens.panel),
-                    in: RoundedRectangle(cornerRadius: 6)
+                    in: RoundedRectangle(cornerRadius: 5)
                 )
+                .frame(minHeight: 36)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .onHover { isHovered = $0 }
@@ -390,30 +395,28 @@ private struct LibraryOverviewView: View {
             VStack(alignment: .leading, spacing: FSDDesignTokens.pageSpacing) {
                 VStack(alignment: .leading, spacing: 5) {
                     Text("Library Overview")
-                        .font(.system(size: 25, weight: .semibold))
+                        .font(.system(size: 24, weight: .semibold))
                     Text("Browse saved captures and compare changes across snapshots.")
-                        .font(.system(size: 11.5))
+                        .font(.system(size: 12.5))
                         .foregroundStyle(FSDDesignTokens.secondaryText)
                 }
 
                 captureCard
 
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 4), spacing: 10) {
-                    OverviewMetricCard(title: "Drives", value: "—", note: "Registry unavailable")
-                    OverviewMetricCard(title: "Snapshots", value: "\(model.history.count)", note: "Saved captures")
-                    OverviewMetricCard(title: "Items", value: "—", note: "Aggregate unavailable")
-                    OverviewMetricCard(title: "Storage", value: "—", note: "Aggregate unavailable")
-                }
+                metricsSection
 
-                HStack(alignment: .top, spacing: 12) {
+                HStack(alignment: .top, spacing: 20) {
                     recentComparisonsPanel
-                    recentCapturesPanel
+                        .frame(maxWidth: .infinity, alignment: .topLeading)
+                    VStack(alignment: .leading, spacing: FSDDesignTokens.pageSpacing) {
+                        recentCapturesPanel
+                        recentDrivesPanel
+                    }
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
                 }
-
-                recentDrivesPanel
             }
-            .padding(.horizontal, 26)
-            .padding(.vertical, 22)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 18)
             .frame(maxWidth: 1120, alignment: .leading)
             .frame(maxWidth: .infinity, alignment: .center)
         }
@@ -423,56 +426,85 @@ private struct LibraryOverviewView: View {
     }
 
     private var captureCard: some View {
-        HStack(spacing: 17) {
+        HStack(spacing: 13) {
             ZStack {
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: 10)
                     .fill(FSDDesignTokens.selected)
-                    .frame(width: 52, height: 52)
+                    .frame(width: 44, height: 44)
                 Image(systemName: "externaldrive.badge.plus")
-                    .font(.system(size: 21, weight: .medium))
+                    .font(.system(size: 18, weight: .medium))
                     .foregroundStyle(FSDDesignTokens.accent)
             }
-            VStack(alignment: .leading, spacing: 5) {
-                HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 7) {
                     Text("Choose a source to capture")
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.system(size: 13.5, weight: .semibold))
                     Text("MANUAL")
-                        .font(.system(size: 8, weight: .bold))
-                        .tracking(0.8)
+                        .font(.system(size: 7.5, weight: .bold))
+                        .tracking(0.7)
                         .foregroundStyle(FSDDesignTokens.accent)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
                         .background(FSDDesignTokens.selected, in: Capsule())
                 }
                 Text("Select a folder when you are ready. FSD records filesystem metadata only.")
-                    .font(.system(size: 11))
+                    .font(.system(size: 10.5))
                     .foregroundStyle(FSDDesignTokens.secondaryText)
                     .fixedSize(horizontal: false, vertical: true)
                 Text("Metadata only  ·  Content Not Verified")
-                    .font(.system(size: 10, weight: .medium))
+                    .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(FSDDesignTokens.mutedText)
             }
             Spacer(minLength: 8)
             Button(action: onCapture) {
                 Label("Capture", systemImage: "arrow.right")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(size: 10.5, weight: .semibold))
                     .foregroundStyle(.white)
-                    .padding(.horizontal, 13)
-                    .frame(height: 34)
-                    .background(FSDDesignTokens.accent, in: RoundedRectangle(cornerRadius: 7))
+                    .padding(.horizontal, 11)
+                    .frame(height: 31)
+                    .background(FSDDesignTokens.accent, in: RoundedRectangle(cornerRadius: 6))
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Open manual capture")
             .accessibilityHint("Opens the existing folder selection and metadata capture workflow.")
         }
-        .padding(17)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 11)
+        .frame(minHeight: 78)
         .background(FSDDesignTokens.raisedPanel, in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
         .overlay(RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius).stroke(FSDDesignTokens.separator, lineWidth: 1))
         .accessibilityElement(children: .contain)
     }
 
+    private var metricsSection: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Text("Library Overview")
+                .font(.system(size: 12.5, weight: .semibold))
+                .foregroundStyle(FSDDesignTokens.primaryText)
+
+            HStack(spacing: 0) {
+                OverviewMetricCell(title: "Drives", value: "—", note: "Registry unavailable")
+                metricDivider
+                OverviewMetricCell(title: "Snapshots", value: "\(model.history.count)", note: "Saved captures")
+                metricDivider
+                OverviewMetricCell(title: "Items", value: "—", note: "Aggregate unavailable")
+                metricDivider
+                OverviewMetricCell(title: "Storage", value: "—", note: "Aggregate unavailable")
+            }
+            .padding(.vertical, 2)
+            .background(FSDDesignTokens.panel, in: RoundedRectangle(cornerRadius: FSDDesignTokens.smallCornerRadius))
+            .overlay(RoundedRectangle(cornerRadius: FSDDesignTokens.smallCornerRadius).stroke(FSDDesignTokens.separator, lineWidth: 1))
+        }
+    }
+
+    private var metricDivider: some View {
+        Rectangle()
+            .fill(FSDDesignTokens.separator)
+            .frame(width: 1, height: 43)
+    }
+
     private var recentComparisonsPanel: some View {
-        OverviewPanel(title: "Recent Comparisons", trailingTitle: "View all", action: onComparisons) {
+        OverviewSection(title: "Recent Comparisons", trailingTitle: "View all", action: onComparisons) {
             if comparisonsUnavailable {
                 OverviewMessageRow(icon: "exclamationmark.circle", text: "Comparison history is unavailable.")
             } else if recentComparisons.isEmpty {
@@ -501,7 +533,7 @@ private struct LibraryOverviewView: View {
                                     .font(.system(size: 9, weight: .semibold))
                                     .foregroundStyle(FSDDesignTokens.mutedText)
                             }
-                            .padding(.vertical, 8)
+                            .padding(.vertical, 6)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -516,7 +548,7 @@ private struct LibraryOverviewView: View {
     }
 
     private var recentCapturesPanel: some View {
-        OverviewPanel(title: "Recent Captures", trailingTitle: "View all", action: onHistory) {
+        OverviewSection(title: "Recent Captures", trailingTitle: "View all", action: onHistory) {
             if model.history.isEmpty {
                 OverviewMessageRow(icon: "clock.arrow.circlepath", text: "No captures yet.")
             } else {
@@ -545,7 +577,7 @@ private struct LibraryOverviewView: View {
                                     .font(.system(size: 9, weight: .semibold))
                                     .foregroundStyle(FSDDesignTokens.mutedText)
                             }
-                            .padding(.vertical, 8)
+                            .padding(.vertical, 6)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -560,7 +592,7 @@ private struct LibraryOverviewView: View {
     }
 
     private var recentDrivesPanel: some View {
-        OverviewPanel(title: "Recent Drives", trailingTitle: nil, action: nil) {
+        OverviewSection(title: "Recent Drives", trailingTitle: nil, action: nil) {
             OverviewMessageRow(
                 icon: "externaldrive",
                 text: "Drive registry is not available yet. Saved captures remain available in Recent Captures."
@@ -591,36 +623,34 @@ private struct LibraryOverviewView: View {
     }
 }
 
-private struct OverviewMetricCard: View {
+private struct OverviewMetricCell: View {
     let title: String
     let value: String
     let note: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 7) {
+        VStack(alignment: .leading, spacing: 4) {
             Text(title.uppercased())
                 .font(.system(size: 8.5, weight: .bold))
                 .tracking(0.8)
                 .foregroundStyle(FSDDesignTokens.mutedText)
             Text(value)
-                .font(.system(size: 20, weight: .semibold, design: .rounded))
+                .font(.system(size: 18, weight: .semibold, design: .rounded))
                 .foregroundStyle(value == "—" ? FSDDesignTokens.mutedText : FSDDesignTokens.primaryText)
             Text(note)
-                .font(.system(size: 9))
+                .font(.system(size: 8.5))
                 .foregroundStyle(FSDDesignTokens.secondaryText)
                 .lineLimit(1)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 13)
-        .padding(.vertical, 11)
-        .background(FSDDesignTokens.panel, in: RoundedRectangle(cornerRadius: FSDDesignTokens.smallCornerRadius))
-        .overlay(RoundedRectangle(cornerRadius: FSDDesignTokens.smallCornerRadius).stroke(FSDDesignTokens.separator, lineWidth: 1))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title): \(value). \(note)")
     }
 }
 
-private struct OverviewPanel<Content: View>: View {
+private struct OverviewSection<Content: View>: View {
     let title: String
     let trailingTitle: String?
     let action: (() -> Void)?
@@ -648,13 +678,14 @@ private struct OverviewPanel<Content: View>: View {
                         .accessibilityLabel("\(trailingTitle) \(title)")
                 }
             }
-            .padding(.bottom, 8)
+            .padding(.bottom, 7)
+            Rectangle()
+                .fill(FSDDesignTokens.separator)
+                .frame(height: 1)
             content
-                .frame(maxWidth: .infinity, minHeight: 80, alignment: .topLeading)
+                .frame(maxWidth: .infinity, minHeight: 28, alignment: .topLeading)
+                .padding(.top, 5)
         }
-        .padding(13)
-        .background(FSDDesignTokens.panel, in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
-        .overlay(RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius).stroke(FSDDesignTokens.separator, lineWidth: 1))
         .frame(maxWidth: .infinity, alignment: .topLeading)
     }
 }
@@ -668,8 +699,8 @@ private struct OverviewMessageRow: View {
             Image(systemName: icon)
                 .font(.system(size: 12))
                 .foregroundStyle(FSDDesignTokens.mutedText)
-                .frame(width: 25, height: 25)
-                .background(FSDDesignTokens.raisedPanel, in: RoundedRectangle(cornerRadius: 6))
+                .frame(width: 22, height: 22)
+                .background(FSDDesignTokens.raisedPanel.opacity(0.76), in: RoundedRectangle(cornerRadius: 5))
             Text(text)
                 .font(.system(size: 10.5))
                 .foregroundStyle(FSDDesignTokens.secondaryText)

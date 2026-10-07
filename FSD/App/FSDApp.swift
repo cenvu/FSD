@@ -8,8 +8,38 @@ struct FSDApp: App {
     var body: some Scene {
         WindowGroup("FishSock Differ") {
             FSDAppShellView(model: model)
+                .background(FSDWindowAppearanceConfigurator().frame(width: 1, height: 1).allowsHitTesting(false))
                 .frame(minWidth: 1120, minHeight: 720)
         }
+    }
+}
+
+private struct FSDWindowAppearanceConfigurator: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        FSDWindowAppearanceView(frame: .zero)
+    }
+
+    func updateNSView(_ view: NSView, context: Context) {
+        (view as? FSDWindowAppearanceView)?.configureWindow()
+    }
+}
+
+private final class FSDWindowAppearanceView: NSView {
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        configureWindow()
+    }
+
+    func configureWindow() {
+        guard let window else { return }
+        window.appearance = NSAppearance(named: .darkAqua)
+        window.backgroundColor = NSColor(
+            calibratedRed: 0.055,
+            green: 0.067,
+            blue: 0.083,
+            alpha: 1
+        )
+        window.titlebarAppearsTransparent = true
     }
 }
 
