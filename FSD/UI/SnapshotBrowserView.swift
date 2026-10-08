@@ -494,9 +494,9 @@ struct SnapshotBrowserView: View {
                     root: model.rootNode,
                     onSelect: { model.select(entryID: $0) }
                 )
-                .frame(minWidth: 380)
+                .frame(minWidth: 320)
                 EntryInspectorView(model: model)
-                    .frame(minWidth: 260)
+                    .frame(minWidth: 220)
             }
             footer
         }

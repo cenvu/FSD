@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-08T22:40:50+07:00
-
 # Recent Captures nested split repair — Task043
 
 ## HOT
