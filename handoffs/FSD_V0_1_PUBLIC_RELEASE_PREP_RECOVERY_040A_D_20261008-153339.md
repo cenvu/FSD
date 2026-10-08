@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-08T15:33:39+07:00
-
 # Task040A — recovered unsigned v0.1.0 public-test candidate
 
 ## HOT
