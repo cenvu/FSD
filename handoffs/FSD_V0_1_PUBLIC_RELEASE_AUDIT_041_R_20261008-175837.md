@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-08T17:58:37+07:00
-
 # Task041 — independent v0.1.0 prepublication release audit
 
 ## HOT
