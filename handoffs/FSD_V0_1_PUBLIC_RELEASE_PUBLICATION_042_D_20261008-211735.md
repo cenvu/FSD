@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-08T21:40:13+07:00
-
 # Task042 — public v0.1.0 prerelease verified; reporting closure STOP
 
 ## HOT

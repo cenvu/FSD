@@ -94,6 +94,39 @@ def table(text, header, label):
     return [dict(zip(header, row)) for row in rows[1:]]
 
 
+def accepted_task_classification_allowed(accepted, state, events):
+    classification = accepted["BRAIN_CLASSIFICATION"]
+    if classification in {"PASS", "PASS_WITH_ADVISORY"}:
+        return True
+    if (accepted["EXECUTOR"] == "REVIEWER" and accepted["STATUS"] == "ACCEPTED"
+            and classification == "REPAIR"):
+        return True
+    if accepted["STATUS"] != "ACCEPTED" or classification != "STOP":
+        return False
+
+    task_id = state["LAST_ACCEPTED_TASK"]
+    accepted_head = state["LAST_ACCEPTED_HEAD"]
+    accepted_event = any(
+        event.get("actor") == "BRAIN"
+        and event.get("event_type") == "stage_accepted"
+        and event.get("task_id") == task_id
+        and event.get("result") == "STOP"
+        and event.get("commit") == accepted_head
+        and event.get("ref") == accepted["HANDOFF"]
+        for event in events
+    )
+    next_decision_event = any(
+        event.get("actor") == "BRAIN"
+        and event.get("event_type") == "next_stage_authorized"
+        and event.get("task_id") == task_id
+        and event.get("result") == state["EXACTLY_ONE_NEXT_DECISION"]
+        and event.get("commit") == accepted_head
+        and event.get("ref") == "STATE/PROJECT_STATE.md"
+        for event in events
+    )
+    return accepted_event and next_decision_event
+
+
 class Checker:
     def __init__(self, args):
         self.args = args
@@ -218,10 +251,6 @@ class Checker:
         require(current["HANDOFF"] == self.new_handoff, "current task must own the one new handoff")
         require(state["LAST_ACCEPTED_TASK"] in ledger, "accepted task missing from ledger")
         accepted = ledger[state["LAST_ACCEPTED_TASK"]]
-        require(accepted["BRAIN_CLASSIFICATION"] in {"PASS", "PASS_WITH_ADVISORY"}
-                or (accepted["EXECUTOR"] == "REVIEWER" and accepted["STATUS"] == "ACCEPTED"
-                    and accepted["BRAIN_CLASSIFICATION"] == "REPAIR"),
-                "last accepted task lacks accepted classification")
         # A self-containing return records a known basis SHA, while BRAIN may
         # later accept its publication snapshot. Prove ancestry and artifact
         # presence instead of requiring those distinct SHA roles to be equal.
@@ -271,6 +300,8 @@ class Checker:
         else:
             require({row["CANDIDATE"] for row in rules} == {"ROOT_DISCOVERABLE_KERNEL", "STABLE_BRAIN_COMPACT", "FULL_DESKTOP_FALLBACK", "NO_MODEL_BENCHMARK", "STATE_PLANE"}, "bootstrap promotions differ from directive")
         self.ledger = ledger
+        self.accepted_task = accepted
+        self.accepted_state = state
         self.receipt.update(task_rows=len(rows), rule_rows=len(rules), next_decision_count=1)
         self.receipt["checks"].append("state_schemas_refs_ownership_placeholders")
 
@@ -316,6 +347,9 @@ class Checker:
                     and e["task_id"] == BOOTSTRAP_TASK and e["result"] == "AUTHORIZED", "invalid supplied Stage-C authorization")
         else:
             require(all(e["actor"] == "WORKER" and e["task_id"] == self.args.task_id for e in added), "Worker fabricated non-Worker transition")
+        require(accepted_task_classification_allowed(self.accepted_task, self.accepted_state, events),
+                "last accepted task lacks accepted classification")
+        self.receipt["accepted_task_classification"] = self.accepted_task["BRAIN_CLASSIFICATION"]
         self.receipt["event_rows"] = len(events)
         self.receipt["checks"].append("events_jsonl_append_only_return")
 
