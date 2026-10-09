@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-09T10:00:13+07:00
-
 # FSD#2 technical baseline — Task044 independent Reviewer audit
 
 ## HOT
