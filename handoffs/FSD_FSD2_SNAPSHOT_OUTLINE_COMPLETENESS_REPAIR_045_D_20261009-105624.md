@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-09T13:15:00+07:00
-
 # Task045 — native snapshot outline completeness repair attempt
 
 ## HOT
