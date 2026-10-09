@@ -898,6 +898,8 @@ final class ComparisonGUIValidationTests: XCTestCase {
         XCTAssertEqual(history.filter { $0.displayName == "Shared Card" }.count, 3)
         XCTAssertEqual(SourceNavigatorSnapshotSelection.resolve(nil, in: history)?.id, newerSameLabel)
         XCTAssertEqual(SourceNavigatorSnapshotSelection.resolve(olderSameLabel, in: history)?.id, olderSameLabel)
+        XCTAssertEqual(SourceNavigatorSnapshotSelection.latestCompletedSnapshotID(in: history), newerSameLabel)
+        XCTAssertEqual(SourceNavigatorSnapshotSelection.resolve(partial, in: history)?.id, partial)
         XCTAssertFalse(SourceNavigatorSnapshotSelection.canBrowse(history.first { $0.id == partial }))
 
         let priorIDs = Set(history.map(\.id))
@@ -905,9 +907,26 @@ final class ComparisonGUIValidationTests: XCTestCase {
         _ = try seedNavigatorSnapshot(volumeID: 701, name: "Shared Card", status: .failed)
         let refreshedHistory = try historyRepo.listSnapshots()
         XCTAssertEqual(
-            SourceNavigatorSnapshotSelection.newlyCompletedSnapshotID(after: priorIDs, in: refreshedHistory),
+            SourceNavigatorSnapshotSelection.newlyCompletedSnapshotID(
+                selectedID: nil,
+                after: priorIDs,
+                in: refreshedHistory
+            ),
             newlyCompleted,
-            "a completed capture discovered after refresh becomes the selected Home context"
+            "history ordering identifies the completed capture by stable SnapshotID"
+        )
+        XCTAssertNil(
+            SourceNavigatorSnapshotSelection.newlyCompletedSnapshotID(
+                selectedID: partial,
+                after: priorIDs,
+                in: refreshedHistory
+            ),
+            "a selected partial capture remains selected until the user chooses another snapshot"
+        )
+        XCTAssertEqual(SourceNavigatorSnapshotSelection.resolve(partial, in: refreshedHistory)?.id, partial)
+        XCTAssertNil(
+            SourceNavigatorSnapshotSelection.latestCompletedSnapshotID(in: refreshedHistory.filter { !$0.isComplete }),
+            "there is no latest-complete action target when history contains only partial captures"
         )
     }
 
@@ -921,6 +940,21 @@ final class ComparisonGUIValidationTests: XCTestCase {
         XCTAssertEqual(history.map(\.id), [id])
         XCTAssertEqual(SourceNavigatorSnapshotSelection.resolve(nil, in: history)?.id, id)
         XCTAssertTrue(SourceNavigatorSnapshotSelection.canBrowse(history.first))
+    }
+
+    func testSourceNavigatorKeepsExistingMainRouteCallbacks() throws {
+        let repoRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let source = try String(
+            contentsOf: repoRoot.appendingPathComponent("FSD/UI/ComparisonSharedViews.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(source.contains("model.openSnapshot(summary)"), "completed Browse keeps the stored-snapshot route")
+        XCTAssertTrue(source.contains("onHistory: { selection = .recentCaptures }"), "History keeps the existing capture-history destination")
+        XCTAssertTrue(source.contains("onComparisons: { selection = .comparisons }"), "Compare keeps the existing comparison workspace")
+        XCTAssertTrue(source.contains("onCapture: { selection = .capture }"), "manual Capture keeps the existing Capture destination")
     }
 
     private func seedNavigatorSnapshot(volumeID: Int64, name: String, status: SnapshotStatus) throws -> SnapshotID {

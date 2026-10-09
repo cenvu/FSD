@@ -170,6 +170,7 @@ struct FSDAppShellView: View {
         .onChange(of: model.history.map(\.id)) { oldIDs, newIDs in
             guard newIDs != oldIDs,
                   let newlyCompletedID = SourceNavigatorSnapshotSelection.newlyCompletedSnapshotID(
+                    selectedID: homeSelectedSnapshotID,
                     after: Set(oldIDs),
                     in: model.history
                   )
@@ -225,6 +226,7 @@ struct FSDAppShellView: View {
 
 private struct FSDSidebarView: View {
     @Binding var selection: FSDDestination
+    @State private var isUnavailableExpanded = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -239,41 +241,58 @@ private struct FSDSidebarView: View {
                     navigationRow("Home", icon: "house", destination: .libraryOverview)
 
                     sectionTitle("LIBRARY")
-                    navigationRow("All Drives", icon: "externaldrive", destination: .allDrives)
                     navigationRow("Recent Captures", icon: "clock.arrow.circlepath", destination: .recentCaptures)
-
-                    HStack {
-                        sectionTitle("DRIVE SETS")
-                        Spacer(minLength: 4)
-                        Button {} label: {
-                            Image(systemName: "plus")
-                                .font(.system(size: 10, weight: .semibold))
-                                .foregroundStyle(FSDDesignTokens.mutedText)
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(true)
-                        .help("Drive Sets are not available yet.")
-                        .accessibilityLabel("New Drive Set unavailable")
-                        .accessibilityHint("Drive Set support is not available yet.")
-                    }
-                    .padding(.top, 1)
-                    Text("Drive Sets unavailable")
-                        .font(.system(size: 10.5))
-                        .foregroundStyle(FSDDesignTokens.mutedText)
-                        .padding(.leading, 8)
-                        .accessibilityLabel("Drive Sets unavailable. Drive Set support is not available yet.")
 
                     sectionTitle("COMPARE")
                     navigationRow("Comparisons", icon: "arrow.left.arrow.right", destination: .comparisons)
 
-                    sectionTitle("CONNECTED NOW")
-                    Label("No connected-drive service yet", systemImage: "externaldrive")
-                        .font(.system(size: 10.5))
-                        .foregroundStyle(FSDDesignTokens.mutedText)
-                        .labelStyle(.titleAndIcon)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.horizontal, 10)
-                        .accessibilityElement(children: .combine)
+                    DisclosureGroup(
+                        isExpanded: Binding(
+                            get: { isUnavailableExpanded || selection == .allDrives },
+                            set: { isUnavailableExpanded = $0 }
+                        )
+                    ) {
+                        VStack(alignment: .leading, spacing: 5) {
+                            navigationRow("All Drives", icon: "externaldrive", destination: .allDrives)
+
+                            Label("Drive Sets unavailable", systemImage: "rectangle.stack")
+                                .font(.system(size: FSDDesignTokens.bodySize - 1))
+                                .foregroundStyle(FSDDesignTokens.mutedText)
+                                .padding(.horizontal, 10)
+                                .frame(minHeight: 30, alignment: .leading)
+                                .accessibilityElement(children: .ignore)
+                                .accessibilityLabel("Drive Sets unavailable. Drive Set support is not available yet.")
+
+                            Label("No connected-drive service yet", systemImage: "externaldrive")
+                                .font(.system(size: FSDDesignTokens.bodySize - 1))
+                                .foregroundStyle(FSDDesignTokens.mutedText)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 5)
+                                .accessibilityElement(children: .combine)
+
+                            Button {} label: {
+                                Label("Auto Capture unavailable", systemImage: "arrow.clockwise")
+                                    .font(.system(size: FSDDesignTokens.bodySize - 1))
+                                    .foregroundStyle(FSDDesignTokens.mutedText)
+                                    .padding(.horizontal, 10)
+                                    .frame(minHeight: 34, alignment: .leading)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(true)
+                            .help("Auto Capture is unavailable until a connected-drive service exists.")
+                            .accessibilityLabel("Auto Capture unavailable")
+                            .accessibilityHint("Automatic capture is not available yet.")
+                        }
+                        .padding(.top, 5)
+                    } label: {
+                        Text("Not available yet")
+                            .font(.system(size: FSDDesignTokens.bodySize - 1, weight: .medium))
+                            .foregroundStyle(FSDDesignTokens.mutedText)
+                    }
+                    .tint(FSDDesignTokens.mutedText)
+                    .padding(.top, 5)
                 }
                 .padding(.horizontal, 12)
                 .padding(.bottom, 12)
@@ -283,34 +302,6 @@ private struct FSDSidebarView: View {
             Rectangle()
                 .fill(FSDDesignTokens.separator)
                 .frame(height: 1)
-
-            Button {} label: {
-                HStack(spacing: 10) {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(FSDDesignTokens.accent.opacity(0.72))
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Auto Capture")
-                            .font(.system(size: FSDDesignTokens.bodySize, weight: .medium))
-                        Text("Unavailable")
-                            .font(.system(size: FSDDesignTokens.labelSize))
-                    }
-                    Spacer()
-                    Image(systemName: "lock.fill")
-                        .font(.system(size: 8.5))
-                }
-                .foregroundStyle(FSDDesignTokens.secondaryText.opacity(0.72))
-                .padding(.horizontal, 9)
-                .padding(.vertical, 8)
-                .background(FSDDesignTokens.selected.opacity(0.22), in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
-                .overlay(RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius).stroke(FSDDesignTokens.accent.opacity(0.20), lineWidth: 1))
-            }
-            .buttonStyle(.plain)
-            .disabled(true)
-            .help("Auto Capture is unavailable until a connected-drive service exists.")
-            .accessibilityLabel("Auto Capture, unavailable")
-            .accessibilityHint("Automatic capture is not available yet.")
-            .padding(8)
         }
         .background(FSDDesignTokens.sidebar)
     }
@@ -417,20 +408,6 @@ private struct FSDTopBarView: View {
                 toolbarButton("Capture", icon: "plus", isActive: selection == .capture) {
                     onSelect(.capture)
                 }
-                Button {} label: {
-                    Label("Search", systemImage: "magnifyingglass")
-                        .font(.system(size: FSDDesignTokens.toolbarLabelSize, weight: .medium))
-                        .foregroundStyle(FSDDesignTokens.mutedText.opacity(0.68))
-                        .padding(.horizontal, 10)
-                        .frame(height: 30)
-                        .frame(minHeight: 44)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .disabled(true)
-                .help("Library-wide search is not available yet. Search within an individual snapshot from its browser.")
-                .accessibilityLabel("Search unavailable")
-                .accessibilityHint("Library-wide search is not available. Search within a snapshot from its browser.")
                 toolbarButton("Compare", icon: "arrow.left.arrow.right", isActive: selection == .comparisons) {
                     onSelect(.comparisons)
                 }
@@ -488,8 +465,17 @@ enum SourceNavigatorSnapshotSelection {
         summary?.isComplete == true
     }
 
-    static func newlyCompletedSnapshotID(after priorIDs: Set<SnapshotID>, in history: [SnapshotSummary]) -> SnapshotID? {
-        history.first(where: { $0.isComplete && !priorIDs.contains($0.id) })?.id
+    static func latestCompletedSnapshotID(in history: [SnapshotSummary]) -> SnapshotID? {
+        history.first(where: \.isComplete)?.id
+    }
+
+    static func newlyCompletedSnapshotID(
+        selectedID: SnapshotID?,
+        after priorIDs: Set<SnapshotID>,
+        in history: [SnapshotSummary]
+    ) -> SnapshotID? {
+        guard selectedID == nil else { return nil }
+        return history.first(where: { $0.isComplete && !priorIDs.contains($0.id) })?.id
     }
 }
 
@@ -517,7 +503,7 @@ private struct LibraryOverviewView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: FSDDesignTokens.pageSpacing) {
+            VStack(alignment: .leading, spacing: 16) {
                 pageHeading
                 if model.history.isEmpty {
                     emptyCatalog
@@ -528,7 +514,7 @@ private struct LibraryOverviewView: View {
                 recentComparisonsSection
             }
             .padding(.horizontal, 24)
-            .padding(.top, FSDDesignTokens.pageInsetTop)
+            .padding(.top, 20)
             .padding(.bottom, FSDDesignTokens.pageInsetBottom)
             .frame(maxWidth: FSDDesignTokens.pageMaxContentWidth, alignment: .leading)
             .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -598,9 +584,9 @@ private struct LibraryOverviewView: View {
     }
 
     private func selectedCaptureCard(_ summary: SnapshotSummary) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 5) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text("SELECTED SAVED CAPTURE")
                         .font(.system(size: FSDDesignTokens.labelSize, weight: .bold))
                         .tracking(0.8)
@@ -645,53 +631,99 @@ private struct LibraryOverviewView: View {
                 SourceNavigatorCountCell(title: "Unreadable items", value: summary.inaccessibleItems)
                 SourceNavigatorCountCell(title: "Warnings", value: summary.warningCount)
             }
-            .padding(.vertical, 4)
+            .padding(.vertical, 2)
             .background(FSDDesignTokens.inset, in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
             .accessibilityElement(children: .contain)
             .accessibilityLabel("Captured metadata counts")
 
-            HStack(spacing: 10) {
-                Button {
-                    onOpenSnapshot(summary)
-                } label: {
-                    Label("Browse Snapshot", systemImage: "folder")
-                        .frame(minHeight: 44)
-                }
-                .buttonStyle(FSDPrimaryActionButtonStyle())
-                .disabled(!SourceNavigatorSnapshotSelection.canBrowse(summary))
-                .accessibilityLabel(
-                    SourceNavigatorSnapshotSelection.canBrowse(summary)
-                        ? "Browse snapshot #\(summary.id.rawValue)"
-                        : "Browse snapshot unavailable for partial capture #\(summary.id.rawValue)"
-                )
-                .accessibilityHint(
-                    SourceNavigatorSnapshotSelection.canBrowse(summary)
-                        ? "Opens this completed snapshot in the stored-metadata browser."
-                        : "This capture is partial. Select a completed capture to browse from Home."
-                )
-
-                Button(action: onHistory) {
-                    Label("History", systemImage: "clock.arrow.circlepath")
-                        .frame(minHeight: 44)
-                }
-                .buttonStyle(FSDSecondaryActionButtonStyle())
-                .accessibilityLabel("Open capture History")
-
-                Button(action: onComparisons) {
-                    Label("Compare", systemImage: "arrow.left.arrow.right")
-                        .frame(minHeight: 44)
-                }
-                .buttonStyle(FSDSecondaryActionButtonStyle())
-                .accessibilityLabel("Open Compare workspace")
-                .accessibilityHint("Opens the existing comparison workspace. Choose comparison sources there.")
-            }
-            .buttonStyle(.plain)
+            captureActionRow(for: summary)
         }
-        .padding(20)
+        .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(FSDDesignTokens.panel, in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
         .overlay(RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius).stroke(FSDDesignTokens.separator, lineWidth: 1))
         .accessibilityElement(children: .contain)
+    }
+
+    @ViewBuilder
+    private func captureActionRow(for summary: SnapshotSummary) -> some View {
+        if SourceNavigatorSnapshotSelection.canBrowse(summary) {
+            HStack(spacing: 10) {
+                browseButton(for: summary)
+                Spacer(minLength: 8)
+                historyButton
+                compareButton
+            }
+        } else {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 12) {
+                    browseButton(for: summary)
+                    Text("This capture is incomplete. Select a completed capture to browse its stored metadata.")
+                        .font(.system(size: FSDDesignTokens.bodySize - 0.5))
+                        .foregroundStyle(FSDDesignTokens.secondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .accessibilityLabel("This capture is incomplete. Select a completed capture to browse its stored metadata.")
+                }
+
+                HStack(spacing: 10) {
+                    Spacer(minLength: 0)
+                    if let latestCompletedID = SourceNavigatorSnapshotSelection.latestCompletedSnapshotID(in: model.history) {
+                        Button {
+                            selectedSnapshotID = latestCompletedID
+                        } label: {
+                            Label("Select latest complete", systemImage: "checkmark.circle")
+                                .frame(minHeight: 34)
+                        }
+                        .buttonStyle(FSDSecondaryActionButtonStyle())
+                        .accessibilityLabel("Select latest complete capture, snapshot #\(latestCompletedID.rawValue)")
+                        .accessibilityHint("Selects this completed capture as the Home context. It does not open the snapshot.")
+                    }
+                    historyButton
+                    compareButton
+                }
+            }
+        }
+    }
+
+    private func browseButton(for summary: SnapshotSummary) -> some View {
+        Button {
+            onOpenSnapshot(summary)
+        } label: {
+            Label("Browse Snapshot", systemImage: "folder")
+                .frame(minHeight: 44)
+        }
+        .buttonStyle(FSDPrimaryActionButtonStyle())
+        .disabled(!SourceNavigatorSnapshotSelection.canBrowse(summary))
+        .accessibilityLabel(
+            SourceNavigatorSnapshotSelection.canBrowse(summary)
+                ? "Browse snapshot #\(summary.id.rawValue)"
+                : "Browse snapshot unavailable for partial capture #\(summary.id.rawValue)"
+        )
+        .accessibilityHint(
+            SourceNavigatorSnapshotSelection.canBrowse(summary)
+                ? "Opens this completed snapshot in the stored-metadata browser."
+                : "This capture is partial. Select a completed capture to browse from Home."
+        )
+    }
+
+    private var historyButton: some View {
+        Button(action: onHistory) {
+            Label("History", systemImage: "clock.arrow.circlepath")
+                .frame(minHeight: 44)
+        }
+        .buttonStyle(FSDSecondaryActionButtonStyle())
+        .accessibilityLabel("Open capture History")
+    }
+
+    private var compareButton: some View {
+        Button(action: onComparisons) {
+            Label("Compare", systemImage: "arrow.left.arrow.right")
+                .frame(minHeight: 44)
+        }
+        .buttonStyle(FSDSecondaryActionButtonStyle())
+        .accessibilityLabel("Open Compare workspace")
+        .accessibilityHint("Opens the existing comparison workspace. Choose comparison sources there.")
     }
 
     private var captureHistory: some View {
@@ -871,9 +903,9 @@ private struct SourceNavigatorMetadataCell: View {
                 .textSelection(.enabled)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 9)
+        .frame(maxWidth: .infinity, minHeight: 40, alignment: .leading)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
         .background(FSDDesignTokens.inset, in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title): \(value)")
@@ -892,12 +924,12 @@ private struct SourceNavigatorCountCell: View {
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
             Text(value.formatted())
-                .font(.system(size: 17, weight: .semibold, design: .rounded))
+                .font(.system(size: 16, weight: .semibold, design: .rounded))
                 .foregroundStyle(FSDDesignTokens.primaryText)
         }
-        .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
-        .padding(.horizontal, 11)
-        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, minHeight: 46, alignment: .leading)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title): \(value)")
     }

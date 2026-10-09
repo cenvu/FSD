@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-09T19:37:20+07:00
-
 # Task048 — Source Navigator Main/Home three-point UX polish
 
 ## HOT
