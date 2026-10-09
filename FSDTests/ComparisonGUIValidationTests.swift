@@ -884,4 +884,50 @@ final class ComparisonGUIValidationTests: XCTestCase {
         _ = view // instantiation compiles; label composition is applied by the view
         XCTAssertTrue(true)
     }
+
+    func testSourceNavigatorSelectionUsesStableSnapshotIDsAndKeepsPartialCapturesIneligible() throws {
+        let snapshots = SnapshotRepository(database: database)
+        try snapshots.createVolume(id: 701, displayName: "Shared Card")
+        try snapshots.createVolume(id: 702, displayName: "Shared Card")
+
+        let olderSameLabel = try seedNavigatorSnapshot(volumeID: 701, name: "Shared Card", status: .complete)
+        let newerSameLabel = try seedNavigatorSnapshot(volumeID: 702, name: "Shared Card", status: .complete)
+        let partial = try seedNavigatorSnapshot(volumeID: 702, name: "Shared Card", status: .interrupted)
+        let history = try historyRepo.listSnapshots()
+
+        XCTAssertEqual(history.filter { $0.displayName == "Shared Card" }.count, 3)
+        XCTAssertEqual(SourceNavigatorSnapshotSelection.resolve(nil, in: history)?.id, newerSameLabel)
+        XCTAssertEqual(SourceNavigatorSnapshotSelection.resolve(olderSameLabel, in: history)?.id, olderSameLabel)
+        XCTAssertFalse(SourceNavigatorSnapshotSelection.canBrowse(history.first { $0.id == partial }))
+
+        let priorIDs = Set(history.map(\.id))
+        let newlyCompleted = try seedNavigatorSnapshot(volumeID: 701, name: "Shared Card", status: .complete)
+        _ = try seedNavigatorSnapshot(volumeID: 701, name: "Shared Card", status: .failed)
+        let refreshedHistory = try historyRepo.listSnapshots()
+        XCTAssertEqual(
+            SourceNavigatorSnapshotSelection.newlyCompletedSnapshotID(after: priorIDs, in: refreshedHistory),
+            newlyCompleted,
+            "a completed capture discovered after refresh becomes the selected Home context"
+        )
+    }
+
+    func testSourceNavigatorEmptyAndSingleCompletedCatalogSelection() throws {
+        XCTAssertNil(SourceNavigatorSnapshotSelection.resolve(nil, in: []))
+
+        try SnapshotRepository(database: database).createVolume(id: 703, displayName: "Single Capture")
+        let id = try seedNavigatorSnapshot(volumeID: 703, name: "Single Capture", status: .complete)
+        let history = try historyRepo.listSnapshots()
+
+        XCTAssertEqual(history.map(\.id), [id])
+        XCTAssertEqual(SourceNavigatorSnapshotSelection.resolve(nil, in: history)?.id, id)
+        XCTAssertTrue(SourceNavigatorSnapshotSelection.canBrowse(history.first))
+    }
+
+    private func seedNavigatorSnapshot(volumeID: Int64, name: String, status: SnapshotStatus) throws -> SnapshotID {
+        let repository = SnapshotRepository(database: database)
+        let id = try repository.createSnapshot(volumeID: volumeID, sessionNumber: Int64(try repository.listSnapshots().count + 1), scanRootName: name)
+        _ = try repository.addRoot(to: id, name: name)
+        try repository.transition(id, to: status)
+        return id
+    }
 }

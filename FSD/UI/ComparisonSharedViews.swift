@@ -113,7 +113,7 @@ private enum FSDDestination: Hashable {
 
     var breadcrumb: String {
         switch self {
-        case .libraryOverview: return "FSD  ›  Library"
+        case .libraryOverview: return "FSD  ›  Home"
         case .allDrives: return "Library  /  All Drives"
         case .recentCaptures: return "Library  /  Recent Captures"
         case .comparisons: return "Compare  /  Comparisons"
@@ -125,6 +125,7 @@ private enum FSDDestination: Hashable {
 struct FSDAppShellView: View {
     @ObservedObject var model: ApplicationModel
     @State private var selection: FSDDestination
+    @State private var homeSelectedSnapshotID: SnapshotID?
 
     init(model: ApplicationModel) {
         self.model = model
@@ -166,6 +167,15 @@ struct FSDAppShellView: View {
         .background(FSDDesignTokens.window)
         .foregroundStyle(FSDDesignTokens.primaryText)
         .preferredColorScheme(.dark)
+        .onChange(of: model.history.map(\.id)) { oldIDs, newIDs in
+            guard newIDs != oldIDs,
+                  let newlyCompletedID = SourceNavigatorSnapshotSelection.newlyCompletedSnapshotID(
+                    after: Set(oldIDs),
+                    in: model.history
+                  )
+            else { return }
+            homeSelectedSnapshotID = newlyCompletedID
+        }
     }
 
     @ViewBuilder
@@ -182,6 +192,7 @@ struct FSDAppShellView: View {
             case .libraryOverview:
                 LibraryOverviewView(
                     model: model,
+                    selectedSnapshotID: $homeSelectedSnapshotID,
                     onCapture: { selection = .capture },
                     onComparisons: { selection = .comparisons },
                     onHistory: { selection = .recentCaptures },
@@ -225,7 +236,7 @@ private struct FSDSidebarView: View {
             ScrollView(.vertical) {
                 VStack(alignment: .leading, spacing: 8) {
                     sectionTitle("HOME")
-                    navigationRow("Library Overview", icon: "square.grid.2x2", destination: .libraryOverview)
+                    navigationRow("Home", icon: "house", destination: .libraryOverview)
 
                     sectionTitle("LIBRARY")
                     navigationRow("All Drives", icon: "externaldrive", destination: .allDrives)
@@ -465,8 +476,26 @@ private struct TopBarActionButton: View {
     }
 }
 
+enum SourceNavigatorSnapshotSelection {
+    static func resolve(_ selectedID: SnapshotID?, in history: [SnapshotSummary]) -> SnapshotSummary? {
+        if let selectedID, let selected = history.first(where: { $0.id == selectedID }) {
+            return selected
+        }
+        return history.first(where: \.isComplete) ?? history.first
+    }
+
+    static func canBrowse(_ summary: SnapshotSummary?) -> Bool {
+        summary?.isComplete == true
+    }
+
+    static func newlyCompletedSnapshotID(after priorIDs: Set<SnapshotID>, in history: [SnapshotSummary]) -> SnapshotID? {
+        history.first(where: { $0.isComplete && !priorIDs.contains($0.id) })?.id
+    }
+}
+
 private struct LibraryOverviewView: View {
     @ObservedObject var model: ApplicationModel
+    @Binding var selectedSnapshotID: SnapshotID?
     let onCapture: () -> Void
     let onComparisons: () -> Void
     let onHistory: () -> Void
@@ -474,136 +503,250 @@ private struct LibraryOverviewView: View {
     @State private var recentComparisons: [ComparisonRecord] = []
     @State private var comparisonsUnavailable = false
 
+    private var selectedSummary: SnapshotSummary? {
+        SourceNavigatorSnapshotSelection.resolve(selectedSnapshotID, in: model.history)
+    }
+
+    private var visibleHistory: [SnapshotSummary] {
+        var summaries = Array(model.history.prefix(5))
+        if let selectedSummary, !summaries.contains(where: { $0.id == selectedSummary.id }) {
+            summaries.append(selectedSummary)
+        }
+        return summaries
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: FSDDesignTokens.pageSpacing) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Library Overview")
-                        .font(.system(size: FSDDesignTokens.overviewTitleSize, weight: .semibold))
-                        .tracking(-0.2)
-                    Text("Browse saved captures and compare changes across snapshots.")
-                        .font(.system(size: FSDDesignTokens.overviewSubtitleSize))
-                        .foregroundStyle(FSDDesignTokens.secondaryText)
+                pageHeading
+                if model.history.isEmpty {
+                    emptyCatalog
+                } else if let selectedSummary {
+                    selectedCaptureCard(selectedSummary)
+                    captureHistory
                 }
-
-                captureCard
-
-                metricsSection
-
-                FSDWeightedColumnsLayout(
-                    leftWeight: FSDDesignTokens.homeGridLeftWeight,
-                    rightWeight: FSDDesignTokens.homeGridRightWeight,
-                    minimumRightWidth: FSDDesignTokens.homeGridMinimumRightWidth,
-                    spacing: FSDDesignTokens.homeGridGap
-                ) {
-                    recentComparisonsPanel
-                    VStack(alignment: .leading, spacing: FSDDesignTokens.recentDrivesSpacing) {
-                        recentCapturesPanel
-                        recentDrivesPanel
-                    }
-                }
+                recentComparisonsSection
             }
-            .padding(.horizontal, FSDDesignTokens.pageInsetHorizontal)
+            .padding(.horizontal, 24)
             .padding(.top, FSDDesignTokens.pageInsetTop)
             .padding(.bottom, FSDDesignTokens.pageInsetBottom)
             .frame(maxWidth: FSDDesignTokens.pageMaxContentWidth, alignment: .leading)
-            .frame(maxWidth: .infinity, alignment: .center)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
         }
         .scrollIndicators(.hidden)
         .background(FSDDesignTokens.window)
-        .onAppear(perform: loadRecentComparisons)
+        .onAppear {
+            if selectedSnapshotID == nil {
+                selectedSnapshotID = selectedSummary?.id
+            }
+            loadRecentComparisons()
+        }
     }
 
-    private var captureCard: some View {
-        HStack(spacing: 16) {
-            ZStack {
-                RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius)
-                    .fill(FSDDesignTokens.primaryAction.opacity(0.30))
-                    .frame(width: 48, height: 48)
-                Image(systemName: "externaldrive.badge.plus")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundStyle(FSDDesignTokens.accent)
-            }
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 7) {
-                    Text("Choose a source to capture")
-                        .font(.system(size: FSDDesignTokens.bodySize, weight: .semibold))
-                    Text("MANUAL")
-                        .font(.system(size: FSDDesignTokens.labelSize, weight: .bold))
-                        .tracking(0.7)
-                        .foregroundStyle(FSDDesignTokens.accent)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
-                    .background(FSDDesignTokens.primaryAction.opacity(0.30), in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
-                }
-                Text("Select a folder when you are ready. FSD records filesystem metadata only.")
-                    .font(.system(size: 12))
+    private var pageHeading: some View {
+        HStack(alignment: .center, spacing: 16) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Source Navigator")
+                    .font(.system(size: FSDDesignTokens.overviewTitleSize, weight: .semibold))
+                    .tracking(-0.2)
+                    .accessibilityAddTraits(.isHeader)
+                Text("Browse stored filesystem metadata from saved captures.")
+                    .font(.system(size: FSDDesignTokens.overviewSubtitleSize))
                     .foregroundStyle(FSDDesignTokens.secondaryText)
                     .fixedSize(horizontal: false, vertical: true)
-                Text("Metadata only  ·  Content Not Verified")
-                    .font(.system(size: FSDDesignTokens.labelSize, weight: .medium))
-                    .foregroundStyle(FSDDesignTokens.mutedText)
             }
             Spacer(minLength: 8)
-            Button(action: onCapture) {
-                Label("Capture", systemImage: "arrow.right")
-                    .font(.system(size: FSDDesignTokens.toolbarLabelSize, weight: .semibold))
-                    .foregroundStyle(FSDDesignTokens.primaryText)
-                    .padding(.horizontal, 14)
-                    .frame(height: 34)
-                    .background(FSDDesignTokens.primaryAction, in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
-                    .frame(minHeight: 44)
-                    .contentShape(Rectangle())
+            if !model.history.isEmpty {
+                Button(action: onCapture) {
+                    Label("Capture Snapshot", systemImage: "plus")
+                        .frame(minHeight: 44)
+                }
+                .buttonStyle(FSDSecondaryActionButtonStyle())
+                .accessibilityLabel("Open manual Capture")
+                .accessibilityHint("Opens the existing folder selection and metadata capture workflow.")
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Open manual capture")
+        }
+    }
+
+    private var emptyCatalog: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Image(systemName: "square.stack.3d.up.slash")
+                .font(.system(size: 23, weight: .regular))
+                .foregroundStyle(FSDDesignTokens.accent)
+                .accessibilityHidden(true)
+            Text("No saved captures yet")
+                .font(.system(size: FSDDesignTokens.sectionTitleSize, weight: .semibold))
+                .foregroundStyle(FSDDesignTokens.primaryText)
+                .accessibilityAddTraits(.isHeader)
+            Text("Choose a source folder to create the first metadata snapshot. Capture is manual, and FSD stores filesystem metadata without verifying file contents.")
+                .font(.system(size: FSDDesignTokens.bodySize))
+                .foregroundStyle(FSDDesignTokens.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
+            Button(action: onCapture) {
+                Label("Capture Snapshot", systemImage: "plus")
+                    .frame(minHeight: 44)
+            }
+            .buttonStyle(FSDPrimaryActionButtonStyle())
+            .accessibilityLabel("Start manual Capture")
             .accessibilityHint("Opens the existing folder selection and metadata capture workflow.")
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 16)
-        .frame(minHeight: 84)
-        .background(FSDDesignTokens.captureSurface, in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
-        .overlay(RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius).stroke(FSDDesignTokens.captureBorder, lineWidth: 1))
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(FSDDesignTokens.panel, in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
+        .overlay(RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius).stroke(FSDDesignTokens.separator, lineWidth: 1))
         .accessibilityElement(children: .contain)
     }
 
-    private var metricsSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Library Overview")
-                .font(.system(size: FSDDesignTokens.sectionTitleSize, weight: .semibold))
-                .foregroundStyle(FSDDesignTokens.primaryText)
-
-            VStack(spacing: 0) {
-                overviewSeparator
-                HStack(spacing: 0) {
-                    OverviewMetricCell(title: "Drives", value: "—", note: "Registry unavailable")
-                    metricDivider
-                    OverviewMetricCell(title: "Snapshots", value: "\(model.history.count)", note: "Saved captures")
-                    metricDivider
-                    OverviewMetricCell(title: "Items", value: "—", note: "Aggregate unavailable")
-                    metricDivider
-                    OverviewMetricCell(title: "Storage", value: "—", note: "Aggregate unavailable")
+    private func selectedCaptureCard(_ summary: SnapshotSummary) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text("SELECTED SAVED CAPTURE")
+                        .font(.system(size: FSDDesignTokens.labelSize, weight: .bold))
+                        .tracking(0.8)
+                        .foregroundStyle(FSDDesignTokens.mutedText)
+                    Text(recordedSourceLabel(for: summary))
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(FSDDesignTokens.primaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text("Snapshot label: \(summary.displayName)  ·  Captured root: \(summary.scanRootName)")
+                        .font(.system(size: FSDDesignTokens.overviewSubtitleSize))
+                        .foregroundStyle(FSDDesignTokens.secondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .frame(minHeight: 76)
-                overviewSeparator
+                Spacer(minLength: 8)
+                SourceNavigatorStatusBadge(status: summary.status)
             }
+
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: "questionmark.circle")
+                    .foregroundStyle(FSDDesignTokens.warning)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Live source identity not verified")
+                        .font(.system(size: FSDDesignTokens.bodySize, weight: .medium))
+                        .foregroundStyle(FSDDesignTokens.primaryText)
+                    Text("Original source connection is unverified. This view uses persisted capture facts and stored metadata.")
+                        .font(.system(size: FSDDesignTokens.overviewSubtitleSize))
+                        .foregroundStyle(FSDDesignTokens.secondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .accessibilityElement(children: .combine)
+
+            HStack(spacing: 8) {
+                SourceNavigatorMetadataCell(title: "Snapshot ID", value: "#\(summary.id.rawValue)")
+                SourceNavigatorMetadataCell(title: "Captured at", value: summary.startedAt)
+            }
+
+            HStack(spacing: 0) {
+                SourceNavigatorCountCell(title: "Files recorded", value: summary.totalFiles)
+                SourceNavigatorCountCell(title: "Folders recorded", value: summary.totalFolders)
+                SourceNavigatorCountCell(title: "Unreadable items", value: summary.inaccessibleItems)
+                SourceNavigatorCountCell(title: "Warnings", value: summary.warningCount)
+            }
+            .padding(.vertical, 4)
+            .background(FSDDesignTokens.inset, in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel("Captured metadata counts")
+
+            HStack(spacing: 10) {
+                Button {
+                    onOpenSnapshot(summary)
+                } label: {
+                    Label("Browse Snapshot", systemImage: "folder")
+                        .frame(minHeight: 44)
+                }
+                .buttonStyle(FSDPrimaryActionButtonStyle())
+                .disabled(!SourceNavigatorSnapshotSelection.canBrowse(summary))
+                .accessibilityLabel(
+                    SourceNavigatorSnapshotSelection.canBrowse(summary)
+                        ? "Browse snapshot #\(summary.id.rawValue)"
+                        : "Browse snapshot unavailable for partial capture #\(summary.id.rawValue)"
+                )
+                .accessibilityHint(
+                    SourceNavigatorSnapshotSelection.canBrowse(summary)
+                        ? "Opens this completed snapshot in the stored-metadata browser."
+                        : "This capture is partial. Select a completed capture to browse from Home."
+                )
+
+                Button(action: onHistory) {
+                    Label("History", systemImage: "clock.arrow.circlepath")
+                        .frame(minHeight: 44)
+                }
+                .buttonStyle(FSDSecondaryActionButtonStyle())
+                .accessibilityLabel("Open capture History")
+
+                Button(action: onComparisons) {
+                    Label("Compare", systemImage: "arrow.left.arrow.right")
+                        .frame(minHeight: 44)
+                }
+                .buttonStyle(FSDSecondaryActionButtonStyle())
+                .accessibilityLabel("Open Compare workspace")
+                .accessibilityHint("Opens the existing comparison workspace. Choose comparison sources there.")
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(FSDDesignTokens.panel, in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
+        .overlay(RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius).stroke(FSDDesignTokens.separator, lineWidth: 1))
+        .accessibilityElement(children: .contain)
+    }
+
+    private var captureHistory: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("Capture History")
+                    .font(.system(size: FSDDesignTokens.sectionTitleSize, weight: .semibold))
+                    .foregroundStyle(FSDDesignTokens.primaryText)
+                    .accessibilityAddTraits(.isHeader)
+                Spacer()
+                Button("View all") { onHistory() }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(FSDDesignTokens.accent)
+                    .accessibilityLabel("View all captures in History")
+            }
+            VStack(spacing: 0) {
+                ForEach(Array(visibleHistory.enumerated()), id: \.element.id) { index, summary in
+                    SourceNavigatorCaptureRow(
+                        summary: summary,
+                        sourceLabel: recordedSourceLabel(for: summary),
+                        isSelected: summary.id == selectedSummary?.id
+                    ) {
+                        selectedSnapshotID = summary.id
+                    }
+                    if index < visibleHistory.count - 1 {
+                        Rectangle().fill(FSDDesignTokens.separator).frame(height: 1)
+                    }
+                }
+            }
+            .background(FSDDesignTokens.panel, in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
+            .overlay(RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius).stroke(FSDDesignTokens.separator, lineWidth: 1))
         }
     }
 
-    private var metricDivider: some View {
-        Rectangle()
-            .fill(FSDDesignTokens.separator)
-            .frame(width: 1, height: 48)
-    }
-
-    private var recentComparisonsPanel: some View {
-        OverviewSection(title: "Recent Comparisons", trailingTitle: "View all", action: onComparisons) {
-            if comparisonsUnavailable {
-                OverviewMessageRow(icon: "exclamationmark.circle", text: "Comparison history is unavailable.")
-            } else if recentComparisons.isEmpty {
-                OverviewMessageRow(icon: "arrow.left.arrow.right", text: "No comparisons yet.")
-            } else {
-                VStack(spacing: 0) {
+    private var recentComparisonsSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("Recent Comparisons")
+                    .font(.system(size: FSDDesignTokens.sectionTitleSize, weight: .semibold))
+                    .foregroundStyle(FSDDesignTokens.primaryText)
+                    .accessibilityAddTraits(.isHeader)
+                Spacer()
+                Button("Open Compare") { onComparisons() }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(FSDDesignTokens.accent)
+                    .accessibilityLabel("Open Compare workspace")
+            }
+            VStack(spacing: 0) {
+                if comparisonsUnavailable {
+                    OverviewMessageRow(icon: "exclamationmark.circle", text: "Comparison history is unavailable. The Compare workspace remains available.")
+                        .padding(12)
+                } else if recentComparisons.isEmpty {
+                    OverviewMessageRow(icon: "arrow.left.arrow.right", text: "No saved comparisons yet. Open Compare to start from its existing source selectors.")
+                        .padding(12)
+                } else {
                     ForEach(Array(recentComparisons.enumerated()), id: \.element.id) { index, record in
                         Button(action: onComparisons) {
                             HStack(spacing: 10) {
@@ -615,86 +758,40 @@ private struct LibraryOverviewView: View {
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(record.mode.label)
                                         .font(.system(size: FSDDesignTokens.bodySize, weight: .medium))
-                                        .lineLimit(1)
+                                        .foregroundStyle(FSDDesignTokens.primaryText)
                                     Text("\(record.totalDifferences) differences  ·  \(record.startedAt)")
                                         .font(.system(size: FSDDesignTokens.labelSize))
                                         .foregroundStyle(FSDDesignTokens.secondaryText)
-                                        .lineLimit(1)
+                                        .fixedSize(horizontal: false, vertical: true)
                                 }
                                 Spacer(minLength: 0)
                                 Image(systemName: "chevron.right")
                                     .font(.system(size: 9, weight: .semibold))
                                     .foregroundStyle(FSDDesignTokens.mutedText)
                             }
+                            .padding(.horizontal, 12)
                             .frame(minHeight: 52)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel("Open comparisons, \(record.mode.label), \(record.totalDifferences) differences")
+                        .accessibilityLabel("Open Compare, \(record.mode.label), \(record.totalDifferences) differences")
                         if index < recentComparisons.count - 1 {
-                            overviewSeparator
+                            Rectangle().fill(FSDDesignTokens.separator).frame(height: 1)
                         }
                     }
                 }
             }
+            .background(FSDDesignTokens.panel, in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
+            .overlay(RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius).stroke(FSDDesignTokens.separator, lineWidth: 1))
         }
+        .onAppear(perform: loadRecentComparisons)
     }
 
-    private var recentCapturesPanel: some View {
-        OverviewSection(title: "Recent Captures", trailingTitle: "View all", action: onHistory) {
-            if model.history.isEmpty {
-                OverviewMessageRow(icon: "clock.arrow.circlepath", text: "No captures yet.")
-            } else {
-                VStack(spacing: 0) {
-                    ForEach(Array(model.history.prefix(3).enumerated()), id: \.element.id) { index, summary in
-                        Button {
-                            onOpenSnapshot(summary)
-                        } label: {
-                            HStack(spacing: 10) {
-                                Image(systemName: "square.stack.3d.up")
-                                    .font(.system(size: 12))
-                                    .foregroundStyle(FSDDesignTokens.accent)
-                                    .frame(width: 25, height: 25)
-                                    .background(FSDDesignTokens.selected, in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
-                                VStack(alignment: .leading, spacing: 3) {
-                                    Text(summary.displayName)
-                                        .font(.system(size: FSDDesignTokens.bodySize, weight: .medium))
-                                        .lineLimit(1)
-                                    Text("\(snapshotStatus(summary.status))  ·  \(summary.startedAt)")
-                                        .font(.system(size: FSDDesignTokens.labelSize))
-                                        .foregroundStyle(FSDDesignTokens.secondaryText)
-                                        .lineLimit(1)
-                                }
-                                Spacer(minLength: 0)
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 9, weight: .semibold))
-                                    .foregroundStyle(FSDDesignTokens.mutedText)
-                            }
-                            .frame(minHeight: 52)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("Browse snapshot \(summary.displayName), \(snapshotStatus(summary.status)), captured \(summary.startedAt)")
-                        if index < min(model.history.count, 3) - 1 {
-                            overviewSeparator
-                        }
-                    }
-                }
-            }
+    private func recordedSourceLabel(for summary: SnapshotSummary) -> String {
+        guard let label = summary.capture.volumeDisplayName?.trimmingCharacters(in: .whitespacesAndNewlines), !label.isEmpty else {
+            return "Source label not recorded at capture time"
         }
-    }
-
-    private var recentDrivesPanel: some View {
-        OverviewSection(title: "Recent Drives", trailingTitle: nil, action: nil) {
-            OverviewMessageRow(
-                icon: "externaldrive",
-                text: "Drive registry is not available yet. Saved captures remain available in Recent Captures."
-            )
-        }
-    }
-
-    private var overviewSeparator: some View {
-        Rectangle().fill(FSDDesignTokens.separator).frame(height: 1)
+        return label
     }
 
     private func loadRecentComparisons() {
@@ -710,118 +807,154 @@ private struct LibraryOverviewView: View {
             comparisonsUnavailable = true
         }
     }
+}
 
-    private func snapshotStatus(_ status: SnapshotStatus) -> String {
-        status.rawValue.replacingOccurrences(of: "_", with: " ").capitalized
+private struct SourceNavigatorStatusBadge: View {
+    let status: SnapshotStatus
+
+    private var title: String {
+        switch status {
+        case .scanning: return "In progress"
+        case .complete: return "Complete"
+        case .completeWithWarnings: return "Complete with warnings"
+        case .interrupted: return "Interrupted · partial"
+        case .cancelled: return "Cancelled · partial"
+        case .failed: return "Failed · partial"
+        }
+    }
+
+    private var tint: Color {
+        switch status {
+        case .complete: return FSDDesignTokens.success
+        case .completeWithWarnings, .interrupted, .cancelled: return FSDDesignTokens.warning
+        case .failed: return FSDDesignTokens.destructive
+        case .scanning: return FSDDesignTokens.mutedText
+        }
+    }
+
+    private var symbol: String {
+        switch status {
+        case .complete: return "checkmark.circle.fill"
+        case .completeWithWarnings: return "exclamationmark.circle.fill"
+        case .interrupted: return "pause.circle.fill"
+        case .cancelled: return "xmark.circle.fill"
+        case .failed: return "exclamationmark.triangle.fill"
+        case .scanning: return "clock.fill"
+        }
+    }
+
+    var body: some View {
+        Label(title, systemImage: symbol)
+            .font(.system(size: FSDDesignTokens.labelSize, weight: .semibold))
+            .foregroundStyle(tint)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 6)
+            .background(tint.opacity(0.13), in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Capture status: \(title)")
     }
 }
 
-private struct FSDWeightedColumnsLayout: Layout {
-    let leftWeight: CGFloat
-    let rightWeight: CGFloat
-    let minimumRightWidth: CGFloat
-    let spacing: CGFloat
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        guard subviews.count >= 2 else { return .zero }
-        let proposedWidth = proposal.width ?? (minimumRightWidth + spacing)
-        let (leftWidth, rightWidth) = columnWidths(for: proposedWidth)
-        let leftSize = subviews[0].sizeThatFits(ProposedViewSize(width: leftWidth, height: proposal.height))
-        let rightSize = subviews[1].sizeThatFits(ProposedViewSize(width: rightWidth, height: proposal.height))
-        return CGSize(width: proposedWidth, height: max(leftSize.height, rightSize.height))
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        guard subviews.count >= 2 else { return }
-        let (leftWidth, rightWidth) = columnWidths(for: bounds.width)
-        subviews[0].place(
-            at: CGPoint(x: bounds.minX, y: bounds.minY),
-            anchor: .topLeading,
-            proposal: ProposedViewSize(width: leftWidth, height: nil)
-        )
-        subviews[1].place(
-            at: CGPoint(x: bounds.minX + leftWidth + spacing, y: bounds.minY),
-            anchor: .topLeading,
-            proposal: ProposedViewSize(width: rightWidth, height: nil)
-        )
-    }
-
-    private func columnWidths(for totalWidth: CGFloat) -> (left: CGFloat, right: CGFloat) {
-        let availableWidth = max(0, totalWidth - spacing)
-        guard availableWidth > 0 else { return (0, 0) }
-        let weightTotal = leftWeight + rightWeight
-        let weightedRight = availableWidth * rightWeight / weightTotal
-        let rightWidth = min(availableWidth, max(minimumRightWidth, weightedRight))
-        return (availableWidth - rightWidth, rightWidth)
-    }
-}
-
-private struct OverviewMetricCell: View {
+private struct SourceNavigatorMetadataCell: View {
     let title: String
     let value: String
-    let note: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title.uppercased())
-                .font(.system(size: FSDDesignTokens.metricLabelSize, weight: .semibold))
-                .tracking(0.8)
+                .font(.system(size: FSDDesignTokens.labelSize, weight: .semibold))
+                .tracking(0.7)
                 .foregroundStyle(FSDDesignTokens.mutedText)
             Text(value)
-                .font(.system(size: FSDDesignTokens.metricValueSize, weight: .semibold, design: .rounded))
-                .foregroundStyle(value == "—" ? FSDDesignTokens.mutedText : FSDDesignTokens.primaryText)
-            Text(note)
-                .font(.system(size: 9))
-                .foregroundStyle(FSDDesignTokens.secondaryText)
-                .lineLimit(1)
+                .font(.system(size: FSDDesignTokens.bodySize, weight: .medium, design: title == "Snapshot ID" ? .monospaced : .default))
+                .foregroundStyle(FSDDesignTokens.primaryText)
+                .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+        .background(FSDDesignTokens.inset, in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(title): \(value). \(note)")
+        .accessibilityLabel("\(title): \(value)")
     }
 }
 
-private struct OverviewSection<Content: View>: View {
+private struct SourceNavigatorCountCell: View {
     let title: String
-    let trailingTitle: String?
-    let action: (() -> Void)?
-    let content: Content
+    let value: Int64
 
-    init(title: String, trailingTitle: String?, action: (() -> Void)?, @ViewBuilder content: () -> Content) {
-        self.title = title
-        self.trailingTitle = trailingTitle
-        self.action = action
-        self.content = content()
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.system(size: FSDDesignTokens.labelSize, weight: .medium))
+                .foregroundStyle(FSDDesignTokens.mutedText)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+            Text(value.formatted())
+                .font(.system(size: 17, weight: .semibold, design: .rounded))
+                .foregroundStyle(FSDDesignTokens.primaryText)
+        }
+        .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
+        .padding(.horizontal, 11)
+        .padding(.vertical, 8)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title): \(value)")
+    }
+}
+
+private struct SourceNavigatorCaptureRow: View {
+    let summary: SnapshotSummary
+    let sourceLabel: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    private var statusText: String {
+        switch summary.status {
+        case .scanning: return "In progress"
+        case .complete: return "Complete"
+        case .completeWithWarnings: return "Complete with warnings"
+        case .interrupted: return "Interrupted · partial"
+        case .cancelled: return "Cancelled · partial"
+        case .failed: return "Failed · partial"
+        }
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text(title)
-                    .font(.system(size: FSDDesignTokens.sectionTitleSize, weight: .semibold))
-                    .foregroundStyle(FSDDesignTokens.primaryText)
-                Spacer()
-                if let trailingTitle, let action {
-                    Button(trailingTitle, action: action)
-                        .font(.system(size: FSDDesignTokens.labelSize, weight: .medium))
-                        .foregroundStyle(FSDDesignTokens.accent)
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("\(trailingTitle) \(title)")
+        Button(action: action) {
+            HStack(spacing: 11) {
+                Image(systemName: isSelected ? "largecircle.fill.circle" : "circle")
+                    .font(.system(size: 16))
+                    .foregroundStyle(isSelected ? FSDDesignTokens.accent : FSDDesignTokens.mutedText)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(sourceLabel)
+                        .font(.system(size: FSDDesignTokens.bodySize, weight: .medium))
+                        .foregroundStyle(FSDDesignTokens.primaryText)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text("Snapshot #\(summary.id.rawValue)  ·  \(statusText)  ·  \(summary.startedAt)")
+                        .font(.system(size: FSDDesignTokens.labelSize))
+                        .foregroundStyle(FSDDesignTokens.secondaryText)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(FSDDesignTokens.mutedText)
+                    .accessibilityHidden(true)
             }
-            .padding(.bottom, 8)
-            Rectangle()
-                .fill(FSDDesignTokens.separator)
-                .frame(height: 1)
-            content
-                .frame(maxWidth: .infinity, minHeight: 52, alignment: .topLeading)
-            Rectangle()
-                .fill(FSDDesignTokens.separator)
-                .frame(height: 1)
+            .padding(.horizontal, 13)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, minHeight: 58, alignment: .leading)
+            .background(isSelected ? FSDDesignTokens.selected : Color.clear)
+            .contentShape(Rectangle())
         }
-        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .buttonStyle(.plain)
+        .accessibilityLabel("Select \(sourceLabel), snapshot #\(summary.id.rawValue), \(statusText), captured \(summary.startedAt)")
+        .accessibilityValue(isSelected ? "Selected" : "Not selected")
+        .accessibilityHint("Selects this saved capture as the Home context. It does not open a content preview.")
     }
 }
 

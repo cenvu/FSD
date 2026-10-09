@@ -1,6 +1,6 @@
 OWNER_PRODUCT_UX_DIRECTION=YES
-IMPLEMENTATION_PROOF=NO
-IMPLEMENTATION_AUTHORIZATION=NO
+IMPLEMENTATION_PROOF=TASK047_MAIN_HOME_DIRECTION_A_ONLY
+IMPLEMENTATION_AUTHORIZATION=OWNER_APPROVED_TASK047_MAIN_HOME_ONLY
 
 # UX and UI Specification
 
@@ -91,6 +91,48 @@ COMPARE
 
 CONNECTED NOW
   <mounted drives>
+
+### 5.1 Owner-approved Main/Home implementation — Task047
+
+Owner approved **Direction A — Source Navigator** for the FSD Main/Home screen.
+Task047 implements that screen only; this approval does not mean the remaining
+Direction A screens or product-wide Stage1 work are complete.
+
+The implemented Main/Home contract is:
+
+- Keep the native persistent sidebar, with Home as the launch destination and
+  clear selection state. Preserve the existing Recent Captures, Comparisons and
+  manual Capture routes.
+- Read saved capture context from `ApplicationModel.history`, backed by the
+  persisted snapshot catalog. Select by stable `SnapshotID`; identical display
+  names remain separate catalog records and are never merged by label or path.
+- Show the capture-time source label when recorded, otherwise say it was not
+  recorded at capture time. Show the snapshot ID, capture timestamp, truthful
+  status, and persisted file, folder, inaccessible-item and warning counts.
+- State that live source identity and original-source connection are unverified.
+  Do not use mount-path existence as proof of a connected physical drive.
+- Keep the primary Browse Snapshot action attached to the selected completed
+  snapshot and open the existing stored-metadata browser. A partial capture is
+  marked partial and is not presented as the last complete snapshot. Selecting
+  a capture changes context only; it does not open a content preview.
+- Provide actual actions to open Recent Captures history, the existing Compare
+  workspace, and the existing explicit manual Capture flow. Compare source
+  selection remains inside that workspace.
+- For an empty catalog, explain how to start a manual metadata capture. Show
+  catalog/startup failures as unavailable rather than inventing empty counts.
+  The Home content uses a vertical scroll surface to retain the source heading,
+  primary action and sidebar at supported window widths.
+
+The Main/Home screen does **not** implement the rest of Direction A. Stage1
+product work remains postponed, including mount detection/Connected Now, Auto
+Capture, dashboard aggregates, paged per-source history, broader search scopes,
+compare ancestor/reveal navigation, and future Explore/source-status screens.
+Stage2 remains postponed: the physical-drive identity and mount/remount policy,
+its evidence/ambiguity contract and identity-aware availability service remain
+unresolved and require their separate authorization. Until then, no physical
+drive identity or connection is asserted from a recorded display name or mount
+path. Existing Collection semantics remain unchanged; Drive Sets remain behind
+their ADR.
 
 ## 6. DRIVE SET DIRECTION
 
@@ -450,4 +492,5 @@ bulk classification
 NAS/network
 decorative analytics.
 
-THIS_DOCUMENT_DOES_NOT_AUTHORIZE_IMPLEMENTATION.
+THIS_DOCUMENT_RECORDS_THE_OWNER_APPROVED_TASK047_MAIN_HOME_IMPLEMENTATION_ONLY.
+IT_DOES_NOT_AUTHORIZE_STAGE1_STAGE2_OR_OTHER_FUTURE_IMPLEMENTATION.

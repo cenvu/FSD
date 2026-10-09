@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-09T16:08:08+07:00
-
 # Task047 — Source Navigator Main/Home — privacy-scoped fast-track continuation
 
 ## HOT
