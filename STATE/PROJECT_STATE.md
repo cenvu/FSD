@@ -2,16 +2,16 @@
 
 STATE_VERSION=1.0.0
 PROJECT=FSD
-CURRENT_PHASE=POST_V0_1_TECH_BASELINE
-ACTIVE_WORKSTREAM=FSD2_TECH_BASELINE
-STATUS=V0_1_PUBLIC_PRERELEASE_VERIFIED;V0_1_OWNER_LAUNCH_NAVIGATION_VERIFIED;TASK041_STOP_ACCEPTED;TASK042_STOP_ACCEPTED;TASK042_REPORTING_RECOVERY_PASS;TASK043_UI_REPAIR_ACCEPTED_WITH_ADVISORY;OWNER_PRIVACY_RISK_ACCEPTED
-CURRENT_GATE=FSD2_TECH_BASELINE_AUDIT
-BLOCKERS=FSD2_BASELINE_AUDIT_PENDING;V0_1_CAPTURE_COMPARE_MANUAL_E2E_UNVERIFIED;PROCESS_PRIVACY_UNPROVEN_OWNER_RISK_ACCEPTED
-LAST_ACCEPTED_TASK=FSD_RECENT_CAPTURES_LAYOUT_REPAIR_043
-LAST_ACCEPTED_HEAD=5c74b88761206c22a3f2b8c64cbed99521ae4726
+CURRENT_PHASE=POST_V0_1_FSD2_FOUNDATION
+ACTIVE_WORKSTREAM=FSD2_STAGE0_FOUNDATION
+STATUS=V0_1_PUBLIC_PRERELEASE_VERIFIED;V0_1_OWNER_LAUNCH_NAVIGATION_VERIFIED;TASK041_STOP_ACCEPTED;TASK042_STOP_ACCEPTED;TASK043_UI_REPAIR_ACCEPTED_WITH_ADVISORY;TASK044_TECH_BASELINE_ACCEPTED_WITH_ADVISORY;OWNER_PRIVACY_RISK_ACCEPTED
+CURRENT_GATE=FSD2_STAGE0_OUTLINE_COMPLETENESS_REPAIR
+BLOCKERS=FSD2_F1_OUTLINE_COMPLETENESS_PENDING;FSD2_F2_SOURCE_IDENTITY_UNRESOLVED;V0_1_CAPTURE_COMPARE_MANUAL_E2E_UNVERIFIED;PROCESS_PRIVACY_UNPROVEN_OWNER_RISK_ACCEPTED
+LAST_ACCEPTED_TASK=FSD2_TECH_BASELINE_READONLY_AUDIT_044
+LAST_ACCEPTED_HEAD=31cc854729e46b98b460ca3a198bd56575adff70
 AUTHORITY_PTRS=AGENTS.md|docs/BRAIN_OPERATOR.md|docs/AGENT.md|docs/UX_UI_SPEC.md|docs/PRD.md|docs/PRODUCT_STATE.md|docs/MVP_PLAN.md|docs/ARCHITECTURE.md|docs/DECISIONS.md|docs/DEPENDENCY_AND_LICENSE_REVIEW.md|docs/SECURITY_AND_READ_ONLY_POLICY.md|docs/TEST_PLAN.md|docs/P15_RUNTIME_PLAN.md|docs/CLASSIFIER_FILETYPE_INTEGRATION_CONTRACT.md
 PARKED_PRODUCT_WORKSTREAM=FSD_DEMO_CRITICAL_PATH
-EXACTLY_ONE_NEXT_DECISION=ACTION(FSD2_TECH_BASELINE_READONLY_AUDIT_044)
+EXACTLY_ONE_NEXT_DECISION=ACTION(FSD2_SNAPSHOT_OUTLINE_COMPLETENESS_REPAIR_045)
 
 Historical accepted-state provenance: explicit BRAIN decision supplied for task036 and projected at 2026-10-07T10:07:23+07:00; accepted audit publication f14d989c9537302b87586a6b9ba34a4af15e0816; the finalizer schema blocker was repaired in BRAIN control-state commit 9322e02c14d4458cd171e38fd2b39cd7ebb82dfd; canonical prepublication and postpublication checks passed.
 Task035 remains accepted PASS_WITH_ADVISORY at publication 869f93243ecff7d008546fe2ccebc1d531e1993d. Task036 is BRAIN-accepted PASS_WITH_ADVISORY at publication f14d989c9537302b87586a6b9ba34a4af15e0816; its immutable technical audit evidence is accepted. The outer STOP was caused only by the unsupported BRAIN-authored PROJECT_STATE assignment rejected by canonical finalization and repaired separately in 9322e02c14d4458cd171e38fd2b39cd7ebb82dfd. The Reviewer made no product, docs, schema, test, Xcode or helper repair. Reviewed production implementation remains 556872844b90640cc2a64e40d99594a78cef61af.
@@ -31,3 +31,5 @@ Task041 is BRAIN-accepted STOP at audit publication d8888421e87fd1117903072a9e1c
 Task042 is BRAIN-accepted STOP at publication 39b94f307f924c5c40928885dce59caecad40ba4; the original Worker STOP is recorded as STOP, not PASS, and is accepted as correct historical evidence of the initial reporting-closure failure. The real PUBLIC prerelease v0.1.0 (GitHub Release ID 406906419, title FSD v0.1.0 — First Public Test) is verified with annotated tag v0.1.0 targeting the exact audited candidate 8a4223eeba93306ecba0262e4dbe38efed96c704 and exact ZIP SHA256 6c840c66ca2677e849e64dc0802890ae8aa60d2901db7ed9d9c863884ee16134 plus SHA256SUMS.txt, including anonymous download verification. The unsigned/not notarized status and default-Gatekeeper-quarantine advisory persist; this is not stable-release acceptance or manual QA PASS. Task041 privacy remains UNPROVEN on three requirements with explicit Owner residual-risk acceptance; no credential revocation or incident resolution is claimed. The subsequent BRAIN-authorized bounded checker recovery (checker repair, 13/13 focused predicate cases, canonical checker PASS) succeeded and the reporting publication is now closed. No Owner manual download/installation acceptance exists yet; exactly one live next decision is WAIT(OWNER_V0_1_DOWNLOAD_INSTALL_REPORT), and no automatic product-development next task is authorized.
 
 BRAIN decision (2026-10-08): Task043 is accepted PASS_WITH_ADVISORY at publication 5c74b88761206c22a3f2b8c64cbed99521ae4726; the Owner accepted the repaired Recent Captures UI from submitted screenshots, with long-path readability advisory open. Public v0.1.0 and its release assets remain unchanged. The original Owner launch/navigation evidence remains accepted; Owner installation of the patched build is not verified, and Capture/Compare end-to-end acceptance remains outstanding. Task041 process-privacy risk remains UNPROVEN and expressly Owner-accepted; credential revocation is not verified. FSD#2 is authorized for read-only source and technical-baseline verification only; no feature or dependency implementation is authorized.
+
+BRAIN decision (2026-10-09T10:11:53+07:00): Task044 technical audit accepted PASS_WITH_ADVISORY at publication 31cc854729e46b98b460ca3a198bd56575adff70; 24/24 audit execution requirements and 223/223 scoped XCTest passes reported. The original Desktop reporting-finalizer STOP remains historical; later reporting recovery PASS published the existing Reviewer report. F1 MEDIUM is incomplete wide-folder outline browsing (1000 stored/500 exposed, load errors appear empty, retained cache bounds unmeasured); F2 MEDIUM is existence-only source availability without source identity/root proof. F3/F4 are LOW and F5 is ADVISORY. Current technologies are retained. Peak RSS, cold latency, physical-media behavior and Capture/Compare manual E2E remain UNPROVEN. Public v0.1.0/assets are unchanged; Task043 UI repair is not in the public ZIP; Owner patched-build installation and Capture/Compare E2E remain unverified. Task041 privacy remains OWNER_ACCEPTED and UNPROVEN; credential revocation is NOT_VERIFIED. No Stage1–6 GO/approval or dependency replacement is granted. Only one bounded F1 implementation, Task045, is authorized; F2 identity remains pending.
