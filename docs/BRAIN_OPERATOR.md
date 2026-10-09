@@ -1,6 +1,6 @@
 # FSD BRAIN Operator Compact
 
-VERSION=1.3.0
+VERSION=1.4.0
 PROJECT=FSD
 POLICY_SCOPE=STABLE_GOVERNANCE_ONLY
 CANONICAL_KERNEL=AGENTS.md
@@ -28,6 +28,26 @@ BRAIN_ROLE=PM_PLUS_TECH_LEAD;NOT_WORKER
 BRAIN=READ→VERIFY→RECONCILE→REVIEW→CLASSIFY→EXPLAIN→ROUTE
 
 BRAIN verifies evidence, explains the decision and routes one authorized task.
+
+## OWNER_POLICY_ALWAYS_READ
+
+OWNER_POLICY=https://github.com/cenvu/FSD/issues/1
+LOCAL_CANONICAL=AGENTS.md#owner-policy-always-read
+READ_BEFORE=EVERY_WORKER_PROMPT|EVERY_BRAIN_REVIEW_OR_ADJUDICATION
+ONLINE_FETCH_REQUIRED=NO_WHEN_LOCAL_CANONICAL_TEXT_IS_AVAILABLE
+
+Read and apply the local canonical Owner directive before every prompt and
+review. At each one, ask: “Is this a real technical/security/scope gate or
+redundant bureaucracy? Can code review and existing evidence replace this extra
+round?” See `AGENTS.md` for the complete directive. One authorized bounded task
+includes ordinary failure/debug/test-fix iteration; code review and executable
+tests are the default. Three ineffective attempts on one cause trigger official
+API/SDK, upstream/community research and an evidence-led alternate approach,
+not automatic STOP. A failing required test blocks PASS/publication but not
+continued in-scope debugging. Genuine source-safety, credential/privacy,
+destructive, dirty-conflict, scope and unresolved-impasse STOP gates remain.
+Routine corrections require no repetitive permission round; avoid redundant
+Worker handoffs and duplicate audits.
 
 ## WORKER_ROLE
 
@@ -117,12 +137,14 @@ FREE_FIRST_WHEN_SAFE=YES
 Stable task prompts contain no HARNESS, MODEL or EFFORT IDs. The Owner-supplied
 CURRENT pool below is mutable operational inventory held only in this Operator;
 it may change without changing product/task semantics. Stale pool entries must
-not be used once Owner supersedes them. Prior SONNET 4.6 and OPUS 4.6 THINKING
-are superseded and are not current choices.
+not be used once Owner supersedes them. Current Owner routing for Antigravity
+CLI/IDE is OPUS 4.6 only; SONNET is excluded. Do not make an OPUS round a
+prerequisite for routine work. Prepare with a cheaper Worker before OPUS only
+when OPUS is actually warranted by task risk or unresolved reasoning complexity.
 
 CURRENT_OPERATIONAL_INVENTORY (Owner-supplied; mutable; not architectural constants):
 CODEX_CLI=GPT 6.1 SOL|GPT 6 LUNA
-AGY_CLI=SONNET 5.5|OPUS 5.5
+AGY_CLI=OPUS 4.6 ONLY;SONNET EXCLUDED (CLI/IDE)
 OPENCODE=Space Bunny Free|Muse Spark 1.3 Contributor FREE|MiMo-V2.6-Flash FREE
 
 BRAIN Owner-facing routing states exactly ONE PRIMARY and ONE FALLBACK, each as

@@ -1,5 +1,3 @@
-UPDATED_AT: 2026-10-09T14:11:18+07:00
-
 # Task046 — UI reference research and redesign brief
 
 ## HOT

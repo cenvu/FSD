@@ -14,12 +14,16 @@ loading, semantic review or BRAIN acceptance.
 
 ## 1. Preflight: authority, identity and scope
 
-Before meaningful execution, freshly read root `AGENTS.md`,
+Before meaningful execution, freshly read root `AGENTS.md` (including its
+always-read local Owner policy),
 `STATE/PROJECT_STATE.md`, `handoffs/CURRENT_HANDOFF.md` HOT, the exact task,
 direct authorities and only applicable skills. Resolve paths from the physical
 canonical Git root. Fetch the configured upstream non-destructively; reconcile
 branch/HEAD differences before mutation. Preserve dirty, untracked and ignored
 owner state; never reset/clean/stash/rebase/merge to manufacture a baseline.
+The canonical local policy text in `AGENTS.md` satisfies Owner Issue #1 reading;
+an online fetch is not required while that text is available. BRAIN must read
+the policy before every Worker prompt and BRAIN review/adjudication.
 
 Record the task lock in the authorized working evidence and eventual handoff:
 
@@ -71,16 +75,47 @@ an explicit unknown. Investigate root cause before fixing; do not stack guesses.
 
 ```text
 NO_FIX_WITHOUT_ROOT_CAUSE_INVESTIGATION=YES
-INITIAL_ATTEMPT=1
-REPAIR_RETRY_MAX=1
-AFTER_SAME_FAMILY_REPEAT_FAILURE=STOP_AND_RESEARCH
+SAME_CAUSE_INEFFECTIVE_IMPLEMENTATION_ATTEMPTS_BEFORE_REQUIRED_RESEARCH=3
+AFTER_THREE_INEFFECTIVE_ATTEMPTS=RESEARCH_AND_CHANGE_APPROACH_WITHIN_AUTHORIZED_TASK
+RESEARCH_TRIGGER_IS_AUTOMATIC_STOP=NO
+FAILED_REQUIRED_TEST_BLOCKS_PASS=YES
+FAILED_REQUIRED_TEST_PROHIBITS_IN_SCOPE_DEBUGGING=NO
 ```
 
-For the same failure family, permit one initial attempt and at most one evidence-
-backed repair retry. If it fails again, stop patching, research the failing boundary
-and return evidence to BRAIN. Failure-family classification is a semantic judgment,
-not a claimed automatic detector. Never start a new Worker session as a retry
-mechanism. Deliberate negative fixtures are validation observations, not repair retries.
+One authorized bounded task includes ordinary implementation/test failure
+iteration, test assertion or fixture corrections supported by source and result
+evidence, and validation within its approved file/path/security scope. Code
+review and executable tests are the default correctness gates; do not add a
+permission round for an ordinary evidenced correction. Inspect the actual
+source, assertion/fixture, result bundle and relevant counters before classifying
+a failure. A failed required test blocks PASS/publication, but not continued
+in-scope debugging.
+
+Count an ineffective attempt when a distinct implementation change is tested
+against the same cause and fails to resolve it. Diagnostic-only inspection and
+rerunning unchanged code are not implementation attempts. After three ineffective
+same-cause attempts, pause that patch pattern and research official APIs/SDK
+contracts, upstream source/docs/issues, credible community reports and known
+alternative approaches. Change approach based on the evidence; do not repeat a
+failed patch blindly. This trigger does not require another Worker/BRAIN approval
+round and is not an automatic STOP. Continue within the existing authorization.
+Only a genuine authority/safety boundary or unresolved technical impasse after
+evidence-based approaches returns to BRAIN. Genuine STOP conditions include
+source writes or unauthorized content reads, credential/secret or privacy risk,
+destructive data/schema/security changes, corruption or loss risk, unexplained
+dirty Owner-work conflict or unreconciled remote drift, and an out-of-scope
+required change. These protections are unchanged.
+
+Do not create redundant Worker handoffs or duplicate audits for each failure.
+Use the existing relevant tests, review and reporting path, with one historical
+handoff for the bounded task. Current Owner routing for Antigravity CLI/IDE is
+OPUS 4.6 only; SONNET is excluded. A cheaper preparation Worker before OPUS is
+appropriate only when OPUS is actually needed by task risk or unresolved
+reasoning complexity, never as an invented prerequisite for a routine fix.
+
+Failure-family/cause classification is a semantic judgment, not a claimed
+automatic detector. Never start a new Worker session as a retry mechanism.
+Deliberate negative fixtures are validation observations, not repair attempts.
 
 ## 4. Testable behavior changes
 
@@ -150,8 +185,9 @@ For a handoff-required task, complete execution postflight on the reviewed candi
 then invoke [fsd-handoff-finalizer](../fsd-handoff-finalizer/SKILL.md). Publication
 and transport are its closure checks; never mark future checks as executed.
 The final completion claim waits for those fresh physical checks too. If finalization
-reveals a scope/semantic defect, return to this discipline within existing authority
-and retry limits; the finalizer cannot repair or expand execution scope.
+reveals a scope/semantic defect, return to this discipline within the existing
+task authorization; follow §3's same-cause research trigger and genuine STOP
+conditions. The finalizer cannot repair or expand execution scope.
 
 ## Handoff guard contract
 
