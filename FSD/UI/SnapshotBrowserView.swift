@@ -54,9 +54,9 @@ final class SnapshotBrowserModel: ObservableObject {
     @Published private(set) var summary: SnapshotSummary
     @Published private(set) var rootNode: SnapshotTreeNode?
     @Published private(set) var selectedDetails: SnapshotEntryDetails?
-    @Published private(set) var sourceAvailability: SourceAvailability = .unknown
     @Published private(set) var issues: [SnapshotIssue] = []
     @Published private(set) var searchResults: MetadataSearchResults?
+    @Published private(set) var searchFailureMessage: String?
     @Published private(set) var isSearching = false
     @Published private(set) var error: String?
     @Published var searchText: String = ""
@@ -151,9 +151,6 @@ final class SnapshotBrowserModel: ObservableObject {
         } catch {
             self.error = error.localizedDescription
         }
-        // The one deliberate filesystem call in the browser, and only to label
-        // the source state. Nothing below depends on its answer.
-        sourceAvailability = SourceAvailabilityProbe().availability(for: summary)
     }
 
     func select(entryID: Int64?) {
@@ -167,9 +164,12 @@ final class SnapshotBrowserModel: ObservableObject {
         guard let entryID else {
             selectedEntryID = nil
             selectedDetails = nil
+            error = nil
             return
         }
         selectedEntryID = entryID
+        selectedDetails = nil
+        error = nil
         do {
             selectedDetails = try classificationDetails(for: entryID)
         } catch {
@@ -259,12 +259,13 @@ final class SnapshotBrowserModel: ObservableObject {
         Task { await control.cancel() }
         classificationPhase = .idle
         classificationMessage = nil
+        cancelPendingSearch()
     }
 
     func runSearch() {
         let text = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else {
-            searchResults = nil
+            cancelPendingSearch()
             return
         }
         searchGeneration += 1
@@ -272,6 +273,8 @@ final class SnapshotBrowserModel: ObservableObject {
         let query = MetadataSearchQuery(text: text, field: searchField)
         let snapshotID = summary.id
         let service = search
+        searchResults = nil
+        searchFailureMessage = nil
         isSearching = true
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let outcome = Result { try service.search(query, in: snapshotID) }
@@ -280,16 +283,29 @@ final class SnapshotBrowserModel: ObservableObject {
                 self.isSearching = false
                 switch outcome {
                 case let .success(results): self.searchResults = results
-                case let .failure(failure): self.error = failure.localizedDescription
+                case .failure:
+                    self.searchResults = nil
+                    self.searchFailureMessage = "Search failed. No results are being shown. Try again."
                 }
             }
         }
     }
 
     func clearSearch() {
-        searchGeneration += 1
         searchText = ""
+        cancelPendingSearch()
+    }
+
+    func clearSearchWhenQueryIsEmpty() {
+        guard searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              isSearching || searchResults != nil || searchFailureMessage != nil else { return }
+        cancelPendingSearch()
+    }
+
+    private func cancelPendingSearch() {
+        searchGeneration += 1
         searchResults = nil
+        searchFailureMessage = nil
         isSearching = false
     }
 
@@ -1047,6 +1063,7 @@ struct LazyMetadataOutlineView: NSViewRepresentable {
 
 struct SnapshotBrowserView: View {
     @ObservedObject var model: SnapshotBrowserModel
+    @State private var isInspectorVisible = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -1057,9 +1074,19 @@ struct SnapshotBrowserView: View {
                     .font(.callout)
             }
             searchBar
+            if let failure = model.searchFailureMessage {
+                Label(failure, systemImage: "exclamationmark.triangle")
+                    .font(.callout)
+                    .foregroundStyle(.orange)
+                    .accessibilityLabel(failure)
+            }
             if let results = model.searchResults {
-                SearchResultsView(results: results) { model.select(entryID: $0) }
-                    .frame(minHeight: 160)
+                SearchResultsView(
+                    results: results,
+                    selectedEntryID: model.selectedEntryID,
+                    onSelect: { model.select(entryID: $0) }
+                )
+                    .frame(minHeight: 88, maxHeight: 176)
             }
             HSplitView {
                 LazyMetadataOutlineView(
@@ -1068,8 +1095,10 @@ struct SnapshotBrowserView: View {
                     onSelect: { model.select(entryID: $0) }
                 )
                 .frame(minWidth: 320)
-                EntryInspectorView(model: model)
-                    .frame(minWidth: 220)
+                if isInspectorVisible {
+                    EntryInspectorView(model: model)
+                        .frame(minWidth: 220)
+                }
             }
             footer
         }
@@ -1079,54 +1108,79 @@ struct SnapshotBrowserView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 6) {
+            Text("Home  ›  Browse Snapshot  ›  Recent Captures / Explore")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .accessibilityLabel("Location: Home, Browse Snapshot, Recent Captures, Explore")
             HStack(alignment: .firstTextBaseline) {
-                Text(model.summary.displayName).font(.title2)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(model.summary.displayName).font(.title2)
+                    Text("Snapshot ID: \(model.summary.id)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 Spacer()
+                Button(isInspectorVisible ? "Hide Inspector" : "Show Inspector") {
+                    isInspectorVisible.toggle()
+                }
+                .accessibilityLabel(isInspectorVisible ? "Hide metadata inspector" : "Show metadata inspector")
                 Button("Export JSON…", action: model.exportJSON)
             }
             HStack(spacing: 10) {
-                Label(model.summary.status.rawValue.replacingOccurrences(of: "_", with: " ").capitalized,
+                Label(snapshotStatus,
                       systemImage: model.summary.isComplete ? "checkmark.seal" : "exclamationmark.circle")
-                Label(model.sourceAvailability.label,
-                      systemImage: model.sourceAvailability == .available ? "externaldrive.connected.to.line.below" : "externaldrive.badge.xmark")
-                    .foregroundStyle(model.sourceAvailability == .available ? Color.secondary : Color.orange)
+                Text("Captured \(model.summary.startedAt)")
+                    .foregroundStyle(.secondary)
             }
             .font(.callout)
-            Text(sourceLine).font(.caption).foregroundStyle(.secondary)
-            Text("\(model.summary.totalFiles) files · \(model.summary.totalFolders) folders · "
-                 + ByteCountFormatter.string(fromByteCount: model.summary.totalLogicalBytes, countStyle: .file)
-                 + " · \(model.summary.inaccessibleItems) inaccessible · \(model.summary.warningCount) warnings")
-                .font(.caption).foregroundStyle(.secondary)
+            Text("Source at capture: \(model.summary.capture.displayNameForHistory)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .truncationMode(.middle)
+            Label("OFFLINE SNAPSHOT", systemImage: "externaldrive")
+                .font(.caption.weight(.semibold))
+            Text("Read-only · browsing stored metadata only · physical source connection and identity are unverified.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 
-    /// Everything shown here comes from the snapshot's own capture-time columns
-    /// (ADR-023), so a later capture of the same volume cannot rewrite it.
-    private var sourceLine: String {
-        let capture = model.summary.capture
-        var parts = ["Source at capture: \(capture.displayNameForHistory)"]
-        if let variant = capture.filesystemVariant { parts.append(variant) }
-        if let mountPath = capture.mountPath { parts.append(mountPath) }
-        parts.append("case \(capture.caseSensitivity.rawValue)")
-        if !capture.isFullyRecorded {
-            parts.append("captured before schema version 5 — volume facts not recorded")
-        }
-        return parts.joined(separator: " · ")
+    private var snapshotStatus: String {
+        let status = model.summary.status.rawValue.replacingOccurrences(of: "_", with: " ").capitalized
+        return model.summary.isComplete ? "Complete snapshot · \(status)" : "Partial snapshot · \(status)"
     }
 
     private var searchBar: some View {
-        HStack {
-            Picker("Search in", selection: $model.searchField) {
-                ForEach(MetadataSearchQuery.Field.allCases, id: \.self) { field in
-                    Text(field.label).tag(field)
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(spacing: 8) {
+                Label("THIS SNAPSHOT", systemImage: "magnifyingglass")
+                    .font(.caption.weight(.semibold))
+                    .accessibilityLabel("Search scope: This Snapshot")
+                Picker("Search field", selection: $model.searchField) {
+                    ForEach(MetadataSearchQuery.Field.allCases, id: \.self) { field in
+                        Text(field.label).tag(field)
+                    }
                 }
+                .frame(width: 148)
+                TextField("Search stored filenames or paths", text: $model.searchText)
+                    .accessibilityLabel("Search stored metadata in snapshot \(model.summary.id)")
+                    .onSubmit { model.runSearch() }
+                    .onChange(of: model.searchText) { _, value in
+                        if value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            model.clearSearchWhenQueryIsEmpty()
+                        }
+                    }
+                Button("Search", action: model.runSearch)
+                    .disabled(model.searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                if !model.searchText.isEmpty || model.searchResults != nil || model.searchFailureMessage != nil || model.isSearching {
+                    Button("Clear", action: model.clearSearch)
+                }
+                if model.isSearching { ProgressView().controlSize(.small) }
             }
-            .frame(width: 200)
-            TextField("Search stored metadata", text: $model.searchText)
-                .onSubmit { model.runSearch() }
-            Button("Search", action: model.runSearch).disabled(model.searchText.isEmpty)
-            if model.searchResults != nil { Button("Clear", action: model.clearSearch) }
-            if model.isSearching { ProgressView().controlSize(.small) }
+            Text("Search covers captured metadata in Snapshot \(model.summary.id) only.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -1150,27 +1204,52 @@ struct SnapshotBrowserView: View {
 
 private struct SearchResultsView: View {
     let results: MetadataSearchResults
+    let selectedEntryID: Int64?
     let onSelect: (Int64) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(headline).font(.caption).foregroundStyle(.secondary)
-            List(results.hits) { hit in
-                HStack {
-                    Text(hit.relativePath.isEmpty ? hit.name : hit.relativePath)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                    Spacer()
-                    Text(hit.itemKind.rawValue).foregroundStyle(.secondary).font(.caption)
+            if results.hits.isEmpty {
+                Label("No matches in this snapshot.", systemImage: "magnifyingglass")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
+            } else {
+                List(results.hits) { hit in
+                    let path = hit.relativePath.isEmpty ? hit.name : hit.relativePath
+                    Button {
+                        onSelect(hit.id)
+                    } label: {
+                        HStack {
+                            Text(path)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                            Spacer()
+                            if selectedEntryID == hit.id {
+                                Text("Selected")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Text(hit.itemKind.rawValue).foregroundStyle(.secondary).font(.caption)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Inspect search result \(path), \(hit.itemKind.rawValue)")
+                    .accessibilityHint("Updates stored metadata in the inspector. The tree stays at its current location.")
                 }
-                .contentShape(Rectangle())
-                .onTapGesture { onSelect(hit.id) }
             }
+            Text("Selecting a result updates the inspector; it does not reveal the item in the tree.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 
     private var headline: String {
-        var text = "\(results.hits.count) match(es) in snapshot \(results.snapshotID) "
+        let count = results.hits.count
+        let matchLabel = count == 1 ? "match" : "matches"
+        var text = "\(count) \(matchLabel) · THIS SNAPSHOT · Snapshot ID: \(results.snapshotID) "
         text += String(format: "in %.3f s", results.durationSeconds)
         if results.isTruncated { text += " — showing the first \(results.limit); refine the search to see the rest" }
         return text

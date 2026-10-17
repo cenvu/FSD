@@ -1,6 +1,6 @@
 OWNER_PRODUCT_UX_DIRECTION=YES
-IMPLEMENTATION_PROOF=TASK047_MAIN_HOME_DIRECTION_A_ONLY
-IMPLEMENTATION_AUTHORIZATION=OWNER_APPROVED_TASK047_MAIN_HOME_ONLY
+IMPLEMENTATION_PROOF=TASK047_MAIN_HOME_TASK049_OFFLINE_SNAPSHOT_EXPLORE_ONLY
+IMPLEMENTATION_AUTHORIZATION=OWNER_APPROVED_TASK047_MAIN_HOME_AND_TASK049_ONE_STAGE1_SLICE
 
 # UX and UI Specification
 
@@ -123,16 +123,40 @@ The implemented Main/Home contract is:
   The Home content uses a vertical scroll surface to retain the source heading,
   primary action and sidebar at supported window widths.
 
-The Main/Home screen does **not** implement the rest of Direction A. Stage1
-product work remains postponed, including mount detection/Connected Now, Auto
-Capture, dashboard aggregates, paged per-source history, broader search scopes,
-compare ancestor/reveal navigation, and future Explore/source-status screens.
-Stage2 remains postponed: the physical-drive identity and mount/remount policy,
-its evidence/ambiguity contract and identity-aware availability service remain
-unresolved and require their separate authorization. Until then, no physical
-drive identity or connection is asserted from a recorded display name or mount
-path. Existing Collection semantics remain unchanged; Drive Sets remain behind
-their ADR.
+The Main/Home screen does **not** implement the rest of Direction A. Task049
+later authorizes only the one bounded Offline Snapshot Explore slice below.
+Other Stage1 work remains postponed, including mount detection/Connected Now,
+Auto Capture, dashboard aggregates, paged per-source history, broader search
+scopes, and compare ancestor/reveal navigation. Stage2 remains postponed: the
+physical-drive identity and mount/remount policy, its evidence/ambiguity
+contract and identity-aware availability service remain unresolved and require
+their separate authorization. Until then, no physical-drive identity or
+connection is asserted from a recorded display name or mount path. Existing
+Collection semantics remain unchanged; Drive Sets remain behind their ADR.
+
+### 5.2 Owner-authorized Offline Snapshot Explore slice — Task049
+
+Task049 reuses the stored snapshot history, `SnapshotBrowserModel`, paged
+`SnapshotTreeDataSource`, AppKit outline, selected-entry inspector and bounded
+`MetadataSearchService`. The route remains Home → Browse Snapshot → Recent
+Captures / Explore. Each workspace identifies its stable SnapshotID, capture-
+time source label, capture timestamp and complete/partial status. Its context
+states that browsing is read-only and uses stored metadata, and that current
+source connection and physical identity are unverified. Explore does not use
+mount-path existence to assert connection.
+
+Search is explicitly **THIS SNAPSHOT** and carries that exact SnapshotID through
+the existing bounded metadata query. Its result state distinguishes no matches,
+query failure, a truncated result set and a cleared query. Selecting a result
+updates the inspector; the tree remains where it was because Reveal in Tree is
+not implemented. Search does not inspect payload bytes or span snapshots,
+drives or a Library.
+
+The existing lazy outline retains direct-child paging, retry, stable row
+identity, bounded caches and eviction. The inspector remains optional and can
+collapse without clearing its selected metadata. Classification remains an
+explicit inspector action. No schema, capture facts, comparison evidence,
+Home semantics or physical-drive identity behavior changes in this slice.
 
 ## 6. DRIVE SET DIRECTION
 

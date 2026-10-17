@@ -1,165 +1,159 @@
-UPDATED_AT: 2026-10-09T19:37:20+07:00
+UPDATED_AT: 2026-10-18T05:10:53+07:00
 
-# Task048 — Source Navigator Main/Home three-point UX polish
+# Task049 — Offline Snapshot Explore Workspace
 
 ## HOT
 
 HMD_SCHEMA=FSD_HANDOFF_MARKDOWN
 HMD_VERSION=1.0.0
 PROJECT=FSD
-WORKSTREAM_ID=FSD2_STAGE0_5_SOURCE_NAVIGATOR_MAIN_UX_POLISH
-HANDOFF_ID=handoffs/FSD_FSD2_SOURCE_NAVIGATOR_MAIN_UX_POLISH_048_D_20261009-185002.md
+WORKSTREAM_ID=FSD2_STAGE1_OFFLINE_SNAPSHOT_EXPLORE
+HANDOFF_ID=handoffs/FSD_FSD2_OFFLINE_SNAPSHOT_EXPLORE_WORKSPACE_049_D_20261017-233523.md
 REPO=/Users/cenvu/DEV/FSD
 BRANCH=main
-LOCAL_HEAD=7e5c5580cd19aca6ffc8ac2729a3da2f708e2d80
-REMOTE_HEAD=7e5c5580cd19aca6ffc8ac2729a3da2f708e2d80
-LAST_VERIFIED_AT=2026-10-09T19:37:20+07:00
-AUTHORITY_PTRS=AGENTS.md|docs/BRAIN_OPERATOR.md|STATE/PROJECT_STATE.md|handoffs/CURRENT_HANDOFF.md|.agents/skills/fsd-task-execution/SKILL.md|.agents/skills/fsd-handoff-finalizer/SKILL.md|scripts/check_control_plane.py
+LOCAL_HEAD=2bd145a9ab8018e99960d9fe214c64cc53ffac6b
+REMOTE_HEAD=2bd145a9ab8018e99960d9fe214c64cc53ffac6b
+LAST_VERIFIED_AT=2026-10-18T05:10:26+07:00
+AUTHORITY_PTRS=AGENTS.md|docs/BRAIN_OPERATOR.md|STATE/PROJECT_STATE.md|STATE/TASK_LEDGER.tsv|handoffs/CURRENT_HANDOFF.md|docs/UX_UI_SPEC.md|docs/FSD2_UI_REFERENCE_RESEARCH.md|.agents/skills/fsd-task-execution/SKILL.md|.agents/skills/fsd-handoff-finalizer/SKILL.md|scripts/check_control_plane.py
 CURRENT_PHASE=POST_V0_1_FSD2_FOUNDATION
-CURRENT_GATE=FSD2_SOURCE_NAVIGATOR_MAIN_UX_POLISH_048
+CURRENT_GATE=FSD2_STAGE1_OFFLINE_SNAPSHOT_EXPLORE_049
 STATUS=WORKER_COMPLETE_PENDING_BRAIN
-BLOCKER=NONE;ADVISORY=KEYBOARD_FOCUS_NOT_DEMONSTRATED|VOICEOVER_AND_OWNER_VISUAL_PENDING|TASK047_EXTERNAL_RETENTION_UNPROVEN
-PROPOSED_NEXT=OWNER_VISUAL_ACCEPTANCE_AFTER_BRAIN_CLASSIFICATION
+BLOCKER=NONE;ADVISORY=MANUAL_VOICEOVER_NOT_PERFORMED|OWNER_EXPLORER_VISUAL_ACCEPTANCE_PENDING|TASK047_PICKER_AX_EXTERNAL_RETENTION_UNPROVEN
+PROPOSED_NEXT=WAIT(OWNER_EXPLORER_VISUAL_REVIEW_AFTER_BRAIN_CLASSIFICATION)
 NO_AUTO_NEXT=YES
-
-## Reporting recovery (2026-10-09T19:35:57+07:00)
-
-The first finalizer result was STOP and did not publish. Its sole reported blocker was the invalid unpublished filename `handoffs/FSD_FSD2_SOURCE_NAVIGATOR_MAIN_UX_POLISH_048_WORKER_20261009-185002.md`; the exact original bytes are preserved at `.ai-scratch/task048/reporting-recovery/invalid-original-handoff.md` (SHA-256 `873b847965049fcbd9a9842502cb3993dcbca8e52f6ec4a431c202afbec09740`). The pre-recovery Desktop transport containing that failure evidence is preserved byte-for-byte at `.ai-scratch/task048/reporting-recovery/desktop-before-recovery.bin` (SHA-256 `2b7d2d54f1739c1c0670fe194cbaf6f9a2e2864eb2c25fb7972f06046304f738`).
-
-BRAIN explicitly authorized one controlled recovery of this unpublished candidate. The corrected historical identity is `handoffs/FSD_FSD2_SOURCE_NAVIGATOR_MAIN_UX_POLISH_048_D_20261009-185002.md`. A later canonical check identified a separate reporting-only issue: the Worker handoff repeated a BRAIN-owned classification assignment. That assignment was removed from Worker history; the Task048 ledger remains PENDING_BRAIN. The failed checker receipt is preserved at `.ai-scratch/task048/reporting-recovery/checker-prepublication-recovery.json` (SHA-256 `53a15fb923435f261370adc8d86fac3ed9c5f4f81a721bd02583a396ea6fe81b`). Filename mismatch was the only blocker reported by the original finalizer. Product/test bytes and behavior did not change; existing Task048 evidence is reused. The corrected candidate passed the canonical prepublication checker with exact Desktop Operator/CURRENT parity (receipt SHA-256 `36e373d29faad1782643f34e580be595c1de14ab6f8300280693a7d40717bac2`).
-
 
 ## Task lock and authority
 
-TASK_ID=FSD2_SOURCE_NAVIGATOR_MAIN_UX_POLISH_048
+TASK_ID=FSD2_OFFLINE_SNAPSHOT_EXPLORE_WORKSPACE_049
 ROLE=WORKER
-MODE=OWNER_APPROVED_THREE_POINT_UX_POLISH
-BASE_HEAD=7e5c5580cd19aca6ffc8ac2729a3da2f708e2d80
-UPSTREAM_HEAD=7e5c5580cd19aca6ffc8ac2729a3da2f708e2d80
+MODE=OWNER_APPROVED_STAGE1_BOUNDED_IMPLEMENTATION
+BASE_HEAD=2bd145a9ab8018e99960d9fe214c64cc53ffac6b
+UPSTREAM_HEAD=2bd145a9ab8018e99960d9fe214c64cc53ffac6b
 ACCEPTED_STATE=STATE/PROJECT_STATE.md
-SCOPE=EXACT_THREE_OWNER_REQUESTED_MAIN_HOME_POLISH;NO_REDESIGN_EXPLORE_STAGE1_STAGE2_OR_RELEASE
-ALLOWED_PATHS=FSD/UI/ComparisonSharedViews.swift|FSDTests/ComparisonGUIValidationTests.swift|STATE/TASK_LEDGER.tsv|STATE/EVENTS.jsonl|handoffs/CURRENT_HANDOFF.md|handoffs/FSD_FSD2_SOURCE_NAVIGATOR_MAIN_UX_POLISH_048_D_20261009-185002.md
-FORBIDDEN_PATHS=STATE/PROJECT_STATE.md|AGENTS.md|docs/BRAIN_OPERATOR.md|docs/UX_UI_SPEC.md|DATABASE_SCHEMA_BACKEND_DEPENDENCIES|OTHER_UI_SCREENS_OR_TESTS|PUBLIC_RELEASE_TAG_ASSETS|OWNER_CATALOG_OR_SOURCE_MEDIA|NATIVE_FOLDER_PICKER|GLOBAL_OR_RECURSIVE_AX|SYSTEM_ACCESSIBILITY_SETTINGS
-SUCCESS_CRITERIA=PARTIAL_SELECTION_STICKY_AND_EXPLICITLY_ACTIONABLE|UNAVAILABLE_NAV_COMPACT_AND_TRUTHFUL|SELECTED_CAPTURE_CARD_COMPACT_WITH_ALL_FACTS_AND_ROUTES
-VALIDATIONS=FOCUSED_XCTEST|ARM64_DEBUG_RELEASE|SYNTHETIC_FSD_WINDOW_SCREENSHOTS|BOUNDED_FSD_AX|GIT_DIFF_CHECK|CANONICAL_CHECKER|DESKTOP_PARITY|MAIN_PUBLICATION
+SCOPE=ONE_OFFLINE_SNAPSHOT_EXPLORE_SLICE_USING_EXISTING_STORED_METADATA_BROWSER;NO_OTHER_STAGE1_STAGE2_OR_RELEASE_WORK
+ALLOWED_PATHS=FSD/UI/SnapshotBrowserView.swift|FSD/UI/ComparisonSharedViews.swift|FSDTests/LazyTreeBrowsingTests.swift|FSDTests/ComparisonGUIValidationTests.swift|FSDTests/MetadataSearchTests.swift|docs/UX_UI_SPEC.md|STATE/TASK_LEDGER.tsv|STATE/EVENTS.jsonl|handoffs/CURRENT_HANDOFF.md|handoffs/FSD_FSD2_OFFLINE_SNAPSHOT_EXPLORE_WORKSPACE_049_D_20261017-233523.md
+FORBIDDEN_PATHS=STATE/PROJECT_STATE.md|STATE/RULE_PROMOTION_LEDGER.tsv|AGENTS.md|SCHEMA_MIGRATIONS|SCANNER_PROVIDERS_CLASSIFIER_HELPER|COMPARISON_ENGINE|OTHER_PRODUCT_SOURCE_OR_TESTS|PUBLIC_RELEASE_TAG_ASSETS|OWNER_CATALOG_OR_MEDIA|NATIVE_FOLDER_PICKER|GLOBAL_OR_RECURSIVE_AX
+SUCCESS_CRITERIA=SOURCE_CAPTURE_CONTEXT|THIS_SNAPSHOT_SEARCH|BOUNDED_EXISTING_LAZY_TREE|SELECTED_METADATA_INSPECTOR|EXISTING_NAVIGATION|1120_1330_1440_LAYOUT|CODE_REVIEW|TESTS_BUILDS_SCREENSHOTS|FINALIZER_PUBLICATION
+VALIDATIONS=FOCUSED_XCTEST|ARM64_DEBUG_RELEASE|SYNTHETIC_FSD_WINDOW_SCREENSHOTS|BOUNDED_FSD_ACCESSIBILITY|GIT_DIFF_CHECK|CANONICAL_CHECKER|DESKTOP_OPERATOR_CURRENT_PARITY|MAIN_PUBLICATION
 NEXT_BOUNDARY=RETURN_TO_BRAIN_ONLY
 
 ## Re-anchor and protected state
 
-At start, the physical repository was `/Users/cenvu/DEV/FSD`, origin was `https://github.com/cenvu/FSD.git`, branch `main`, and the worktree was clean at `094988961b7d1d9e915e329a7f6be99a2faa9cbd`. A non-destructive `git fetch origin` advanced `origin/main` from `0949889...` to the authorized `7e5c5580cd19aca6ffc8ac2729a3da2f708e2d80`. The local commit was an ancestor; `git merge --ff-only 7e5c5580cd19aca6ffc8ac2729a3da2f708e2d80` advanced only the branch pointer. No dirty or untracked owner work was present. Re-anchor result was `HEAD=origin/main=7e5c558...`, ahead/behind `0/0`.
+The physical canonical root was /Users/cenvu/DEV/FSD, origin was https://github.com/cenvu/FSD.git, and branch was main. Before fetch, local HEAD was f4b07ba407bb4ae85c7327973edef15fda4796ff with a clean worktree. A non-destructive fetch advanced origin/main through the clean BRAIN projection 96290b2fe900cae97bb4559bf713545ca55b347d to the task-authorized EXPECTED_HEAD 2bd145a9ab8018e99960d9fe214c64cc53ffac6b. Local HEAD was an ancestor; git merge --ff-only origin/main advanced safely. Final prepublication fetch confirmed HEAD=origin/main=2bd145a9ab8018e99960d9fe214c64cc53ffac6b, ahead/behind 0/0. The baseline was clean before Task049 edits.
 
-At that expected head, Task047 was BRAIN-accepted `PASS_WITH_ADVISORY` at `094988961b7d1d9e915e329a7f6be99a2faa9cbd`. Owner Task048 authority is recorded in `STATE/PROJECT_STATE.md` and commit `7e5c558...`; it authorizes exactly the three Main/Home corrections in the task prompt. No Task048 ledger row or historical handoff existed at re-anchor. Owner Policy was read from the local canonical section in `AGENTS.md`, with applicable rules from `docs/BRAIN_OPERATOR.md`, accepted State, CURRENT HOT, task-execution and handoff-finalizer skills, and the macOS SwiftUI/build skills.
+The Task049 prompt and owner authorization in the current State/Event history authorize exactly this one Offline Snapshot Explore slice. The local Owner policy in AGENTS.md, docs/BRAIN_OPERATOR.md, accepted State, CURRENT HOT, task-execution skill, finalizer skill, UX spec and reference research were read. No code or catalog path was expanded beyond the authorized task.
 
-The accepted `STATE/PROJECT_STATE.md`, `AGENTS.md`, `docs/BRAIN_OPERATOR.md`, `docs/UX_UI_SPEC.md`, Task047 historical handoff, schema/backend/dependencies, other UI screens/tests, public release/tag/assets remain unchanged. Worker classification remains pending BRAIN.
+The selected production implementation is under FSD/UI/SnapshotBrowserView.swift. FSD/UI/ComparisonSharedViews.swift and FSDTests/LazyTreeBrowsingTests.swift were not edited. The Main/Home view and its existing Home, Recent Captures, Compare and Capture routes remain unchanged. STATE/PROJECT_STATE.md, STATE/RULE_PROMOTION_LEDGER.tsv, schema/migrations, scanner/providers/classifier/helper, comparison implementation, public release files, and prior historical handoffs remain unchanged. The Task048 historical handoff SHA-256 before reporting was 5f7fb6e1b70f8bbf0fd076665f6007dcce901c616c8581be159c786164cbe6c8.
 
 ## Work completed
 
-### Polish A — partial capture selection
+Explore remains the existing stored-snapshot browser and retains SnapshotBrowserModel, SnapshotTreeDataSource, the AppKit paged outline, MetadataSearchService and EntryInspectorView.
 
-- Main selection remains keyed by stable `SnapshotID`. A selected partial snapshot stays selected when history refreshes; the refresh helper no longer replaces any explicit selection.
-- Partial Browse remains disabled and now has the requested visible explanation: “This capture is incomplete. Select a completed capture to browse its stored metadata.”
-- When a completed snapshot exists, the secondary `Select latest complete` action targets the first completed item in existing `ApplicationModel.history` ordering and stores that summary's `SnapshotID`. The action changes selection only when activated. Browse then becomes enabled for that completed selection and still calls the existing `model.openSnapshot(summary)` route.
-- The CTA is omitted when there is no completed snapshot. The normal manual Capture action remains available.
+The browser context now shows the stable SnapshotID, capture-time source label from persisted capture facts, captured timestamp, complete or partial status, and an OFFLINE SNAPSHOT / read-only stored-metadata statement. It explicitly says current physical source connection and identity are unverified. Explore no longer calls SourceAvailabilityProbe or displays a mount-path-derived connected state.
 
-### Polish B — sidebar density
+Search is visibly scoped to THIS SNAPSHOT. It keeps the existing metadata fields and bounded MetadataSearchService query and shows the result SnapshotID. Zero matches, query failure, truncated results and a cleared query have separate states. Emptying the field or closing a snapshot invalidates the search generation and clears displayed results. A new query clears old results before it starts. Selecting a result updates only the inspector; visible wording and accessible hint state that the tree is not revealed. Search results are keyboard-accessible Buttons.
 
-- Home, Recent Captures, and Comparisons remain the prominent working sidebar destinations. Manual Capture remains in the active toolbar.
-- All Drives, Drive Sets, Connected Now, and Auto Capture are grouped under one native `DisclosureGroup`, collapsed by default. Selecting All Drives keeps the group expanded so the selected route remains visible; the existing All Drives destination still presents its unavailable placeholder.
-- Connected Now says no connected-drive service exists. Auto Capture remains disabled and labeled unavailable. Search was removed from the active toolbar.
-- No mounted-drive, connected-source, drive-library, or automatic-capture capability was added or implied.
+Selection clears the prior details before loading the newly selected entry, so a failed lookup cannot leave old metadata in the inspector. Snapshot close invalidates the prior browser search state; the existing Recent Captures route creates a new browser identified by SnapshotID. The inspector can be hidden and shown without clearing its selected metadata. Classification remains behind the existing explicit inspector button and was not started by browsing, selection or search.
 
-### Polish C — selected-card density
+The existing AppKit outline implementation, direct-child query/page semantics, stable entry identity, 500-row ceiling, bounded cache, eviction, error Retry and Task043 split-pane behavior were not changed. No schema, capture facts, comparison evidence or comparison semantics were changed.
 
-- Reduced the selected-card spacing and padding, compacted metadata/count cells, and tightened Home section spacing.
-- Preserved source label, snapshot label/root, SnapshotID, capture timestamp, completion/partial/warning badge, live-source-identity qualifier, all recorded counts, Browse, History, Compare, and manual Capture.
-- Partial actions use a two-row layout so the explanation sits directly beside disabled Browse and the selection/History/Compare buttons retain their natural widths.
+The only product documentation change is the bounded Task049 section in docs/UX_UI_SPEC.md. It records this single Stage1 slice and leaves other Stage1 work and Stage2 identity policy postponed.
 
-## Test and build evidence
+## Test, build and GUI evidence
 
-Causal RED was observed by temporarily removing the selected-ID guard: the focused selection test executed `1/1` and failed the exact partial-selection assertion (`XCTAssertNil failed: "4"`). The guard was restored. An initial compile reported a missing explicit `return` after the guard; that one-line correction was made before the final run.
+Final focused command:
 
-Final command:
+xcodebuild test -project FSD.xcodeproj -scheme FSD -configuration Debug -destination 'platform=macOS,arch=arm64' -derivedDataPath .ai-scratch/task049/DerivedData -resultBundlePath .ai-scratch/task049/results/focused-suites-final-v3.xcresult -only-testing:FSDTests/LazyTreeBrowsingTests -only-testing:FSDTests/MetadataSearchTests -only-testing:FSDTests/SnapshotHistoryTests -only-testing:FSDTests/ComparisonGUIValidationTests
 
-```text
-xcodebuild test -project FSD.xcodeproj -scheme FSD -configuration Debug -destination 'platform=macOS,arch=arm64' -derivedDataPath .ai-scratch/task048/DerivedData -resultBundlePath .ai-scratch/task048/results/required-suites-acceptance.xcresult -only-testing:FSDTests/ComparisonGUIValidationTests -only-testing:FSDTests/ComparisonGUISourceBoundaryTests -only-testing:FSDTests/SnapshotHistoryTests -only-testing:FSDTests/LazyTreeBrowsingTests
-```
+Result: exit 0; 92 executed, 92 passed, 0 failed, 0 skipped. Suites: ComparisonGUIValidationTests 39, MetadataSearchTests 13, SnapshotHistoryTests 28, LazyTreeBrowsingTests 12. Lazy-tree evidence covers 0, 1, 499, 500, 501, 1000, 1001 and 1500 direct siblings, page order/no gaps, Retry recovery, cache bounds/eviction and keyboard-accessible paging. SnapshotHistoryTests includes browsing and searching after its synthetic source directory is removed. MetadataSearchTests checks limits/truncation and same display label with distinct SnapshotIDs. GUI validation covers no-match versus query failure, clear-query behavior, search-generation invalidation on snapshot close, isolated results for a second same-label snapshot, stale inspector clearing and the classification table remaining unchanged.
 
-Result: exit `0`, `84` executed, `84` passed, `0` failed, `0` skipped: `ComparisonGUIValidationTests` 37/37, `ComparisonGUISourceBoundaryTests` 7/7, `SnapshotHistoryTests` 28/28, `LazyTreeBrowsingTests` 12/12. The GUI validation tests now cover latest-complete ordering by stable ID, selected-partial preservation, Browse ineligibility, no completed target, repeated source labels, and existing Main route callback wiring.
+Final normal arm64 builds passed:
 
-Arm64 builds on the final product source:
+- Debug: xcodebuild build -project FSD.xcodeproj -scheme FSD -configuration Debug -destination 'platform=macOS,arch=arm64' -derivedDataPath .ai-scratch/task049/DerivedData — exit 0, BUILD SUCCEEDED.
+- Release: same command with -configuration Release — exit 0, BUILD SUCCEEDED.
 
-- `xcodebuild build -project FSD.xcodeproj -scheme FSD -configuration Debug -destination 'platform=macOS,arch=arm64' -derivedDataPath .ai-scratch/task048/DerivedData` — exit `0`, `BUILD SUCCEEDED`.
-- Same command with `-configuration Release` — exit `0`, `BUILD SUCCEEDED`.
+The running Debug candidate used an isolated copy at .ai-scratch/task049/fixtures/explore-synthetic.sqlite3, backed up from the existing synthetic Task048 fixture. It contains four snapshots and 20 entries; SQLite integrity_check was ok and foreign_key_check returned zero rows. No production catalog or owner source media was used. Screenshots below are captures of the FSD process/window only.
 
-## Synthetic GUI and bounded accessibility evidence
+- .ai-scratch/task049/screenshots/explorer-completed-1120.png — completed snapshot at 1120×748 pt; context, tree and inspector visible.
+- .ai-scratch/task049/screenshots/explorer-completed-1330.png — completed snapshot at 1330×748 pt; context, tree and inspector visible.
+- .ai-scratch/task049/screenshots/explorer-completed-1440.png — completed snapshot at 1440×748 pt.
+- .ai-scratch/task049/screenshots/search-results-1440.png — two CLIP results, THIS SNAPSHOT and SnapshotID 3 visible.
+- .ai-scratch/task049/screenshots/selected-inspector-1440.png — selected CLIP_0001.MOV and its stored path in the inspector.
+- .ai-scratch/task049/screenshots/search-empty-1440.png — zero matches shown distinctly; this snapshot’s scope and ID remain visible.
+- .ai-scratch/task049/screenshots/narrow-selected-1120.png — 1120 pt layout with the tree and inspector both visible and selected metadata retained.
+- .ai-scratch/task049/screenshots/explorer-partial-1120.png — switching from completed SnapshotID 3 to the same-label partial SnapshotID 4 clears the previous query and inspector selection and shows the partial warning.
 
-The GUI app was launched with explicit `-FSDCatalogPath` arguments pointing only to isolated Task048 copies of the synthetic Task047 `main` and `empty` catalogs. The copied databases passed SQLite integrity and foreign-key checks. No Owner catalog or source-media path was used.
+A bounded FSD-only keyboard interaction submitted CLIP from the search field. FSD-only accessibility reads confirmed the snapshot context, scope and result state; clicking the synthetic result updated the inspector. The existing paging test also activated Next and Retry by keyboard and checked accessibility labels. Manual VoiceOver and Owner visual acceptance of this new Explorer screen were not performed.
 
-Only the FSD application window was captured via its FSD-owned window ID. Pixel dimensions correspond to the exact requested logical widths:
+## Code review and privacy
 
-- `.ai-scratch/task048/screenshots/populated-main-1330.png` — 2660×1496 pixels (1330×748 pt).
-- `.ai-scratch/task048/screenshots/partial-selected-main-1120.png` — 2240×1496 pixels (1120×748 pt).
-- `.ai-scratch/task048/screenshots/completed-selected-main-1440.png` — 2880×1496 pixels (1440×748 pt).
-- `.ai-scratch/task048/screenshots/empty-main-1120.png` — 2240×1496 pixels (1120×748 pt).
-
-The populated 1330 and completed 1440 views show the collapsed compact sidebar and multiple Capture History rows above the fold. The 1120 partial view shows the selected partial context, disabled Browse, exact guidance, and available `Select latest complete` action without clipping. The 1440 completed view shows the selected complete SnapshotID and enabled Browse. The empty 1120 view retains the manual Capture button. Task047 screenshots were inspected for comparison and were not modified.
-
-Bounded interaction checks used the FSD process/window and direct UI elements only. The partial capture stayed selected until the `Select latest complete` control was clicked. Its accessible help/label identified snapshot `#3`; after activation, the History row value became `Selected` and Browse was enabled. Browse and History both routed to `Library / Recent Captures`; Compare routed to `Compare / Comparisons`; Capture routed to `Library / Capture` without opening the folder picker; All Drives routed to `Library / All Drives` placeholder. The sidebar disclosure expanded by mouse and its disabled Auto Capture state and “No connected-drive service yet” text were observed.
-
-A separate keyboard activation was not demonstrated: the disclosure's focused AX value was unavailable and Space did not toggle it. Mouse activation passed. No keyboard/accessibility preference was inspected or changed. Manual VoiceOver was not performed; Owner visual acceptance remains pending as requested.
-
-## Privacy, review, and scope
-
-No native folder picker, source-media content, or Owner catalog was accessed. No Finder/Desktop directory listing or global/recursive AX scan was performed. The only Desktop interaction is the explicitly requested BRAIN transport file for finalizer parity. No system-wide accessibility setting was changed. Screenshots contain only the FSD application window and synthetic catalog facts. The original Task047 privacy STOP remains preserved; external retention of its prior AX output remains UNPROVEN and no resolution/containment claim is made. No new privacy exposure occurred.
-
-Full diff review: PASS. Reviewed sticky `SnapshotID` selection, history ordering, incomplete-snapshot browse ineligibility, only explicit CTA selection mutation, existing route closures, truthful placeholders/offline identity, accessible labels/hints, native controls, compact layout at the target widths, and source-read-only/privacy boundaries. No snapshot semantics, database/schema/backend, other UI screens, or release assets changed. `git diff --check`: PASS. Current tracked candidate is limited to the two authorized product/test files.
+Review result: PASS. The context is sourced from the selected persisted SnapshotSummary; search receives that exact SnapshotID and callbacks are generation-guarded. Clearing the query and closing the browser invalidate late responses. Selection clears old details before lookup. Results have stable entry IDs, do not claim tree reveal, and remain bounded. The existing outline/cache/retry implementation and comparison semantics are unchanged. No source enumeration, source content reads, mount-path identity inference, picker launch, other-app inspection, global/recursive Accessibility scan, classification run, schema mutation, or external tool disclosure occurred. Earlier Task047 external AX retention remains UNPROVEN and open; this task claims no resolution. New Explorer Owner visual acceptance and manual VoiceOver remain pending advisories.
 
 ## Execution requirement map
 
-| # | Requirement | Result | Evidence |
+| # | Requirement | Outcome | Evidence |
 |---:|---|---|---|
-| 1 | Correct repository/origin/main, expected head, clean initial state, safe re-anchor | EVIDENCED | Fetch and fast-forward-only receipt above; final re-anchor remained 0/0. |
-| 2 | Task047 accepted and Task048 authorized/not previously published | EVIDENCED | Accepted State, Owner decision at expected head; no Task048 ledger/history at start. |
-| 3 | Exact two-file product/test scope and protected State/docs/backend/release boundaries | EVIDENCED | `git diff --name-only`; protected paths unchanged. |
-| 4 | Partial capture remains selected before explicit user action | EVIDENCED | Causal RED/GREEN selection test and bounded GUI interaction. |
-| 5 | Partial Browse disabled with exact visible explanation | EVIDENCED | Focused test and 1120 FSD-window screenshot/AX state. |
-| 6 | Latest completed selection follows history ordering and stable SnapshotID | EVIDENCED | Helper test, accessible CTA activation selecting snapshot #3. |
-| 7 | No completed capture omits fake CTA and preserves manual Capture | EVIDENCED | Nil latest-complete test, conditional UI, empty Main screenshot. |
-| 8 | Completed Browse uses existing stored-snapshot route | EVIDENCED | Callback test and bounded Browse activation to Recent Captures. |
-| 9 | Existing History route remains | EVIDENCED | Callback test and bounded route activation. |
-| 10 | Existing Compare route remains | EVIDENCED | Callback test and bounded route activation. |
-| 11 | Existing manual Capture route remains without opening picker | EVIDENCED | Callback test and toolbar activation to Capture; no picker opened. |
-| 12 | Repeated source names stay distinct | EVIDENCED | Synthetic test creates three “Shared Card” records and selects by ID. |
-| 13 | Home, Recent Captures, Comparisons and manual Capture stay prominent/functional | EVIDENCED | Source review, screenshots and route activations. |
-| 14 | Planned/unavailable items grouped compactly and collapsed by default | EVIDENCED | Native disclosure state and populated screenshots. |
-| 15 | All Drives placeholder remains truthful; no drive/connection/automation claims | EVIDENCED | Placeholder route and scoped AX labels; Auto Capture disabled. |
-| 16 | Disabled Search no longer competes with working toolbar actions | EVIDENCED | Search removed; populated screenshots show only working toolbar actions. |
-| 17 | Card retains capture context, identity qualifier, status, counts, and routes | EVIDENCED | Source review, AX, and populated/partial/complete screenshots. |
-| 18 | Card/history compact and readable at requested widths | EVIDENCED | Exact 1120/1330/1440 screenshots; no clipping/truncation. |
-| 19 | Focused XCTest suites pass | EVIDENCED | 84/84, zero skipped/failed. |
-| 20 | Arm64 Debug and Release builds pass | EVIDENCED | Both final product builds succeeded. |
-| 21 | Privacy-safe visual proof uses synthetic catalogs and FSD-only window capture | EVIDENCED | Four exact ignored paths and sizes above. |
-| 22 | Bounded FSD accessibility and input activation | EVIDENCED | Direct FSD labels; mouse activation of partial row, latest-complete CTA and disclosure. |
-| 23 | No source-media read, picker launch, broad AX scan, or global setting change | EVIDENCED | GUI process args and bounded action history; no picker/Owner path accessed. |
-| 24 | Task047 STOP and external-retention advisory preserved | EVIDENCED | No Task047 history/event bytes modified; advisory repeated without a closure claim. |
-| 25 | Full diff review and diff check | EVIDENCED | Review summary above; `git diff --check` exit `0`. |
-| 26 | Separate keyboard activation | NOT_APPLICABLE | Mouse path satisfied the input activation check; host focus property unavailable and no system setting changed. Keyboard path is not claimed. |
-| 27 | Manual VoiceOver | NOT_APPLICABLE | Not performed; remains pending. |
-| 28 | Owner visual acceptance | NOT_APPLICABLE | Pending Owner review after BRAIN adjudication. |
+| 1 | Canonical repo, main branch, expected head, clean initial state and safe fetch/fast-forward | EVIDENCED | Git re-anchor receipt above; HEAD/origin 0/0. |
+| 2 | One owner-authorized Offline Snapshot Explore slice only | EVIDENCED | Prompt, current State/Event authorization and exact diff scope. |
+| 3 | Protected State/schema/scanner/comparison/release paths and prior handoffs unchanged | EVIDENCED | Diff/status scope and canonical postflight check. |
+| 4 | Existing Main/Home and Home/History/Compare/Capture routes unchanged | EVIDENCED | ComparisonSharedViews.swift unchanged; route regression tests pass. |
+| 5 | Browser context names the selected SnapshotID | EVIDENCED | Completed and partial FSD-window screenshots; GUI contract test. |
+| 6 | Captured source label and timestamp come from persisted facts | EVIDENCED | SnapshotSummary capture fields in code and screenshots. |
+| 7 | Complete and partial status/warning remain truthful | EVIDENCED | Complete/partial screenshots and existing partial-browse tests. |
+| 8 | Read-only/offline metadata semantics and identity disclaimer | EVIDENCED | Source code and screenshots; mount path removed from browser presentation. |
+| 9 | No connection/identity claim from label or mount-path existence | EVIDENCED | SourceAvailabilityProbe removed from Explore; no mountPath in view. |
+| 10 | Completed snapshot browsing survives absent source | EVIDENCED | SnapshotHistoryTests synthetic source-removal test passed. |
+| 11 | Duplicate source display labels keep separate SnapshotIDs | EVIDENCED | Search and GUI fixtures plus live ID3→ID4 screenshot. |
+| 12 | Search is explicitly THIS SNAPSHOT and bound to selected ID | EVIDENCED | UI copy/results header, model search tests, GUI screenshot. |
+| 13 | Existing metadata fields/service and bounded limits remain | EVIDENCED | Existing MetadataSearchService/fields reused; 13 tests pass. |
+| 14 | Truncated search results are identified honestly | EVIDENCED | Existing limit/truncation tests and visible UI branch. |
+| 15 | Empty query clears results and invalidates prior generation | EVIDENCED | GUI model test and actual empty-query screenshot. |
+| 16 | Empty result and query failure are distinct | EVIDENCED | GUI test and separate no-match/failure UI states. |
+| 17 | Switching snapshots cannot show stale search/inspector state | EVIDENCED | Close-generation/new-browser model test and live ID3→ID4 screenshot. |
+| 18 | Search result selection does not imply Reveal in Tree | EVIDENCED | Visible copy, AX hint and search-result screenshot. |
+| 19 | Existing lazy AppKit outline remains, with no eager descendants | EVIDENCED | Tree code unchanged; LazyTreeBrowsing tests pass. |
+| 20 | Sibling paging boundaries, ordering and no gaps | EVIDENCED | 0/1/499/500/501/1000/1001/1500 test passes. |
+| 21 | Page error Retry recovers without reopening | EVIDENCED | Existing Retry regression and keyboard/AX test passes. |
+| 22 | Cache limits and eviction remain bounded | EVIDENCED | Existing cache budget/eviction suite passes. |
+| 23 | Task043 split-pane fix is retained | EVIDENCED | Split minima unchanged; full-window narrow screenshot and tests. |
+| 24 | Selected-entry stored metadata inspector remains available | EVIDENCED | Selected inspector screenshots and model tests. |
+| 25 | Selection errors cannot leave old entry details visible | EVIDENCED | GUI test passes for valid then missing entry ID. |
+| 26 | Classification remains explicit and browsing never starts it | EVIDENCED | Explicit button retained; fixture classification row count stayed zero. |
+| 27 | Empty and unavailable catalog states remain distinct | EVIDENCED | Empty/unavailable branch contract test; existing empty selection test. |
+| 28 | 1120/1330/1440 pt windows retain usable tree and inspector | EVIDENCED | FSD-only screenshots at all three widths; inspector also tested at 1120. |
+| 29 | Keyboard/accessibility labels checked when safely testable | EVIDENCED | Bounded FSD field/result interaction and paging keyboard/AX regression. |
+| 30 | Static breadcrumb/context does not claim unimplemented actions | EVIDENCED | Breadcrumb is static Text with location accessibility label. |
+| 31 | UX spec records only the authorized Stage1 slice | EVIDENCED | docs/UX_UI_SPEC.md Task049 subsection. |
+| 32 | Privacy uses synthetic data, with no picker/broad AX/other-app inspection | EVIDENCED | Isolated catalog and process-scoped FSD window operations. |
+| 33 | Earlier privacy advisory stays open; no external-retention resolution claim | EVIDENCED | Explicitly preserved as open/unproven. |
+| 34 | Focused XCTest validation passes | EVIDENCED | 92/92; zero failed/skipped. |
+| 35 | Normal arm64 Debug and Release builds pass | EVIDENCED | Both final xcodebuild build logs report success. |
+| 36 | Required FSD-window screenshots physically exist | EVIDENCED | Eight exact paths listed above. |
+| 37 | Code review and whitespace check pass | EVIDENCED | Review summary and git diff --check. |
+| 38 | Manual VoiceOver speech review | NOT_APPLICABLE | Not performed; explicitly advisory per task. |
+| 39 | Owner visual acceptance of new Explorer screen | NOT_APPLICABLE | Pending; screenshots are evidence only, not Owner acceptance. |
 
-## Finalizer-owned closure
+## Finalizer closure boundary
 
-The immutable handoff is prepared from prepublication `HEAD=7e5c558...`; its self-publication SHA is intentionally not recorded here. Canonical prepublication checker PASS and exact Desktop Operator/CURRENT parity are evidenced by the recovery receipt (SHA-256 `36e373d29faad1782643f34e580be595c1de14ab6f8300280693a7d40717bac2`); `git diff --check` passes. The normal commit/push, clean/synced postpublication checker and publication SHA are reported in the final Desktop transport and Worker return after those physical checks run. `STATE/PROJECT_STATE.md` remains unchanged. Public release/tag/assets remain unchanged. No Task049 or Stage1/Stage2 work started.
+This report is the prepublication Worker evidence source. The canonical checker, Desktop Operator/CURRENT parity, commit/push and postpublication clean/synced verification are finalizer closure checks and are not claimed here. The finalizer records their actual receipts in the current Desktop transport. No Worker classification or accepted-state projection is authored in this report.
 
 RESULT=PASS_WITH_ADVISORY
-Worker handoff leaves classification to BRAIN; Task048 ledger remains PENDING_BRAIN.
+WORKER_RESULT=PASS_WITH_ADVISORY
+PUBLIC_RELEASE=UNCHANGED;NO_NEW_ZIP
 OWNER_VISUAL_ACCEPTANCE=PENDING
+MANUAL_VOICEOVER=NOT_PERFORMED
+TASK047_EXTERNAL_RETENTION=UNPROVEN;OPEN
 
 WORKER_EXECUTION_GUARD=FSD_WORKER_EXECUTION_V1
 WORKER_PREFLIGHT=PASS
-WORKER_REQUIREMENTS_TOTAL=28
-WORKER_REQUIREMENTS_EVIDENCED=25
-WORKER_REQUIREMENTS_NOT_APPLICABLE=3
+WORKER_REQUIREMENTS_TOTAL=39
+WORKER_REQUIREMENTS_EVIDENCED=37
+WORKER_REQUIREMENTS_NOT_APPLICABLE=2
 WORKER_REQUIREMENTS_UNPROVEN=0
 WORKER_POSTFLIGHT=PASS
 NEXT_TASK_STARTED=NO
+
+
+## Reporting-only recovery
+
+This dated recovery note was recorded at 2026-10-18T05:10:26+07:00. The original finalizer result remains STOP: the canonical checker rejected `handoffs/FSD_FSD2_OFFLINE_SNAPSHOT_EXPLORE_WORKSPACE_049_W_20261017-233523.md` as an invalid historical name. The original candidate is preserved byte-for-byte at `.ai-scratch/task049/reporting-recovery/invalid-original-handoff.md` (SHA-256 `b2aec109f3be6372f29e599f1d8269e68104e6e61b44a321753e2ae8c4327037`), alongside the pre-recovery CURRENT, ledger, event, Desktop transport and checker-failure receipts. BRAIN explicitly authorized one controlled reporting recovery and publication for this same unpublished Task049 candidate. The product, test, UX-spec and synthetic-catalog bytes were fingerprinted before reporting changes and are preserved; see `.ai-scratch/task049/reporting-recovery/pre-recovery-sha256-manifest.txt`. The active identity is corrected to `handoffs/FSD_FSD2_OFFLINE_SNAPSHOT_EXPLORE_WORKSPACE_049_D_20261017-233523.md` and matching CURRENT, ledger and single Worker-return references are reconciled. At the instant this immutable candidate was sealed, the recovery checker and publication had not yet run; no later result is pre-claimed here. Their actual terminal status is recorded in the dated Desktop Task049 finalizer receipt, and the handoff's publication commit is resolved from Git history rather than self-referenced inside its own bytes.

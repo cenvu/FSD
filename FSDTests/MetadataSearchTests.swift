@@ -52,6 +52,39 @@ final class MetadataSearchTests: XCTestCase {
         XCTAssertFalse(first.isTruncated)
     }
 
+    func testRepeatedCaptureLabelsStayScopedToTheirSnapshotIDs() throws {
+        let original = try XCTUnwrap(SnapshotHistoryRepository(database: database).summary(id: snapshotID))
+        let repository = SnapshotRepository(database: database)
+        let secondID = try repository.createSnapshot(
+            volumeID: original.volumeID,
+            sessionNumber: original.sessionNumber + 1,
+            scanRootName: original.scanRootName,
+            sourceCaseSensitivity: original.capture.caseSensitivity,
+            displayName: original.displayName
+        )
+        try SyntheticSnapshot.insertEntries(database: database, snapshotID: secondID, entries: [
+            SyntheticSnapshot.root(id: 9001, name: original.scanRootName),
+            SyntheticSnapshot.SeedEntry(
+                id: 9002, parentID: 9001,
+                relativePath: "only-in-second-snapshot.txt",
+                name: "only-in-second-snapshot.txt"
+            )
+        ])
+        try SyntheticSnapshot.complete(database: database, snapshotID: secondID)
+
+        let second = try XCTUnwrap(SnapshotHistoryRepository(database: database).summary(id: secondID))
+        XCTAssertEqual(original.displayName, second.displayName)
+        XCTAssertNotEqual(original.id, second.id)
+
+        let originalResults = try search.search(MetadataSearchQuery(text: "report"), in: original.id)
+        let secondResults = try search.search(MetadataSearchQuery(text: "report"), in: second.id)
+
+        XCTAssertEqual(originalResults.snapshotID, original.id)
+        XCTAssertEqual(originalResults.hits.count, 2)
+        XCTAssertEqual(secondResults.snapshotID, second.id)
+        XCTAssertTrue(secondResults.hits.isEmpty, "same display labels do not merge stored snapshot search")
+    }
+
     func testNameAndPathFieldsAreDistinct() throws {
         let byName = try search.search(MetadataSearchQuery(text: "RAW", field: .name), in: snapshotID)
         let byPath = try search.search(MetadataSearchQuery(text: "RAW", field: .path), in: snapshotID)

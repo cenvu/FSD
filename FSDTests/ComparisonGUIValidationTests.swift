@@ -955,6 +955,125 @@ final class ComparisonGUIValidationTests: XCTestCase {
         XCTAssertTrue(source.contains("onHistory: { selection = .recentCaptures }"), "History keeps the existing capture-history destination")
         XCTAssertTrue(source.contains("onComparisons: { selection = .comparisons }"), "Compare keeps the existing comparison workspace")
         XCTAssertTrue(source.contains("onCapture: { selection = .capture }"), "manual Capture keeps the existing Capture destination")
+        XCTAssertTrue(source.contains("if let startupError = model.startupError"), "a catalog failure remains explicitly unavailable")
+        XCTAssertTrue(source.contains("if model.history.isEmpty"), "an empty catalog remains distinct from a startup failure")
+        XCTAssertTrue(source.contains("No captures yet"), "the empty-catalog action guidance remains visible")
+        XCTAssertTrue(source.contains("title: \"Catalog unavailable\""), "startup failure is not presented as an empty catalog")
+    }
+
+    func testOfflineExploreSearchAndInspectorStateAreSnapshotScoped() async throws {
+        let snapshotID = try SyntheticSnapshot.createSnapshot(
+            database: database, volumeID: 704, session: 1, name: "Explore Fixture"
+        )
+        try SyntheticSnapshot.insertEntries(database: database, snapshotID: snapshotID, entries: [
+            SyntheticSnapshot.root(id: 9700, name: "Explore Fixture"),
+            SyntheticSnapshot.SeedEntry(
+                id: 9701, parentID: 9700,
+                relativePath: "needle.txt", name: "needle.txt",
+                logicalSizeBytes: 12, allocatedSizeBytes: 12
+            )
+        ])
+        try SyntheticSnapshot.complete(database: database, snapshotID: snapshotID)
+        let summary = try XCTUnwrap(historyRepo.summary(id: snapshotID))
+        let browser = SnapshotBrowserModel(database: database, summary: summary)
+
+        browser.select(entryID: 9701)
+        XCTAssertEqual(browser.selectedDetails?.name, "needle.txt")
+        browser.select(entryID: Int64.max)
+        XCTAssertNil(browser.selectedDetails, "a failed lookup cannot leave the prior entry visible")
+
+        browser.searchText = "missing-token"
+        browser.runSearch()
+        try await waitForSearchCompletion(browser)
+        XCTAssertEqual(browser.searchResults?.snapshotID, snapshotID)
+        XCTAssertTrue(browser.searchResults?.hits.isEmpty == true)
+        XCTAssertNil(browser.searchFailureMessage, "zero matches are not a query failure")
+
+        browser.searchText = "needle"
+        browser.runSearch()
+        try await waitForSearchCompletion(browser)
+        XCTAssertEqual(browser.searchResults?.hits.map(\.id), [9701])
+        browser.searchText = ""
+        browser.clearSearchWhenQueryIsEmpty()
+        XCTAssertNil(browser.searchResults, "clearing the query removes the displayed results")
+        XCTAssertFalse(browser.isSearching)
+
+        let secondID = try SyntheticSnapshot.createSnapshot(
+            database: database, volumeID: 705, session: 1, name: "Explore Fixture"
+        )
+        try SyntheticSnapshot.insertEntries(database: database, snapshotID: secondID, entries: [
+            SyntheticSnapshot.root(id: 9800, name: "Explore Fixture"),
+            SyntheticSnapshot.SeedEntry(
+                id: 9801, parentID: 9800,
+                relativePath: "other.txt", name: "other.txt"
+            )
+        ])
+        try SyntheticSnapshot.complete(database: database, snapshotID: secondID)
+        let secondSummary = try XCTUnwrap(historyRepo.summary(id: secondID))
+        XCTAssertEqual(summary.displayName, secondSummary.displayName)
+        XCTAssertNotEqual(snapshotID, secondID)
+
+        browser.searchText = "needle"
+        browser.runSearch()
+        try await waitForSearchCompletion(browser)
+        XCTAssertEqual(browser.searchResults?.snapshotID, snapshotID)
+        browser.cancelClassificationForSnapshotClose()
+        XCTAssertNil(browser.searchResults, "closing a snapshot invalidates its pending/displayed search state")
+
+        let secondBrowser = SnapshotBrowserModel(database: database, summary: secondSummary)
+        XCTAssertNil(secondBrowser.searchResults)
+        XCTAssertNil(secondBrowser.selectedDetails)
+        secondBrowser.searchText = "needle"
+        secondBrowser.runSearch()
+        try await waitForSearchCompletion(secondBrowser)
+        XCTAssertEqual(secondBrowser.searchResults?.snapshotID, secondID)
+        XCTAssertTrue(secondBrowser.searchResults?.hits.isEmpty == true,
+                      "a repeated label cannot carry the first snapshot's hits into the next snapshot")
+
+        try database.execute("ALTER TABLE entries RENAME TO unavailable_entries")
+        secondBrowser.searchText = "needle"
+        secondBrowser.runSearch()
+        try await waitForSearchCompletion(secondBrowser)
+        XCTAssertNil(secondBrowser.searchResults, "a failed query must not keep an earlier result set visible")
+        XCTAssertEqual(secondBrowser.searchFailureMessage, "Search failed. No results are being shown. Try again.")
+        XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM entry_classifications")?.int64Value, 0,
+                       "opening, selecting and searching never starts classification")
+    }
+
+    func testOfflineExplorePresentsTruthfulContextAndAccessibleSnapshotSearch() throws {
+        let repoRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let source = try String(
+            contentsOf: repoRoot.appendingPathComponent("FSD/UI/SnapshotBrowserView.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(source.contains("Snapshot ID: \\(model.summary.id)"))
+        XCTAssertTrue(source.contains("Source at capture: \\(model.summary.capture.displayNameForHistory)"))
+        XCTAssertTrue(source.contains("Captured \\(model.summary.startedAt)"))
+        XCTAssertTrue(source.contains("OFFLINE SNAPSHOT"))
+        XCTAssertTrue(source.contains("Partial snapshot · \\(status)"))
+        XCTAssertTrue(source.contains("physical source connection and identity are unverified"))
+        XCTAssertTrue(source.contains("Label(\"THIS SNAPSHOT\""))
+        XCTAssertTrue(source.contains("Search scope: This Snapshot"))
+        XCTAssertTrue(source.contains("Search covers captured metadata in Snapshot"))
+        XCTAssertTrue(source.contains("does not reveal the item in the tree"))
+        XCTAssertTrue(source.contains("if results.isTruncated"))
+        XCTAssertTrue(source.contains("showing the first \\(results.limit)"))
+        XCTAssertTrue(source.contains("accessibilityHint(\"Updates stored metadata in the inspector."))
+        XCTAssertTrue(source.contains("Button(\"Classify selected file\")"))
+        XCTAssertTrue(source.contains("Hide metadata inspector"))
+        XCTAssertFalse(source.contains("SourceAvailabilityProbe().availability"))
+        XCTAssertFalse(source.contains("mountPath"))
+    }
+
+    private func waitForSearchCompletion(_ browser: SnapshotBrowserModel) async throws {
+        for _ in 0..<500 {
+            if !browser.isSearching { return }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        XCTFail("snapshot metadata search did not finish within five seconds")
     }
 
     private func seedNavigatorSnapshot(volumeID: Int64, name: String, status: SnapshotStatus) throws -> SnapshotID {
