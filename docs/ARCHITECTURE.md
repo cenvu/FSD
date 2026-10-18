@@ -1341,3 +1341,67 @@ Synthetic production-stack XCTest covers schema parity, legacy-row preservation,
 rollback/reopen and repository behavior. It does not validate hardware identity,
 H01–H14, live observer lifecycle, real crash/power-loss behavior, capture receipts,
 Drive Sets, UI or Owner catalog migration. Those remain separate work.
+
+## 15. Synthetic observation contract and resolver — Task059
+
+`SourceObservationEnvelope` is an immutable, bounded, single-subject Swift value.
+It reuses Task058's observation ID, session ID, revision, scope, original unresolved
+state, observation time and typed evidence. Separate envelopes distinguish device,
+media, partition, volume and mount-session subjects; sharing a session is no
+physical topology proof. A new revision requires a new observation ID and fresh
+manual confirmation. The contract contains generated facts only; it implements
+no live adapter, mount event subscription, availability service or event reducer.
+Repeated/reordered envelope evaluation has no retained state to overwrite.
+
+Inputs retain a caller-declared complete/partial marker and missing provenance;
+completeness is not hardware verification. Missing values use typed `unknown` and
+NULL. Malformed UUIDs, wrong scopes, invalid revisions/times, NULs and oversized
+values reject with a bounded typed error. Limits are 32 input facts, 1024 UTF-8
+bytes per value/provenance, 256 per property/time and 200 input candidates before
+deduplication. UUID spellings are canonicalized. Exact duplicate facts collapse;
+contradictory duplicates remain available to the conflict check. Fact order is
+canonical. Host-defined kind dependency groups collapse provider aliases; these
+groups are lineage labels, never a count of independent hardware proofs.
+
+`SourceObservationResolver` is stateless. Candidate records are explicit caller
+hypotheses, never discovered from observation strings. The resolver performs no
+UUID/name/path/BSD/serial search or automatic PhysicalDrive admission. Outputs
+retain sorted unique candidate IDs. The deterministic precedence is:
+
+1. Original Conflict, an explicitly conflicting fact, or disagreeing non-null
+   aliases for the same subject/kind returns Conflict, regardless of validation
+   label, candidate order or manual choice.
+2. Inconsistent duplicate local records, retired candidates, stale/mismatched
+   observation/assertion/target references, missing manual targets and malformed
+   manual-event structure return Conflict. A manual target must be a current,
+   active volume/partition selection with matching target revision.
+3. Incomplete candidate coverage is quarantined as Conflict; manual/recency
+   choices do not erase it. This is caller-supplied coverage, not an implemented
+   collision discovery or persistent quarantine service.
+4. A current explicit association/correction returns ManualAssociation, including
+   when several hypotheses exist. Missing evidence/provenance alone is not a
+   contradiction and does not invalidate a current deliberate manual assertion.
+   Revocation supplies no target and proceeds to the unresolved outcomes.
+5. Original Ambiguous or multiple distinct hypotheses returns Ambiguous. Zero
+   or one weak hypothesis returns Unknown. No first/last/recency rule is used.
+
+There is no production UniqueStrongMatch branch or configurable strong profile:
+approved real strong profiles remain zero. Validated typed fields and manual
+associations never become hardware verification. The contract grants no source
+root authority, reconnect, history merge or capture permission.
+
+`SyntheticSourceResolutionRepository` is a read seam over the existing v10
+catalog. It requires exact stored observation/session/revision/state/time/
+provenance and canonical evidence equality, a caller's expected current assertion
+revision, and existing explicitly supplied candidate IDs. Changed evidence or a
+new observation cannot reuse an old manual event. Bounded indexed reads execute
+inside the existing serialized BEGIN IMMEDIATE transaction for a consistent
+view; it reserves the catalog writer slot but performs no row writes. SQL errors
+propagate and the transaction rolls back. Results are point-in-time values, not
+admission tokens. This seam does not alter the older Task058 convenience resolver.
+
+Schema, migrations, startup/recovery, snapshot/entry/Collection/comparison facts,
+manual events and captured attribution are unchanged. Synthetic XCTest exercises
+production Swift and isolated generated catalogs; it proves no real storage
+observation, H01–H14, reconnect accuracy or hardware identity. ADR-036/037/038
+retain Proposed / Owner Direction Approved / Technical Proof Pending status.

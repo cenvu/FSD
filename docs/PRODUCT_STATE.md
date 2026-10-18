@@ -22,7 +22,7 @@ comparison persistence; bounded comparison paging; append-only classification
 storage; Collection create/list/move; snapshot display-name and note editing.
 
 **Partial foundations:** capture has no connected-drive UX; physical-drive
-identity lacks a validated strong/ambiguous resolver; current Collection
+identity lacks an approved hardware strong profile or live observation adapter; current Collection
 controls do not cover the full capture-organization/default flow; the dashboard
 has no bounded aggregate facade; search lacks drive/library scope; comparison
 navigation lacks ancestor projection; live-comparison retention remains
@@ -41,7 +41,9 @@ states must stay separated here:
 
 - **Current implementation:** Tasks047–052 and the Phase 1.5 runtime, as listed
   below. Task058 adds a backend-only local PhysicalDrive/evidence/manual-assertion
-  foundation (Worker implementation pending BRAIN review); no hardware proof.
+  foundation (BRAIN-accepted with advisory); no hardware proof. Task059 adds a
+  synthetic-input observation contract and fail-closed resolver/read seam
+  (Worker implementation pending BRAIN review), without live observation.
 - **Accepted feasibility (synthetic, not implementation):** Tasks054–056 are
   BRAIN-accepted `PASS_WITH_ADVISORY` for ADR-036 identity, ADR-037 Drive Sets and
   ADR-038 Save Comparison respectively. They are research and isolated synthetic
@@ -73,6 +75,14 @@ See [DECISIONS.md](DECISIONS.md), [MVP_PLAN.md](MVP_PLAN.md) and
   no hardware match, observer, UI or capture integration. Approved real strong
   profiles remain empty. See [ARCHITECTURE.md §14](ARCHITECTURE.md#14-local-physicaldrive-foundation--task058)
   and [TEST_PLAN.md §14](TEST_PLAN.md#14-task058-production-local-identity-tests--synthetic-only).
+- Task059 immutable synthetic observation envelopes, pure deterministic Conflict /
+  ManualAssociation / Ambiguous / Unknown precedence and a bounded read-only seam
+  over stored observations/manual assertions. Explicit candidate hypotheses,
+  revision/retirement checks, alias lineage and deterministic ordering; no
+  automatic matching, hardware verification, live observer, reconnect or capture.
+  Schema v10 and historical facts remain unchanged. See
+  [ARCHITECTURE.md §15](ARCHITECTURE.md#15-synthetic-observation-contract-and-resolver--task059)
+  and [TEST_PLAN.md §15](TEST_PLAN.md#15-task059-synthetic-observation-and-fail-closed-resolver).
 - Catalog-path override, automatic XCTest-host isolation and single-process
   catalog lock before open/recovery (ADR-025/026). Tests do not use the owner catalog.
 - Metadata-only native mounted capture: detected source/capture-time volume

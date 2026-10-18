@@ -1,307 +1,323 @@
-UPDATED_AT: 2026-10-18T23:27:36+07:00
+UPDATED_AT: 2026-10-19T01:51:26+07:00
 
-# Task058 Local PhysicalDrive Identity Foundation — Worker return
+# Task059 Synthetic Source Observation Contract and Fail-Closed Resolver — Worker return
 
 ## HOT
 
 HMD_SCHEMA=FSD_HANDOFF_MARKDOWN
 HMD_VERSION=1.0.0
 PROJECT=FSD
-WORKSTREAM_ID=FSD2_IMPLEMENTATION_PHYSICAL_DRIVE_FOUNDATION
-HANDOFF_ID=handoffs/FSD_FSD2_LOCAL_PHYSICAL_DRIVE_IDENTITY_FOUNDATION_058_D_20261018-232736.md
+WORKSTREAM_ID=FSD2_IMPLEMENTATION_SOURCE_OBSERVATION_RESOLVER
+HANDOFF_ID=handoffs/FSD_FSD2_SOURCE_OBSERVATION_FAIL_CLOSED_RESOLVER_059_D_20261019-015126.md
 REPO=/Users/cenvu/DEV/FSD
 BRANCH=main
-LOCAL_HEAD=cb60fc3161d0fddf57d145c0692a910744ed9cfd
-REMOTE_HEAD=cb60fc3161d0fddf57d145c0692a910744ed9cfd
-LAST_VERIFIED_AT=2026-10-18T23:27:36+07:00
-AUTHORITY_PTRS=AGENTS.md|docs/BRAIN_OPERATOR.md|docs/AGENT.md|STATE/PROJECT_STATE.md|STATE/TASK_LEDGER.tsv|STATE/EVENTS.jsonl|handoffs/CURRENT_HANDOFF.md|.agents/skills/fsd-task-execution/SKILL.md|.agents/skills/fsd-handoff-finalizer/SKILL.md|.agents/skills/fsd-independent-review/SKILL.md|docs/DECISIONS.md|docs/ARCHITECTURE.md|docs/TEST_PLAN.md|docs/MVP_PLAN.md|docs/PRODUCT_STATE.md|docs/UX_UI_SPEC.md|docs/database/schema.sql|FSD/Catalog/CatalogDatabase.swift|FSD/Catalog/CatalogMigrations.swift|FSD/Catalog/PhysicalDriveRepository.swift|FSD/Model/PhysicalDriveModels.swift|FSDTests/PhysicalDriveIdentityTests.swift|FSDTests/PhysicalDriveMigrationTests.swift|scripts/check_control_plane.py
+LOCAL_HEAD=5ddf1cd15c43b351f1e4863c0155ae4ab1de8938
+REMOTE_HEAD=5ddf1cd15c43b351f1e4863c0155ae4ab1de8938
+LAST_VERIFIED_AT=2026-10-19T01:51:26+07:00
+AUTHORITY_PTRS=AGENTS.md|docs/BRAIN_OPERATOR.md|docs/AGENT.md|STATE/PROJECT_STATE.md|STATE/TASK_LEDGER.tsv|STATE/EVENTS.jsonl|handoffs/CURRENT_HANDOFF.md|.agents/skills/fsd-task-execution/SKILL.md|.agents/skills/fsd-independent-review/SKILL.md|.agents/skills/fsd-handoff-finalizer/SKILL.md|docs/DECISIONS.md|docs/ARCHITECTURE.md|docs/TEST_PLAN.md|docs/PRODUCT_STATE.md|docs/database/schema.sql|FSD/Model/PhysicalDriveModels.swift|FSD/Catalog/PhysicalDriveRepository.swift|FSD/Model/SourceObservationResolver.swift|FSD/Catalog/SyntheticSourceResolutionRepository.swift|FSDTests/SourceObservationResolverTests.swift|FSDTests/SyntheticSourceResolutionRepositoryTests.swift|scripts/check_control_plane.py
 CURRENT_PHASE=POST_V0_1_FSD2_FOUNDATION
-CURRENT_GATE=FSD2_LOCAL_PHYSICAL_DRIVE_IDENTITY_FOUNDATION_058
+CURRENT_GATE=FSD2_SOURCE_OBSERVATION_FAIL_CLOSED_RESOLVER_059
 STATUS=WORKER_COMPLETE_PENDING_BRAIN
-BLOCKER=NONE_FOR_LOCAL_MANUAL_FOUNDATION;REAL_HARDWARE_PROOF_AND_FUTURE_FEATURES_PENDING
-PROPOSED_NEXT=WAIT(BRAIN_REVIEW_TASK058_LOCAL_PHYSICAL_DRIVE_FOUNDATION)
+BLOCKER=NONE_FOR_SYNTHETIC_RESOLVER;REAL_HARDWARE_AND_LIVE_OBSERVATION_PENDING
+PROPOSED_NEXT=WAIT(BRAIN_REVIEW_TASK059_SYNTHETIC_OBSERVATION_RESOLVER)
 NO_AUTO_NEXT=YES
 
-## Task lock and authority
+## Task lock, authority and recovery
 
 PROJECT=FSD
-TASK_ID=FSD2_LOCAL_PHYSICAL_DRIVE_IDENTITY_FOUNDATION_058
+TASK_ID=FSD2_SOURCE_OBSERVATION_FAIL_CLOSED_RESOLVER_059
 ROLE=WORKER
 REPO=/Users/cenvu/DEV/FSD
 BRANCH=main
-BASE_HEAD=cb60fc3161d0fddf57d145c0692a910744ed9cfd
-UPSTREAM_HEAD=cb60fc3161d0fddf57d145c0692a910744ed9cfd
+BASE_HEAD=5ddf1cd15c43b351f1e4863c0155ae4ab1de8938
+UPSTREAM_HEAD=5ddf1cd15c43b351f1e4863c0155ae4ab1de8938
 ACCEPTED_STATE=STATE/PROJECT_STATE.md
-SCOPE=LOCAL_OPAQUE_ID_TYPED_EVIDENCE_MANUAL_ASSOCIATION_ADDITIVE_V10_SYNTHETIC_ONLY
-ALLOWED_PATHS=18_IMPLEMENTATION_DOC_TEST_PROJECT_PATHS_LISTED_BELOW|one_new_history|CURRENT|Worker_ledger_event|Desktop_transport
-FORBIDDEN_PATHS=ACCEPTED_STATE|RULE_PROMOTION_LEDGER|OLD_HISTORIES|UNRELATED_PRODUCT|SOURCE_MEDIA|OWNER_CATALOG|HARDWARE|DRIVE_SETS|UI|AUTO_CAPTURE|SAVE_COMPARISON|RELEASE|TASK059
-SUCCESS_CRITERIA=DURABLE_LOCAL_IDENTITY|TYPED_EVIDENCE|EXPLICIT_REVISION_BOUND_MANUAL_HISTORY|ATOMIC_ADDITIVE_SCHEMA|SYNTHETIC_PROOF|REGRESSION_BUILD_REVIEW|FINALIZER
-VALIDATIONS=ARM64_DEBUG_RELEASE|XCTEST|INTEGRITY_FK|EXPECTED_STATE|PARITY|ROLLBACK_REOPEN|INDEPENDENT_REVIEW|SCOPE_HASH|DIFF_CHECK|CANONICAL_PRE_POST
+SCOPE=SYNTHETIC_IMMUTABLE_OBSERVATION_PURE_FAIL_CLOSED_RESOLVER_V10_READ_SEAM
+ALLOWED_PATHS=8_SUBSTANTIVE_PATHS_LISTED_BELOW|one_new_history|CURRENT|Worker_ledger_event|Desktop_transport
+FORBIDDEN_PATHS=ACCEPTED_STATE|RULE_PROMOTION_LEDGER|PRIOR_HISTORY|SCHEMA_MIGRATIONS|UNRELATED_PRODUCT_TESTS|OWNER_DATA_CATALOG_MEDIA|SOURCE_IO|HARDWARE|LIVE_OBSERVATION|AUTO_CAPTURE|DRIVE_SETS|SAVE_COMPARISON|RELEASE|TASK060
+SUCCESS_CRITERIA=BOUNDED_TYPED_CONTRACT|DETERMINISTIC_PRECEDENCE|EXPLICIT_MANUAL_REUSE|ZERO_MUTATION_STRONG_MATCH|SYNTHETIC_XCTEST|REGRESSION_BUILDS_REVIEW|CANONICAL_PUBLICATION
+VALIDATIONS=NEW_AND_TASK058_XCTEST|CATALOG_SCHEMA_SNAPSHOT_COLLECTION_COMPARISON_SOURCE_REGRESSIONS|CLEAN_ARM64_DEBUG_RELEASE|SQLITE_FK_INTEGRITY|PROTECTED_HASH_SCOPE_DIFF|INDEPENDENT_REVIEW|CANONICAL_PRE_POST_PARITY
 NEXT_BOUNDARY=RETURN_TO_BRAIN_ONLY
 
-Canonical accepted State explicitly authorizes exactly ACTION(Task058); the
-exact task is the Owner's production-code exception to Wave A's earlier ban.
-Worker-local result: PASS_WITH_ADVISORY. BRAIN classification remains pending.
-Owner subsequently explicitly approved six stale current-version expectation
-corrections in five extra existing test files, through two asynchronous replies:
-ManualSessionASubstituteTests and MilestoneConditionTests (one each), then
-M5ReliabilityTests (two), ComparisonGUISourceBoundaryTests and
-FinalScaleSnapshotTests (one each). The GUI boundary assertion also requires
-`import FSD`. These are the only five allowlist exceptions; no related refactor.
+The initial Task059 preflight STOP was solely AUTHORIZATION_STATE_SYNC_PENDING.
+It made no product or reporting mutation. BRAIN subsequently published the
+Owner's existing approval in 5ddf1cd15c43b351f1e4863c0155ae4ab1de8938; it is not
+claimed to have been published earlier. Owner explicitly resumed the same task.
+Fresh non-destructive fetch verified clean physical main and origin/main at that
+exact baseline, 0/0. State has exactly ACTION(Task059), while Task058 remains
+accepted PASS_WITH_ADVISORY at d7db0fa426942f24d12569500be3fab1099e0193. No
+reset, stash, clean, force, unknown-work overwrite or Owner catalog access.
 
-Initial physical main was clean at 18dd2d4cdfc498a0e4f386325819a79ff6517eed.
-Non-destructive fetch found exactly two BRAIN control-state commits ahead.
-Their full State/ledger/event diff was inspected; safe ff-only advanced to the
-expected baseline above. Origin https://github.com/cenvu/FSD.git; fresh final
-fetch reconfirmed HEAD/upstream equality and 0/0 before finalization. No
-reset/stash/clean/rebase/force or unknown-work removal. All baseline tracked
-bytes were captured before edits (symlinks hashed by link text), and 110 old
-historical handoffs remain identical. Accepted State and rule ledger are untouched.
+Read canonical Owner policy/kernel, Compact/FULL, State/ledger/recent events,
+CURRENT HOT, Task054/057/058 immutable handoffs, ADR036, architecture §§11–14,
+Test Plan §§10/13/14, Product State, v10 identity schema, Task058 models/repository/
+tests and catalog/recovery source. All three execution/review/finalizer skills
+apply. Before edits, captured hashes for all 1524 tracked paths, symlinks by link
+text. Scope validation preserves all 111 old historical handoffs and protected
+State, migrations, schema, helper, runtime and comparison sources.
 
-Read authorities: CURRENT HOT first; kernel/local Owner policy, Compact/FULL and
-all three skills; accepted State; ADR-004/019/020/023/024/025/026/036/037/038;
-architecture identity and migration contracts; TEST_PLAN §§10/13; MVP Wave A;
-product/UX §§8–9; canonical schema, migrations, database, repositories and tests.
+## Implemented contract and precedence
 
-## Actual production slice and limits
+Two focused production files; no existing production Swift changed:
 
-- PhysicalDriveID wraps a random UUID, never an observed identifier. Creation is
-  explicit, with optional nonunique local label, explicit-local admission and
-  provenance. Stable IDs survive reopen. Revision-checked retirement is a
-  tombstone; SQL rejects hard deletion, revival and invalid revision transitions.
-  `hardwareVerified` is always false.
-- Frozen local observations store distinct opaque subject IDs, caller-supplied
-  session UUID/revision, scope, unresolved state, provenance and observation time.
-  There is no implemented mount-session service or live observation adapter.
-- Evidence is typed by device/media/partition/volume/mount-session scope, kind,
-  provider and property. It retains value/status/provenance/revision/time. Host
-  dependency groups collapse aliases across providers. UUID candidates are
-  syntax-checked and canonically represented; malformed/blank/NUL/oversized,
-  wrong-scope and duplicate provider/property input rejects atomically. Repository
-  input is capped at 32 facts, 1024 UTF-8 bytes for value/provenance and 256 for
-  property. Validated facts are never treated as hardware proof.
-- Manual association is an explicit operation over observation ID/revision and
-  stable local target ID/revision. Association assertion revision starts at zero;
-  associate/correct/revoke appends a new event with operation UUID, prior-event
-  pointer, actor, reason and time. Exact operation retries return the original
-  event; changed intent, missing target or stale writers reject without mutation.
-  Separate connections recheck inside BEGIN IMMEDIATE. Conflicting observations
-  cannot be associated; revocation remains available after retirement/conflict.
-- The association boundary intentionally does not reference legacy `volumes`.
-  New observations require fresh selection. Correction cannot reattribute any
-  old snapshot or transfer any historical capture fact. No identity backfill,
-  capture receipt, history merge or capture admission is implemented.
-- Resolution returns Unknown/Ambiguous/Conflict or explicit ManualAssociation.
-  Alias contradictions and retired manual targets fail closed. UniqueStrongMatch
-  is reserved as a model case with no producer. Approved real strong profiles=0;
-  no scoring, UUID matcher or automatic creation/reconnect/capture exists.
-- Reads use PK/indexed local-ID lookups and keyset pages clamped to 1–200 with
-  truncation flags; evidence reads are bounded. No source I/O, hardware API,
-  mount listener, provider dependency or UI was added.
+- `SourceObservationEnvelope`: immutable Sendable/Equatable single-subject value
+  reusing Task058 IdentityObservation and IdentityEvidenceInput. Includes local
+  observation/session IDs, revision, device/media/partition/volume/mountSession
+  scope, original Unknown/Ambiguous/Conflict state, time/provenance, typed facts
+  and caller-declared complete/partial state. Missing provenance stays explicit;
+  it is not a verified fact. Sharing a session does not prove physical topology.
+- Bounds: 32 incoming facts before dedup, 1024 UTF-8 bytes per value/provenance,
+  256 per property/time, positive revision, parseable observation time, no NUL,
+  correct kind/scope and unknown/NULL relationship. UUID kinds are syntax-checked
+  and canonicalized. Exact duplicates collapse, contradictory duplicates remain;
+  fact ordering is canonical. Kind-defined dependency groups identify correlated
+  provider aliases; no caller-supplied independence, score or strong threshold.
+- `SourceObservationResolver`: stateless, no I/O or callbacks. Candidates are
+  explicit caller hypotheses, never discovered from labels, paths, BSD nodes,
+  UUIDs, reader serials or vendor/model. Limit 200 incoming candidates before
+  dedup. Sorted unique output IDs; no first/last/recency selection.
+- Conflict precedes everything: original Conflict, explicit conflicting typed
+  evidence, disagreeing same-subject/kind alias values, inconsistent duplicate
+  local records, retired candidates, stale/wrong observation/assertion/target
+  references, missing targets or malformed manual structure. A manual selection
+  cannot erase contradictory facts or incomplete candidate coverage.
+- A current active explicit volume/partition association or correction may
+  return ManualAssociation after those checks, including from an ambiguous
+  hypothesis set. Incomplete/missing evidence alone is not a contradiction and
+  cannot upgrade this manual assertion to hardware verification. Revocation
+  removes the target and proceeds to the unresolved outcomes.
+- Original Ambiguous or multiple distinct supplied hypotheses returns Ambiguous.
+  Zero or one weak hypothesis returns Unknown. UniqueStrongMatch is reserved in
+  the existing model with no producer, injection hook or hypothetical profile.
+  Approved real strong profiles = 0. No automatic admission/reconnect/capture.
+- `SyntheticSourceResolutionRepository`: read seam only. Requires an existing
+  exact stored observation (ID/session/revision/scope/state/time/provenance),
+  canonical evidence equality, caller's expected current assertion revision and
+  existing explicit candidate IDs. New/changed observations cannot reuse an old
+  assertion. Latest correction/revocation is authoritative. Target revisions and
+  retirement are rechecked. Bounded indexed reads use the existing serialized
+  BEGIN IMMEDIATE for one consistent view; it reserves the writer slot but makes
+  no row writes. SQL errors propagate; transaction rollback retains ownership.
+  The result is point-in-time, never capture/root authorization. The older
+  Task058 convenience resolver is unchanged.
 
-## Schema and migration
+No live OS observer/adapter/reducer exists. Repeated, reordered generated envelope
+calls simply recompute the same deterministic result; no event delivery mutates
+stored state. No new schema, migration, table, capture receipt, snapshot
+reattribution, Drive Set, Save Comparison, UI, dependency or device access.
 
-Current schema is v10. Four additive tables: physical_drives,
-identity_observations, identity_evidence, manual_drive_associations. Two new
-named indexes and ten guards; canonical total inventory is 17 tables, 19 named
-indexes and 40 triggers (SQLite internal autoindexes excluded). No legacy table,
-FK, normalization constraint or immutability trigger was changed.
+## Executed validation and causal debugging
 
-CatalogMigrations registers explicit v9→v10 DDL. Tables/indexes/triggers share
-canonical definitions with ExpectedState; fresh SQL matches. New table DDL is
-verified exactly on every open, including columns, CHECKs, FKs and uniqueness.
-The current-version inventory is validated inside the transaction BEFORE the
-version row/commit, so successful but missing/altered DDL rolls back too.
-Unsupported/missing versions reject before changing persistent journal mode;
-per-connection foreign-key safety is still enabled before repositories operate.
-Lock ownership and ordinary startup recovery remain unchanged.
+All new tests use generated values and unique temporary v10 catalogs. Existing
+selected regressions use generated catalogs/files and existing XCTest host
+isolation. Paths/nodes/serials in the new fixtures are inert strings.
 
-Synthetic Swift tests cover both v4 variants and v5/v6/v7/v8/v9 → v10, every
-legacy relation's row preservation, zero invented identities, exact fresh/new
-DDL and legacy-column parity, existing trigger/index definitions, reopen without
-replay, and newer-version rejection. Sixteen v10 statements yield 17 injected
-DDL/version failure boundaries; each restores original schema/version and
-successfully migrates/reopens on retry. Missing/altered successful DDL also
-rolls back. Unsupported v2/v999 DELETE-journal catalogs retain exact file bytes.
-No Owner catalog was opened/migrated or authorized for migration.
+Commands executed from the repo; destination platform=macOS,arch=arm64:
 
-## Executed evidence and ordinary debugging
+1. Causal RED: `xcodebuild test -project FSD.xcodeproj -scheme FSD -configuration
+   Debug -destination 'platform=macOS,arch=arm64' -derivedDataPath
+   .ai-scratch/task059/Debug
+   -only-testing:FSDTests/SourceObservationResolverTests/testCurrentManualAssociationRemainsManual`.
+   `red-manual.log`: exit65, exactly 1 test/1 intended failure, scaffold Unknown
+   versus expected ManualAssociation. After production implementation,
+   `green-manual.log`: exit0, 1/1. Initial `red.log` had zero tests after a project
+   registration script assertion; it is NOT causal RED or a test success claim.
+2. Expanded focused command selects SourceObservationResolverTests,
+   SyntheticSourceResolutionRepositoryTests, PhysicalDriveIdentityTests and
+   PhysicalDriveMigrationTests using the same xcodebuild arguments.
+   `focused-2.log`: exit0, 60/60, zero failures/skips: new pure28 + integration8
+   + Task058 identity16 + migration8. `focused-1.log` was a setup compile failure
+   because the new fixture called nonexistent executeScript. Source inspection
+   identified CatalogDatabase.execute; the new fixture now submits its generated
+   statements individually. No existing production or test file was weakened.
+3. Final regression command is preserved in
+   `.ai-scratch/task059/regression-command.json`: xcodebuild test as above,
+   explicit 36-suite selection. `regressions-1.log` and regressions-exit.json:
+   exit0, 527/527, zero failed/skipped, 52.684 seconds. This is 36 new tests plus
+   491 existing regressions (including the 24 Task058 tests), not additive to the
+   overlapping focused run. Includes complete SchemaMigration/CatalogDatabase/
+   ExpectedState, snapshots/history/Collections/capture/recovery/lock, comparison
+   semantics/persistence/GUI source boundaries, browse/search/export and
+   classification isolation/security/runtime suites. Exact suite list follows.
+   The generated disk-image mount case is explicitly excluded because mount
+   operations are forbidden; external device/Owner catalog and nonrequired
+   million-entry/helper-LLDB/scale suites were not selected, not claimed tested.
+4. Clean normal app builds: `xcodebuild clean build -project FSD.xcodeproj
+   -scheme FSD -configuration Debug -destination 'platform=macOS,arch=arm64'
+   -derivedDataPath .ai-scratch/task059/FinalDebug` and corresponding
+   Release/FinalRelease: exit0, BUILD SUCCEEDED in build-debug.log and
+   build-release.log. Both build the reviewed production sources; unrelated
+   existing warnings retained. No release/signing/notarization operation.
+5. Integration XCTest compares every catalog relation before/after repeated
+   resolution, total_changes unchanged, retained manual event chain, exact
+   captured snapshot/entry/Collection/comparison rows after explicit correction/
+   revocation, and existing immutability trigger rejection. Reopen reproduces
+   identical result. SQLite schema10, foreign_keys=1, integrity_check=ok and empty
+   foreign_key_check execute against generated catalogs. Task058 production
+   migration/rollback/fresh-parity regressions pass; no migration was changed.
+6. `python3 .ai-scratch/task059/verify_scope.py`: PASS, exact 8 substantive paths,
+   protected hashes and 111 old histories, architecture/test-plan append-only,
+   no new source/device/capture/mutation dependencies, reviewed digest equal.
+   `git diff --check`: PASS. Review covered all new source bytes and the exact
+   tracked project/doc diff. No accepted ADR or BRAIN State change.
 
-All identity/migration proof uses production Swift over unique temporary
-synthetic catalogs. Existing regressions use generated catalogs/files and the
-existing automatic XCTest host catalog isolation. Established GUI regressions
-may refresh their generated ignored screenshot fixtures; no Owner media is used.
-Raw receipts are in ignored `.ai-scratch/task058/`; durable executable tests are
-in the repository. No empirical physical-device evidence is claimed.
+Regression selection (all FSDTests):
+- `PhysicalDriveIdentityTests`
+- `PhysicalDriveMigrationTests`
+- `SchemaMigrationTests`
+- `CatalogDatabaseTests`
+- `ExpectedStateInventoryTests`
+- `TerminalCollisionEvidenceTests`
+- `SnapshotLifecycleTests`
+- `SnapshotHistoryTests`
+- `SnapshotCollectionsTests`
+- `Milestone2CaptureTests`
+- `MilestoneConditionTests`
+- `ManualSessionASubstituteTests`
+- `CaptureErrorBoundaryTests`
+- `M5ReliabilityTests`
+- `ComparisonSemanticsTests`
+- `ComparisonIdentityTests`
+- `ComparisonSnapshotStateTests`
+- `ComparisonModeTests`
+- `ComparisonPersistenceTests`
+- `ComparisonWorkspaceModelTests`
+- `ComparisonBrowserModelTests`
+- `ComparisonGUISourceBoundaryTests`
+- `ComparisonGUIValidationTests`
+- `ComparisonEndToEndProbeTests`
+- `LazyTreeBrowsingTests`
+- `MetadataSearchTests`
+- `JSONExportTests`
+- `ClassificationEnrichmentTests`
+- `ClassificationSourceReaderTests`
+- `ClassificationProviderContractTests`
+- `ClassificationRuntimeServiceTests`
+- `ClassificationInvocationIsolationTests`
+- `ClassificationSecurityIntegrationTests`
+- `SnapshotBrowserClassificationTests`
+- `SourceObservationResolverTests`
+- `SyntheticSourceResolutionRepositoryTests`
 
-Commands (all from repo; destinations `platform=macOS,arch=arm64`):
+Excluded method:
+`MilestoneConditionTests/testNestedMountBoundaryAgainstAGeneratedDiskImage`.
+This is deliberate safety exclusion, not a passing real-device test.
+Raw logs and xcresults remain under ignored `.ai-scratch/task059/Debug/Logs/Test/`.
+Durable generated test definitions are committed; no hardware/source facts are
+needed to reproduce them.
 
-1. Initial causal RED: `xcodebuild test -project FSD.xcodeproj -scheme FSD
-   -configuration Debug -destination 'platform=macOS,arch=arm64'
-   -derivedDataPath .ai-scratch/task058/DerivedData
-   -only-testing:FSDTests/PhysicalDriveIdentityTests` — one test failed for the
-   intended baseline v9/missing physical_drives boundary (two assertions).
-   `red.log`; initial GREEN after implementation: 1/1; expanded 45/45, then 51/51.
-2. Unsupported-byte causal RED: same command with derived data
-   `.ai-scratch/task058/UnsupportedRedDD` and only
-   `PhysicalDriveMigrationTests/testUnsupportedCatalogDoesNotChangePersistentJournalModeOrBytes`
-   — intended failure: v2/v999 changed DELETE→WAL despite rejection. Fixed by
-   moving WAL configuration after version checks; no global configuration change.
-3. Final focused suites: PhysicalDriveIdentityTests, PhysicalDriveMigrationTests,
-   SchemaMigrationTests, CatalogDatabaseTests, ExpectedStateInventoryTests —
-   65/65 PASS, zero failures/skips. Breakdown 16 + 8 + 25 + 6 + 10.
-   `focused-final.log` and its xcresult receipt.
-4. Final broad regression: `python3 .ai-scratch/task058/run_final_regressions.py`
-   invokes xcodebuild test with the explicit 34-suite selection saved in
-   `final-regression-command.json` — 491/491 PASS, zero failures/skips, exit 0.
-   `regressions-final.log`; xcresult
-   `.ai-scratch/task058/FinalDebug/Logs/Test/Test-FSD-2026.10.18_23-21-41-+0700.xcresult`.
-   Includes complete schema/catalog/inventory suites, snapshot lifecycle/history/
-   Collections/read-only boundaries, recovery/lock tests, comparison semantics/
-   persistence/GUI source boundaries, classification isolation/security/runtime,
-   browse/search/export. The generated disk-image mount test is explicitly
-   excluded; external device/catalog probes and nonrequired million-entry
-   comparison/memory suites were not selected.
-5. Final supplemental `xcodebuild test-without-building` with FinalDebug and only
-   the unchanged helper call-count test, CancellationRaceStressTests,
-   ComparisonScaleTests, and the corrected million-entry snapshot reopen test —
-   15/15 PASS, zero failures/skips, exit 0; supplemental-final.log. The million fixture has 1,002,182 generated entries; it is
-   database scale/reopen proof, never a source scan or hardware observation.
-6. `xcodebuild clean build -project FSD.xcodeproj -scheme FSD -configuration Debug
-   -destination 'platform=macOS,arch=arm64' -derivedDataPath .ai-scratch/task058/FinalDebug`
-   and equivalent Release/FinalRelease — both exit 0, BUILD SUCCEEDED. Final
-   production sources match the reviewed candidate. Logs build-debug-final.log
-   and build-release-final.log. Existing unrelated compiler warnings retained.
-7. `python3 .ai-scratch/task058/verify_scope.py` — PASS: exact allowed paths,
-   protected baseline hashes/110 old histories, append-only Architecture/Test Plan,
-   assertion-only approved exceptions, no new source/device APIs, legacy schema
-   unchanged except version/header/additive block, generated canonical SQLite
-   integrity/FK checks. `git diff --check` PASS. Production XCTest separately
-   executes integrity_check, foreign_key_check and index query-plan assertions.
+## Independent review and exact scope
 
-Earlier exploratory broad run: 529 executed, 524 passed, five failing test cases
-(seven failing assertions). Four cases were stale v9 expectations corrected with
-Owner's explicit allowlist permission. The fifth was an unchanged classifier
-helper LLDB launch/attach-pause failure; isolated final rerun passed without
-product/helper/test weakening. A subsequent 491-case run exposed the remaining
-three stale expectation cases; corrected as authorized, final full selection
-passed. One intermediate compile failure from the newly dynamic source-boundary
-assertion was corrected with its necessary `import FSD`; final build/test passes.
-Earlier failure xcresults and JSON summaries remain in task scratch. No failing
-required gate is waived or reported as passing. No model/harness benchmark ran.
+Separate read-only reviewer `/root/task059_review` loaded execution and review
+skills, independently inspected all eight source/test/project/doc paths and
+causal RED/GREEN/final receipts. No reviewer repairs, test executions, State,
+Owner-data access or separate reporting mutation. Final result: no material
+findings. Coverage includes conflict/manual/revocation/staleness, consistent
+transaction and nested failure ownership, input bounds/order, row nonmutation,
+zero strong promotion and no source/capture dependency. One nonmaterial note:
+pure typed envelopes permit cross-kind provider/property label reuse; kinds
+remain host-separated, no profile promotes them, and the persisted seam requires
+exact stored facts. No speculative framework or repair was added for this note.
 
-## Independent review and final exact scope
+Independent final aggregate SHA256, sorted relative path + NUL + per-file hex
+SHA256 + LF, matched by Worker:
+`a4bce7914bf8218bf3c967cac7e36f375f6eb2875f1072b2f9ee85b5b0d2d3c2`.
+Review inspected Worker execution receipts; it is not an independent test rerun
+or hardware/empirical acceptance.
 
-Required separate read-only review used fsd-task-execution plus
-fsd-independent-review. Reviewer inspected every changed source/schema/test/
-project/doc path; no mutations, Owner data access or reviewer test run. Findings:
-(1) inventory validation must precede migration commit — repaired and tested;
-(2) an initial negative case failed in a trigger before FK evaluation — added
-causal wrong-revision composite FK test and outer rollback assertion. Both were
-re-reviewed. The later unsupported-version byte-preservation fix and all six
-Owner-approved version expectation corrections were independently re-reviewed.
-Final conclusion: no remaining material findings. Evidence limitations are
-source review plus observed execution receipts, not independent empirical proof.
-
-Final 18-path aggregate SHA256 (sorted path + NUL + per-file SHA256 + LF):
-`0da7e09d9b981f6dc3aef81372d318a3012e9dabedabc3c1494b4ea428100414`.
-Reviewer timestamp 2026-10-18T23:22:32+07:00; Worker freshly confirmed identical.
-
-Exact implementation/docs/project/test tracked paths:
+Exact substantive paths:
+- `FSD/Model/SourceObservationResolver.swift`
+- `FSD/Catalog/SyntheticSourceResolutionRepository.swift`
+- `FSDTests/SourceObservationResolverTests.swift`
+- `FSDTests/SyntheticSourceResolutionRepositoryTests.swift`
 - `FSD.xcodeproj/project.pbxproj`
-- `FSD/Catalog/CatalogDatabase.swift`
-- `FSD/Catalog/CatalogMigrations.swift`
-- `FSD/Catalog/PhysicalDriveRepository.swift`
-- `FSD/Model/PhysicalDriveModels.swift`
-- `FSDTests/CatalogDatabaseTests.swift`
-- `FSDTests/SchemaMigrationTests.swift`
-- `FSDTests/PhysicalDriveIdentityTests.swift`
-- `FSDTests/PhysicalDriveMigrationTests.swift`
-- `docs/database/schema.sql`
 - `docs/ARCHITECTURE.md`
 - `docs/TEST_PLAN.md`
 - `docs/PRODUCT_STATE.md`
-- `FSDTests/ManualSessionASubstituteTests.swift`
-- `FSDTests/MilestoneConditionTests.swift`
-- `FSDTests/M5ReliabilityTests.swift`
-- `FSDTests/FinalScaleSnapshotTests.swift`
-- `FSDTests/ComparisonGUISourceBoundaryTests.swift`
 
-Reporting adds exactly this history, CURRENT full mirror, one Task058 Worker
-ledger row and one append-only worker_return event. Technical SHA is the known
-baseline/basis above; publication resolves from this historical file's Git commit
-and the Desktop final Git receipt, not a self-referential future SHA here.
-No accepted BRAIN State, ADR status, rule ledger or previous history is changed.
+Reporting paths, all Worker-owned only:
+- `handoffs/FSD_FSD2_SOURCE_OBSERVATION_FAIL_CLOSED_RESOLVER_059_D_20261019-015126.md` (one new immutable source)
+- `handoffs/CURRENT_HANDOFF.md` (full source mirror)
+- `STATE/TASK_LEDGER.tsv` (one new pending Worker row)
+- `STATE/EVENTS.jsonl` (one appended Worker return)
 
-## Requirement accounting — execution postflight
+Technical SHA is the known baseline/basis, not this source's future publication
+SHA. Publication resolves from Git history and Desktop's final fetched receipt.
+The recovery BRAIN authorization event/State bytes, accepted ledger rows, rule
+ledger and historical handoffs remain unchanged by this Worker cycle.
 
-Every row below is EVIDENCED; none is a claim of hardware or full acceptance.
+## Requirement accounting
 
-| ID | Requirement | Actual evidence |
+All rows below are EVIDENCED within the synthetic-only scope; empirical hardware,
+live OS notifications, Auto Capture and full acceptance are excluded claims.
+
+| ID | Requirement | Evidence |
 |---|---|---|
-| R01 | Authority/baseline/one active task | Accepted ACTION, safe FF, fresh equal main/upstream, task lock |
-| R02 | Exact scope and Owner work preservation | Hash baseline, allowlist, six explicitly approved assertion corrections |
-| R03 | Opaque local entity/provenance/revision/lifecycle | Models/repository/schema; ID, reopen and retirement tests |
-| R04 | Typed evidence subject/provider/value/provenance | All-scope roundtrip, bounds, validation, host dependency groups |
-| R05 | Deliberate ID-bound association/correction | Atomic expected target/observation/assertion revisions; event chain |
-| R06 | Safe resolution boundary | No strong producer, profile count zero, explicit manual remains manual |
-| R07 | Mandatory test 1: fresh schema | Fresh identity/schema/catalog/inventory suites |
-| R08 | Mandatory test 2: v9 upgrade | Legacy preservation test and production migration |
-| R09 | Mandatory test 3: historical chains | Both v4 variants and v5/v6/v7/v8/v9 parity test |
-| R10 | Mandatory test 4: no invented history identity | All four new relations empty after seeded legacy migration |
-| R11 | Mandatory test 5: preserve all facts | Every legacy relation before/after row equality |
-| R12 | Mandatory test 6: duplicate display labels | Two same labels yield distinct local UUIDs |
-| R13 | Mandatory test 7: stable reopen | Drive IDs/records identical on generated catalog reopen |
-| R14 | Mandatory test 8: valid target only | Explicit success; unresolved record alone has no association |
-| R15 | Mandatory test 9: invalid target no mutation | Missing targets/observations reject; event count unchanged |
-| R16 | Mandatory test 10: idempotency | Same operation ID exact retry; changed intent rejects |
-| R17 | Mandatory test 11: stale revision | Drive/observation/assertion and separate-connection stale writer |
-| R18 | Mandatory test 12: correction provenance/facts | Prior-event/actor/reason chain, legacy rows unchanged |
-| R19 | Mandatory test 13: UUID/path/name no fallback | Duplicate/missing UUID and reused path/name remain Unknown |
-| R20 | Mandatory test 14: unresolved never verified | Unknown/Ambiguous/Conflict tests and hardwareVerified false |
-| R21 | Mandatory test 15: no real strong profile | Constant zero; no repository UniqueStrongMatch return |
-| R22 | Mandatory test 16: typed/bounded evidence | All kinds/scopes/provenance; malformed/oversized/blank/NUL rejection |
-| R23 | Mandatory test 17: alias independence | Shared group/canonical spelling; alias disagreement Conflict |
-| R24 | Mandatory test 18: no cascade | Retirement/no-delete tests; no FK into legacy graph; facts unchanged |
-| R25 | Mandatory test 19: FK/transaction rollback | Actual FK engine message, outer transaction and injected failures |
-| R26 | Mandatory test 20: DDL/version rollback | 17 failure boundaries plus invalid inventories; original state restored |
-| R27 | Mandatory test 21: no replay reopen | Version timestamps stable; poisoned migration never reruns |
-| R28 | Mandatory test 22: reject future versions | v999 version/schema and bytes/journal unchanged |
-| R29 | Mandatory test 23: bounded/indexed reads | Clamped keyset pages/truncation; EXPLAIN QUERY PLAN assertions |
-| R30 | Mandatory test 24: legacy invariants | Final regression selection and scale/recovery supplement |
-| R31 | Mandatory test 25: no source/device dependency | Independent changed-source review, scope script, existing boundary suites |
-| R32 | Clean arm64 Debug/Release | Both final clean build commands exit zero |
-| R33 | Schema/transaction/source/error review | Separate independent review, repaired findings, matching final digest |
-| R34 | Truthful docs/ADR/acceptance boundaries | Three narrow docs, unchanged ADRs and accepted State |
-| R35 | Exact diff/protected bytes/integrity | Scope/hash checks, git diff --check, canonical synthetic SQLite checks |
-| R36 | One task/return boundary | No Task059, no real media/catalog, one pending Worker return/proposal |
+| R01 | Authority and accepted Task058 pointer | Canonical ACTION at verified5ddf1cd; clean fetch0/0; no earlier publication claim |
+| R02 | Required bootstrap and safe scope | Named authorities/skills, baseline1524 tracked hashes,111 histories protected |
+| R03 | Immutable bounded typed envelope | SourceObservationEnvelope; scopes, session/revision, provenance, values/time/state/completeness/lineage |
+| R04 | Safe read integration | Stored envelope equality, latest event/expected revision, transaction, bounded indexed reads |
+| R05 | Strong profile prohibition | Count0; no UniqueStrongMatch producer; manual stays manual |
+| R06 | No schema or forbidden source scope | All schema/migrations/oldproduction hashes unchanged; no source IO/hardware/service |
+| R07 | Scenario1 no evidence | testNoEvidenceIsUnknown |
+| R08 | Scenario2 same display label | testSameDisplayNameDistinctLocalRecordsNeverMatches |
+| R09 | Scenario3 reused path | testReusedMountPathHasNoIdentityOrIO |
+| R10 | Scenario4 reused node | testReusedBSDNodeHasNoIdentity |
+| R11 | Scenario5 missing/malformed UUID | testMissingAndMalformedUUID |
+| R12 | Scenario6 clone UUID | testClonedUUIDCandidateHypothesesRemainAmbiguous |
+| R13 | Scenario7 distinct partitions | testDistinctPartitionsUnderOneGeneratedSessionStaySeparate |
+| R14 | Scenario8 reader/media | testSameReaderDifferentMediaNeverSelectsDrive |
+| R15 | Scenario9 correlated aliases | testIdenticalAliasesShareOneLineageWithoutPromotion |
+| R16 | Scenario10 contrary aliases | testContradictoryAliasesConflictInBothOrders |
+| R17 | Scenario11 mixed validation | testMixedValidatedAndUnverifiedFieldsNeverVerifyHardware |
+| R18 | Scenario12 duplicate candidates | testDuplicateCandidateRecordsDeduplicateOrConflict |
+| R19 | Scenario13 singleton weak | testSingleWeakPlausibleCandidateRemainsUnknown |
+| R20 | Scenario14 current manual | testCurrentManualAssociationRemainsManual and persisted workflow |
+| R21 | Scenario15 correction | testManualCorrectionSelectsExplicitIDDespiteAmbiguity and event chain |
+| R22 | Scenario16 revoke | testRevocationDoesNotFallBackToOldTarget and persisted workflow |
+| R23 | Scenario17 stale observation | testStaleObservationAndWrongSubjectConflict and seam wrong session/ID/revision |
+| R24 | Scenario18 stale target | testStaleTargetRevisionConflicts |
+| R25 | Scenario19 retired target | testRetiredTargetConflicts and persisted retirement |
+| R26 | Scenario20 missing target | testMissingTargetConflicts and missing candidate seam |
+| R27 | Scenario21 later contradiction | testContradictionWinsOverManualAndAllCandidateOrders and altered stored evidence seam |
+| R28 | Scenario22 repeated/reordered deliveries | testRepeatedAndReorderedGeneratedDeliveriesAreStateless |
+| R29 | Scenario23 partial/provenance | testPartialMissingProvenancePreservedAndManualNeverVerified |
+| R30 | Scenario24 retry/nonmutation | testGeneratedRetryAndReorderedCandidatesHaveNoMutation; total_changes unchanged |
+| R31 | Scenario25 no strong profiles | testZeroProfilesAcrossEveryScopeAndOriginalState |
+| R32 | Scenario26 reopen | testAliasCanonicalizationAndReopenReproduceResult |
+| R33 | Scenario27 immutable history | testSnapshotCollectionEntryAndTerminalComparisonFactsStayIdentical |
+| R34 | Scenario28 source/capture isolation | No I/O or capture dependency; inert path tests; boundary regression and independent review |
+| R35 | Scenario29 bounds/order | testBoundedInputAndTypedValidation; testCandidateOrderingAndMaximumAreDeterministic |
+| R36 | Scenario30 no first/last/recency | Reverse facts/candidates, Conflict/incomplete coverage before manual; no match ranking |
+| R37 | Required regressions/builds | Executed60focused;527final;clean arm64Debug/Release, zero failures |
+| R38 | Independent code review | Separate read-only review, exact8-path digest match, no material findings |
+| R39 | Catalog integrity/error/ownership | SQLite FK/integrity; nested transaction failure usable; existing schema/migration invariants pass |
+| R40 | Exact diff and honest boundaries | Scope/hash/diff review; narrow docs, no ADR promotion, BRAIN pending; single return |
 
 WORKER_EXECUTION_GUARD=FSD_WORKER_EXECUTION_V1
 WORKER_PREFLIGHT=PASS
-WORKER_REQUIREMENTS_TOTAL=36
-WORKER_REQUIREMENTS_EVIDENCED=36
+WORKER_REQUIREMENTS_TOTAL=40
+WORKER_REQUIREMENTS_EVIDENCED=40
 WORKER_REQUIREMENTS_NOT_APPLICABLE=0
 WORKER_REQUIREMENTS_UNPROVEN=0
 WORKER_POSTFLIGHT=PASS
 NEXT_TASK_STARTED=NO
 
-## Finalizer closure and BRAIN return boundary
+## Finalizer closure and acceptance limits
 
-Execution postflight is complete on the reviewed candidate. Canonical finalizer
-closure follows: CURRENT/Worker projection/Desktop, prepublication checker,
-normal commit/push/fetch verification, clean/synced postchecker and final Desktop
-Git receipt. These are not preclaimed in this immutable prepublication source;
-the executed final receipts/publication SHA belong in tool output and Desktop.
+Worker-local result PASS_WITH_ADVISORY; BRAIN alone reviews/classifies/accepts.
+Finalizer closure follows execution postflight: one source/CURRENT/Worker ledger
+and event/Desktop; canonical prechecker, normal commit/push/fetch, clean/synced
+postchecker and exact Desktop/current/operator parity. Future publication/checker
+results are not preclaimed in this immutable source. Actual closure receipts and
+full publication SHA are returned after execution and placed in Desktop transport.
 
-Only local persistence, typed evidence, manual association and synthetic
-Swift/SQLite referential/migration safety are proved. Hardware identity,
-reconnect accuracy, mounted-device detection, UniqueStrongMatch, H01–H14,
-Auto Capture, Drive Sets, capture identity receipts, Save Comparison, physical
-power-loss testing and FSD2 Full/internal acceptance are not proved. The three
-ADRs remain Proposed / Owner Direction Approved / Technical Proof Pending.
-Owner catalog migration is not authorized. Manual E2E/VoiceOver and existing
-privacy residuals remain separate accepted-state limitations.
-
-BRAIN should independently re-anchor and classify Task058. Worker chooses no
-next implementation and stops after publication. Transport:
-`/Users/cenvu/Desktop/04_FSD_BRAIN.md`.
+Proposed State delta is only consideration of this synthetic contract/resolver
+implementation for acceptance; no accepted State or active next is authored.
+No real hardware identity, approved strong profile, H01–H14, live mount detection,
+automatic reconnect, Auto Capture, UI, Drive Sets, saved comparisons, Full Feature
+Complete or Internal Acceptance Complete proof. ADR036 remains Proposed / Owner
+Direction Approved / Technical Proof Pending, as do the other Wave A technical
+boundaries. Existing manual E2E/VoiceOver/privacy advisories remain unchanged.
+No Owner catalog migration/open is performed or authorized. Task060 is not
+started. Transport: `/Users/cenvu/Desktop/04_FSD_BRAIN.md`.

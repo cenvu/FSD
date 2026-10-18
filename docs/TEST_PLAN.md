@@ -1207,3 +1207,27 @@ automatic candidate matcher, hardware UniqueStrongMatch, reconnect, capture or
 UI. Manual association is neither hardware verification nor a capture receipt.
 H01–H14 remain empirically untested; ADR-036/037/038 are not promoted by these
 tests. Owner catalog access/migration is outside Task058.
+
+## 15. Task059 synthetic observation and fail-closed resolver
+
+`SourceObservationResolverTests` exercises the actual immutable envelope and
+pure Swift resolver. `SyntheticSourceResolutionRepositoryTests` exercises the
+read seam with generated temporary schema-v10 catalogs. No source/media/Owner
+catalog is opened. Reused paths/BSD nodes/serials are inert generated strings.
+The immutable Task059 handoff owns executed counts and command receipts.
+
+| Required scenarios | Production-stack coverage |
+|---|---|
+| 1–8: absent facts, same labels, reused path/node, missing/malformed/cloned UUID, partitions, reader/media | Pure resolver tests; no implicit candidate discovery, singleton stays Unknown, multiple supplied hypotheses Ambiguous |
+| 9–13: correlated/contradictory aliases, mixed validation, duplicates, weak singleton | Canonical UUID/lineage, reverse ordering, inconsistent same-ID records Conflict, no strong promotion |
+| 14–21: manual current/correct/revoke/stale observation/stale target/retired/missing/contradiction | Pure negatives and persisted event chain; expected assertion revision, exact stored subject/session/evidence check; no fallback |
+| 22–25: delivery duplication/reordering, partial/missing provenance, idempotency, zero strong profiles | Stateless repeated generated envelope evaluation, canonical facts, unchanged inputs, zero-profile all-scope/state checks |
+| 26–28: reopen, immutable history, source/capture boundary | Reopened catalog produces identical result; every legacy table compared by row value; manual-event and total_changes equality across resolution; existing source-boundary regressions and independent source review |
+| 29–30: bounds/order, conflict never first/last/recency | 32-fact/200-candidate limits before dedup, byte/NUL/scope/value errors, sorted deduplicated IDs, both candidate/fact orders, explicit conflict and incomplete coverage outrank manual |
+| Additional review boundaries | Wrong session/subject and altered evidence, malformed manual references, failed/nested transaction leaves connection usable; SQLite integrity/FK checks; Task058 identity/migration regressions |
+
+Candidate records are explicit hypotheses, not hardware matches. No OS event
+adapter/reducer or hypothetical strong-profile mechanism is wired into production.
+Tests establish deterministic synthetic behavior and catalog non-mutation, not
+empirical physical-device identity or H01–H14 acceptance. Real hardware, Owner
+data, mount/eject operations and live observation are prohibited for this task.
