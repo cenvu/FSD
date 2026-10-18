@@ -32,6 +32,8 @@ public struct SnapshotCollectionPage: Sendable, Equatable {
 public struct CollectionSnapshot: Identifiable, Hashable, Sendable {
     public let id: SnapshotID
     public let displayName: String
+    /// A user-managed organization note; this is not a capture-time fact.
+    public let userNote: String?
     /// The source label recorded at capture time, if it was recorded.
     public let sourceLabelAtCapture: String?
     public let status: SnapshotStatus
@@ -42,6 +44,15 @@ public struct CollectionSnapshot: Identifiable, Hashable, Sendable {
     public var isComplete: Bool {
         status == .complete || status == .completeWithWarnings
     }
+}
+
+/// User-managed label and note read from the local catalog for one saved
+/// snapshot. These values are separate from the immutable source label recorded
+/// at capture time.
+public struct SnapshotLabelAndNote: Equatable, Sendable {
+    public let snapshotID: SnapshotID
+    public let displayName: String
+    public let userNote: String?
 }
 
 /// One bounded page of snapshots in deterministic newest-first order.
@@ -77,6 +88,9 @@ public struct CollectionMembershipCounts: Sendable, Equatable {
 
 public enum SnapshotCollectionError: Error, LocalizedError, Equatable {
     case blankName
+    case blankSnapshotDisplayName
+    case snapshotDisplayNameTooLong(maximumCharacters: Int)
+    case snapshotUserNoteTooLong(maximumCharacters: Int)
     case duplicateName(existing: SnapshotCollection)
     case collectionNotFound(Int64)
     case snapshotNotFound(SnapshotID)
@@ -87,6 +101,12 @@ public enum SnapshotCollectionError: Error, LocalizedError, Equatable {
         switch self {
         case .blankName:
             return "A Collection name is required."
+        case .blankSnapshotDisplayName:
+            return "Enter a snapshot label."
+        case let .snapshotDisplayNameTooLong(maximumCharacters):
+            return "Snapshot labels can be up to \(maximumCharacters) characters."
+        case let .snapshotUserNoteTooLong(maximumCharacters):
+            return "Snapshot notes can be up to \(maximumCharacters) characters."
         case let .duplicateName(existing):
             return "A Collection named \"\(existing.name)\" already exists."
         case .collectionNotFound:
@@ -94,7 +114,7 @@ public enum SnapshotCollectionError: Error, LocalizedError, Equatable {
         case .snapshotNotFound:
             return "That capture is no longer in the catalog."
         case .snapshotNotUser:
-            return "Only saved user captures can be organized into Collections."
+            return "Only saved user captures can be organized or edited."
         case let .database(error):
             // Bounded presentation: never surface raw SQLite text or paths.
             if case let .sqlite(code, _) = error {
@@ -116,6 +136,10 @@ public final class SnapshotCollectionRepository {
     public static let defaultCollectionLimit = 500
     /// Snapshots are listed newest-first; this bounds a page.
     public static let defaultSnapshotLimit = 200
+    /// Limits count Swift extended grapheme clusters (`String.count`) and are
+    /// applied without trimming or normalizing the user's text.
+    public static let maximumSnapshotDisplayNameCharacters = 120
+    public static let maximumSnapshotUserNoteCharacters = 2_000
 
     private let database: CatalogDatabase
 
@@ -164,6 +188,72 @@ public final class SnapshotCollectionRepository {
                 bindings: [.integer(id)]
             )
             return try rows.first.map(Self.makeCollection)
+        } catch let error as CatalogDatabaseError {
+            throw SnapshotCollectionError.database(error)
+        }
+    }
+
+    /// Reads a saved user snapshot's mutable label and note by stable SnapshotID.
+    /// A transient or missing snapshot is rejected; no display/source name or
+    /// list position is used as identity.
+    public func snapshotLabelAndNote(for snapshotID: SnapshotID) throws -> SnapshotLabelAndNote {
+        do {
+            return try Self.snapshotLabelAndNote(for: snapshotID, database: database)
+        } catch let error as SnapshotCollectionError {
+            throw error
+        } catch let error as CatalogDatabaseError {
+            throw SnapshotCollectionError.database(error)
+        }
+    }
+
+    /// Atomically saves only `snapshots.display_name` and `snapshots.user_note`
+    /// for one saved user snapshot. Labels are stored exactly as entered after
+    /// rejecting blank input; an empty note is stored as NULL. Collection
+    /// membership, capture facts and Collection usage timestamps are untouched.
+    @discardableResult
+    public func saveSnapshotLabelAndNote(
+        snapshotID: SnapshotID,
+        displayName: String,
+        userNote: String?
+    ) throws -> SnapshotLabelAndNote {
+        guard !displayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw SnapshotCollectionError.blankSnapshotDisplayName
+        }
+        guard displayName.count <= Self.maximumSnapshotDisplayNameCharacters else {
+            throw SnapshotCollectionError.snapshotDisplayNameTooLong(
+                maximumCharacters: Self.maximumSnapshotDisplayNameCharacters
+            )
+        }
+        let storedNote = userNote.flatMap { $0.isEmpty ? nil : $0 }
+        if let storedNote, storedNote.count > Self.maximumSnapshotUserNoteCharacters {
+            throw SnapshotCollectionError.snapshotUserNoteTooLong(
+                maximumCharacters: Self.maximumSnapshotUserNoteCharacters
+            )
+        }
+
+        do {
+            return try database.transaction {
+                _ = try Self.snapshotLabelAndNote(for: snapshotID, database: database)
+                let changedRows = try database.executeWithRowCount(
+                    """
+                    UPDATE snapshots
+                    SET display_name = ?, user_note = ?
+                    WHERE id = ? AND snapshot_kind = ?
+                    """,
+                    bindings: [
+                        .text(displayName),
+                        storedNote.map(DatabaseValue.text) ?? .null,
+                        .integer(snapshotID.rawValue),
+                        .text(SnapshotKind.user.rawValue)
+                    ]
+                )
+                guard changedRows == 1 else {
+                    throw SnapshotCollectionError.snapshotNotFound(snapshotID)
+                }
+                return try Self.snapshotLabelAndNote(for: snapshotID, database: database)
+            }
+        } catch let error as SnapshotCollectionError {
+            throw error
         } catch let error as CatalogDatabaseError {
             throw SnapshotCollectionError.database(error)
         }
@@ -270,7 +360,7 @@ public final class SnapshotCollectionRepository {
         do {
             let rows = try database.query(
                 """
-                SELECT id, display_name, status, started_at, collection_id, volume_display_name_at_capture
+                SELECT id, display_name, user_note, status, started_at, collection_id, volume_display_name_at_capture
                 FROM snapshots
                 WHERE \(whereClause)
                 ORDER BY started_at DESC, id DESC
@@ -329,6 +419,30 @@ public final class SnapshotCollectionRepository {
         return try rows.first.map(makeCollection)
     }
 
+    private static func snapshotLabelAndNote(
+        for snapshotID: SnapshotID,
+        database: CatalogDatabase
+    ) throws -> SnapshotLabelAndNote {
+        let rows = try database.query(
+            "SELECT snapshot_kind, display_name, user_note FROM snapshots WHERE id = ? LIMIT 1",
+            bindings: [.integer(snapshotID.rawValue)]
+        )
+        guard let row = rows.first else {
+            throw SnapshotCollectionError.snapshotNotFound(snapshotID)
+        }
+        guard row["snapshot_kind"]?.stringValue == SnapshotKind.user.rawValue else {
+            throw SnapshotCollectionError.snapshotNotUser(snapshotID)
+        }
+        guard let displayName = row["display_name"]?.stringValue else {
+            throw SnapshotCollectionError.database(.schemaStateInvalid("snapshot label is missing"))
+        }
+        return SnapshotLabelAndNote(
+            snapshotID: snapshotID,
+            displayName: displayName,
+            userNote: row["user_note"]?.stringValue
+        )
+    }
+
     private static func collection(id: Int64, database: CatalogDatabase) throws -> SnapshotCollection? {
         let rows = try database.query(
             """
@@ -374,6 +488,7 @@ public final class SnapshotCollectionRepository {
         return CollectionSnapshot(
             id: SnapshotID(rawValue: id),
             displayName: displayName,
+            userNote: row["user_note"]?.stringValue,
             sourceLabelAtCapture: row["volume_display_name_at_capture"]?.stringValue,
             status: status,
             startedAt: startedAt,

@@ -104,7 +104,7 @@ private extension Color {
     }
 }
 
-private enum FSDDestination: Hashable {
+enum FSDDestination: Hashable {
     case libraryOverview
     case allDrives
     case recentCaptures
@@ -128,9 +128,11 @@ struct FSDAppShellView: View {
     @ObservedObject var model: ApplicationModel
     @State private var selection: FSDDestination
     @State private var homeSelectedSnapshotID: SnapshotID?
+    private let injectedCollectionsModel: SnapshotCollectionsModel?
 
     init(model: ApplicationModel) {
         self.model = model
+        injectedCollectionsModel = nil
         var initial = FSDDestination.libraryOverview
         #if DEBUG
         if CommandLine.arguments.contains("-FSDSelectCompare") {
@@ -140,6 +142,18 @@ struct FSDAppShellView: View {
         }
         #endif
         _selection = State(initialValue: initial)
+    }
+
+    /// Internal injection point used by synthetic-catalog integration checks.
+    /// It keeps the production shell and its normal catalog path unchanged.
+    init(
+        model: ApplicationModel,
+        initialDestination: FSDDestination,
+        collectionsModel: SnapshotCollectionsModel? = nil
+    ) {
+        self.model = model
+        injectedCollectionsModel = collectionsModel
+        _selection = State(initialValue: initialDestination)
     }
 
     var body: some View {
@@ -215,7 +229,12 @@ struct FSDAppShellView: View {
                 FSDCaptureHistoryView(model: model)
             case .collections:
                 if let catalog = model.database {
-                    SnapshotCollectionsView(database: catalog) { summary in
+                    SnapshotCollectionsView(
+                        model: injectedCollectionsModel ?? SnapshotCollectionsModel(
+                            database: catalog,
+                            onMetadataSaved: model.refresh
+                        )
+                    ) { summary in
                         model.openSnapshot(summary)
                         selection = .recentCaptures
                     }
@@ -534,6 +553,7 @@ private struct LibraryOverviewView: View {
         .scrollIndicators(.hidden)
         .background(FSDDesignTokens.window)
         .onAppear {
+            model.refresh()
             if selectedSnapshotID == nil {
                 selectedSnapshotID = selectedSummary?.id
             }
@@ -1134,6 +1154,7 @@ private struct FSDCaptureHistoryView: View {
             }
         }
         .background(FSDDesignTokens.window)
+        .onAppear { model.refresh() }
     }
 }
 
@@ -1502,23 +1523,32 @@ final class SnapshotCollectionsModel: ObservableObject {
     @Published var selectedSnapshotID: SnapshotID?
     @Published var newCollectionName = ""
     @Published var isComposingCollection = false
+    @Published var isShowingSnapshotMetadataEditor = false
+    @Published var snapshotLabelDraft = ""
+    @Published var snapshotUserNoteDraft = ""
+    @Published private(set) var snapshotMetadataEditorError: String?
+    @Published private(set) var isSavingSnapshotMetadata = false
 
     let database: CatalogDatabase
     private let repository: SnapshotCollectionRepository
     private let historyRepository: SnapshotHistoryRepository
     private let collectionLimit: Int
     private let snapshotLimit: Int
+    private let onMetadataSaved: () -> Void
+    private var editingSnapshotID: SnapshotID?
 
     init(
         database: CatalogDatabase,
         collectionLimit: Int = SnapshotCollectionRepository.defaultCollectionLimit,
-        snapshotLimit: Int = SnapshotCollectionRepository.defaultSnapshotLimit
+        snapshotLimit: Int = SnapshotCollectionRepository.defaultSnapshotLimit,
+        onMetadataSaved: @escaping () -> Void = {}
     ) {
         self.database = database
         self.repository = SnapshotCollectionRepository(database: database)
         self.historyRepository = SnapshotHistoryRepository(database: database)
         self.collectionLimit = collectionLimit
         self.snapshotLimit = snapshotLimit
+        self.onMetadataSaved = onMetadataSaved
     }
 
     /// Reloads the sidebar and the current grouping. A read failure is surfaced
@@ -1574,6 +1604,60 @@ final class SnapshotCollectionsModel: ObservableObject {
         } catch {
             actionError = Self.userMessage(for: error)
         }
+    }
+
+    /// Loads the editor draft from SQLite by the selected stable SnapshotID.
+    func beginEditingSelectedSnapshotMetadata() {
+        guard let snapshotID = selectedSnapshotID else { return }
+        do {
+            let metadata = try repository.snapshotLabelAndNote(for: snapshotID)
+            editingSnapshotID = metadata.snapshotID
+            snapshotLabelDraft = metadata.displayName
+            snapshotUserNoteDraft = metadata.userNote ?? ""
+            snapshotMetadataEditorError = nil
+            actionError = nil
+            isShowingSnapshotMetadataEditor = true
+        } catch {
+            actionError = Self.userMessage(for: error)
+        }
+    }
+
+    /// Saves the draft for the SnapshotID captured when editing began. A
+    /// failure keeps the sheet and both draft fields available for correction.
+    @discardableResult
+    func saveSnapshotLabelAndNote() -> Bool {
+        guard !isSavingSnapshotMetadata,
+              isShowingSnapshotMetadataEditor,
+              let editingSnapshotID
+        else { return false }
+        isSavingSnapshotMetadata = true
+        defer { isSavingSnapshotMetadata = false }
+
+        do {
+            _ = try repository.saveSnapshotLabelAndNote(
+                snapshotID: editingSnapshotID,
+                displayName: snapshotLabelDraft,
+                userNote: snapshotUserNoteDraft
+            )
+            snapshotMetadataEditorError = nil
+            isShowingSnapshotMetadataEditor = false
+            self.editingSnapshotID = nil
+            reload()
+            onMetadataSaved()
+            return true
+        } catch {
+            snapshotMetadataEditorError = Self.userMessage(for: error)
+            return false
+        }
+    }
+
+    func cancelSnapshotMetadataEdit() {
+        guard !isSavingSnapshotMetadata else { return }
+        isShowingSnapshotMetadataEditor = false
+        editingSnapshotID = nil
+        snapshotLabelDraft = ""
+        snapshotUserNoteDraft = ""
+        snapshotMetadataEditorError = nil
     }
 
     /// Resolves the stored-history summary needed to browse a snapshot. Reads
@@ -1659,6 +1743,9 @@ struct SnapshotCollectionsView: View {
         .background(FSDDesignTokens.window)
         .foregroundStyle(FSDDesignTokens.primaryText)
         .onAppear { model.reload() }
+        .sheet(isPresented: $model.isShowingSnapshotMetadataEditor) {
+            SnapshotMetadataEditorSheet(model: model)
+        }
     }
 
     // MARK: - Sidebar
@@ -1823,6 +1910,15 @@ struct SnapshotCollectionsView: View {
             }
 
             HStack(spacing: 10) {
+                Button {
+                    model.beginEditingSelectedSnapshotMetadata()
+                } label: {
+                    Label("Edit Label & Note", systemImage: "pencil")
+                        .frame(minHeight: 34)
+                }
+                .disabled(model.selectedSnapshotID == nil)
+                .accessibilityLabel("Edit selected snapshot label and note")
+
                 Menu {
                     Button("Unsorted") { model.moveSelectedSnapshot(to: nil) }
                     ForEach(model.collections) { collection in
@@ -1924,7 +2020,7 @@ struct SnapshotCollectionsView: View {
         case .unsorted:
             return "Every saved capture currently belongs to a Collection."
         case .collection:
-            return "Select a capture above and choose Move to Collection to file it here."
+            return "Open All Snapshots or Unsorted, select a capture, then move it into this Collection."
         }
     }
 
@@ -1952,6 +2048,76 @@ struct SnapshotCollectionsView: View {
         }
         .scrollIndicators(.hidden)
         .background(FSDDesignTokens.window)
+    }
+}
+
+private struct SnapshotMetadataEditorSheet: View {
+    @ObservedObject var model: SnapshotCollectionsModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Edit Label & Note")
+                .font(.system(size: FSDDesignTokens.sectionTitleSize, weight: .semibold))
+                .accessibilityAddTraits(.isHeader)
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text("Snapshot label")
+                    .font(.system(size: FSDDesignTokens.bodySize, weight: .medium))
+                TextField("Snapshot label", text: $model.snapshotLabelDraft)
+                    .textFieldStyle(.roundedBorder)
+                    .accessibilityLabel("Snapshot label")
+                    .onSubmit(save)
+                Text("\(model.snapshotLabelDraft.count)/\(SnapshotCollectionRepository.maximumSnapshotDisplayNameCharacters) characters")
+                    .font(.system(size: FSDDesignTokens.labelSize))
+                    .foregroundStyle(FSDDesignTokens.mutedText)
+            }
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text("Note (optional)")
+                    .font(.system(size: FSDDesignTokens.bodySize, weight: .medium))
+                TextEditor(text: $model.snapshotUserNoteDraft)
+                    .font(.system(size: FSDDesignTokens.bodySize))
+                    .scrollContentBackground(.hidden)
+                    .padding(5)
+                    .frame(minHeight: 92, maxHeight: 120)
+                    .background(FSDDesignTokens.panel, in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
+                    .overlay(RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius).stroke(FSDDesignTokens.separator, lineWidth: 1))
+                    .accessibilityLabel("Snapshot note (optional)")
+                Text("\(model.snapshotUserNoteDraft.count)/\(SnapshotCollectionRepository.maximumSnapshotUserNoteCharacters) characters")
+                    .font(.system(size: FSDDesignTokens.labelSize))
+                    .foregroundStyle(FSDDesignTokens.mutedText)
+            }
+
+            if let error = model.snapshotMetadataEditorError {
+                Label(error, systemImage: "exclamationmark.triangle")
+                    .font(.system(size: FSDDesignTokens.overviewSubtitleSize))
+                    .foregroundStyle(FSDDesignTokens.destructive)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityLabel("Snapshot metadata error: \(error)")
+            }
+
+            Spacer(minLength: 0)
+
+            HStack {
+                Spacer()
+                Button("Cancel") { model.cancelSnapshotMetadataEdit() }
+                    .keyboardShortcut(.cancelAction)
+                    .accessibilityLabel("Cancel editing snapshot label and note")
+                Button("Save Changes", action: save)
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(model.isSavingSnapshotMetadata)
+                    .accessibilityLabel("Save snapshot label and note")
+            }
+            .buttonStyle(FSDSecondaryActionButtonStyle())
+        }
+        .padding(20)
+        .frame(minWidth: 420, idealWidth: 470, minHeight: 330, idealHeight: 370)
+        .background(FSDDesignTokens.window)
+        .foregroundStyle(FSDDesignTokens.primaryText)
+    }
+
+    private func save() {
+        _ = model.saveSnapshotLabelAndNote()
     }
 }
 
@@ -1987,6 +2153,12 @@ private struct SnapshotCollectionRow: View {
                     .font(.system(size: FSDDesignTokens.labelSize))
                     .foregroundStyle(FSDDesignTokens.mutedText)
                     .lineLimit(1)
+                if let note = snapshot.userNote, !note.isEmpty {
+                    Text("User note: \(note)")
+                        .font(.system(size: FSDDesignTokens.labelSize))
+                        .foregroundStyle(FSDDesignTokens.secondaryText)
+                        .lineLimit(1)
+                }
             }
             Spacer(minLength: 0)
         }

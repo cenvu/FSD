@@ -75,6 +75,55 @@ final class SnapshotHistoryTests: XCTestCase {
         XCTAssertEqual(first, first.sorted { $0.rawValue > $1.rawValue })
     }
 
+    @MainActor
+    func testApplicationModelRefreshReloadsEditedLabelAndReopensBySnapshotID() throws {
+        let snapshots = SnapshotRepository(database: database)
+        try snapshots.createVolume(id: 1, displayName: "Recorded Source")
+        try database.execute(
+            """
+            INSERT INTO snapshots (
+                id, volume_id, session_number, scan_root_name, status, scanner_version,
+                schema_version, normalization_version, snapshot_kind, display_name,
+                capture_policy_json, started_at, created_at, updated_at,
+                volume_display_name_at_capture
+            ) VALUES (70000, 1, 1, 'Capture label', 'scanning', ?, ?, ?, 'user',
+                      'Capture label', '{}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP,
+                      CURRENT_TIMESTAMP, 'Recorded Source')
+            """,
+            bindings: [
+                .text(SnapshotRepository.scannerVersion),
+                .integer(CatalogDatabase.currentSchemaVersion),
+                .text(NormalizationVersion.current.rawValue)
+            ]
+        )
+        let snapshotID = SnapshotID(rawValue: 70_000)
+        try SyntheticSnapshot.insertEntries(database: database, snapshotID: snapshotID, entries: [
+            SyntheticSnapshot.root(id: 70_001, name: "Capture label")
+        ])
+        try SyntheticSnapshot.complete(database: database, snapshotID: snapshotID)
+        let application = ApplicationModel(catalogForTesting: database)
+        application.selectedSnapshotID = snapshotID
+        XCTAssertEqual(application.history.first(where: { $0.id == snapshotID })?.displayName, "Capture label")
+
+        _ = try SnapshotCollectionRepository(database: database).saveSnapshotLabelAndNote(
+            snapshotID: snapshotID,
+            displayName: "Current user label",
+            userNote: "User organization note"
+        )
+        application.refresh()
+
+        let refreshed = try XCTUnwrap(application.history.first(where: { $0.id == snapshotID }))
+        XCTAssertEqual(refreshed.displayName, "Current user label")
+        XCTAssertEqual(application.selectedSnapshotID, snapshotID, "refresh does not discard stable SnapshotID selection")
+        XCTAssertEqual(refreshed.capture.volumeDisplayName, "Recorded Source",
+                       "the historical source label stays separate from the mutable user label")
+
+        application.openSnapshot(refreshed)
+        XCTAssertEqual(application.browser?.summary.id, snapshotID)
+        XCTAssertEqual(application.browser?.summary.displayName, "Current user label",
+                       "reopening uses the refreshed stored summary")
+    }
+
     func testTransientSnapshotsAreExcludedFromUserHistory() throws {
         let repository = SnapshotRepository(database: database)
         try repository.createVolume(id: 1, displayName: "Kinds")

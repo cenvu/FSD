@@ -204,6 +204,27 @@ writes; Auto Capture; Drive Sets; physical source identity and mount detection;
 library-wide search; content preview and auto-classification; and any schema,
 migration or comparison-engine change.
 
+### 5.4 Owner-authorized snapshot label and note editor — Task052
+
+Task052 adds a compact **Edit Label & Note** sheet to the existing Collections
+organizer. The editor loads and saves the existing schema version 9
+`snapshots.display_name` and nullable `snapshots.user_note` fields by stable
+`SnapshotID`. It accepts duplicate labels, rejects blank labels, and limits
+labels to 120 and notes to 2,000 Swift characters (`String.count`, extended
+grapheme clusters). Labels are stored exactly as entered; clearing the note
+stores `NULL`. A failed write keeps the sheet and its draft open.
+
+Only those two snapshot columns are updated. The SnapshotID, Collection
+membership, capture-time source label, source identity, capture timestamps,
+`session_number`, lifecycle state, entries, aggregates and comparison evidence
+remain unchanged. The note is shown as **User note** so it cannot be mistaken
+for a capture-time fact. Home and Recent Captures refresh their cached history
+when visited, and a successful save refreshes the app-scoped history model.
+
+The Empty Reel instruction directs users to All Snapshots or Unsorted before
+moving a capture into the empty Collection. Source access, classification,
+schema changes and wider Collections redesign remain outside this slice.
+
 ## 6. DRIVE SET DIRECTION
 
 A Drive Set is a user-created group of PHYSICAL DRIVES.

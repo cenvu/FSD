@@ -147,6 +147,21 @@ final class ApplicationModel: ObservableObject {
         processLock = resolvedLock
     }
 
+    /// Builds the real app model around an isolated synthetic catalog for UI
+    /// integration tests. This initializer deliberately skips catalog
+    /// resolution, process locking and recovery so it cannot touch user data.
+    init(catalogForTesting database: CatalogDatabase) {
+        let resolvedHistory = SnapshotHistoryRepository(database: database)
+        self.database = database
+        historyRepository = resolvedHistory
+        processLock = nil
+        do {
+            history = try resolvedHistory.listSnapshots()
+        } catch {
+            startupError = "The synthetic catalog could not be read."
+        }
+    }
+
     var hasDatabase: Bool { database != nil }
 
     func chooseSource() {
