@@ -182,7 +182,7 @@ final class FinalScaleSnapshotTests: XCTestCase {
         )
         let reopenSeconds = Date().timeIntervalSince(reopenStart)
 
-        XCTAssertEqual(try database.scalar("SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1")?.int64Value, 9)
+        XCTAssertEqual(try database.scalar("SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1")?.int64Value, CatalogDatabase.currentSchemaVersion)
         XCTAssertEqual(try database.scalar("PRAGMA integrity_check")?.stringValue, "ok")
         XCTAssertTrue(try database.query("PRAGMA foreign_key_check").isEmpty)
         XCTAssertEqual(try EntrySnapshotProbe.classificationRowCount(database: database), 0)

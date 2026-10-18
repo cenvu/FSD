@@ -250,7 +250,6 @@ public final class CatalogDatabase: @unchecked Sendable {
         try executeUnlocked("PRAGMA busy_timeout = 5000")
         try executeUnlocked("PRAGMA synchronous = NORMAL")
         try executeUnlocked("PRAGMA temp_store = MEMORY")
-        try executeUnlocked("PRAGMA journal_mode = WAL")
         guard try scalarUnlocked("PRAGMA foreign_keys")?.int64Value == 1 else {
             throw CatalogDatabaseError.foreignKeysNotEnabled
         }
@@ -266,6 +265,7 @@ public final class CatalogDatabase: @unchecked Sendable {
 
         if !hasMigrations {
             guard !hasUserTables else { throw CatalogDatabaseError.unsupportedSchemaVersion(nil) }
+            try executeUnlocked("PRAGMA journal_mode = WAL")
             try applySchema(from: schemaURL)
             try verifyCurrentSchemaState()
             return
@@ -276,11 +276,13 @@ public final class CatalogDatabase: @unchecked Sendable {
         if current > Self.currentSchemaVersion {
             throw CatalogDatabaseError.unsupportedSchemaVersion(current)
         }
+        // Reject unknown/unsupported versions before changing a persistent
+        // journal setting. Per-connection safety pragmas are already enabled.
+        guard current >= CatalogMigrations.oldestMigratableVersion else {
+            throw CatalogDatabaseError.unsupportedSchemaVersion(current)
+        }
+        try executeUnlocked("PRAGMA journal_mode = WAL")
         if current < Self.currentSchemaVersion {
-            // Versions 1-3 were never materialized and have no migration.
-            guard current >= CatalogMigrations.oldestMigratableVersion else {
-                throw CatalogDatabaseError.unsupportedSchemaVersion(current)
-            }
             for migration in migrations.sorted(by: { $0.version < $1.version }) where migration.version > current {
                 try apply(migration)
             }
@@ -300,6 +302,11 @@ public final class CatalogDatabase: @unchecked Sendable {
         do {
             for statement in migration.statements {
                 try executeScriptUnlocked(statement)
+            }
+            // Validate the final inventory before recording or committing the
+            // current version. Successful but incomplete DDL must roll back too.
+            if migration.version == Self.currentSchemaVersion {
+                try verifyCurrentSchemaState()
             }
             try executeUnlocked(
                 "INSERT INTO schema_migrations(version, applied_at) VALUES (?, CURRENT_TIMESTAMP)",
@@ -323,6 +330,9 @@ public final class CatalogDatabase: @unchecked Sendable {
     private func verifyCurrentSchemaState() throws {
         for table in CatalogMigrations.ExpectedState.tables {
             try requireSchemaObject(type: "table", name: table)
+        }
+        for entry in CatalogMigrations.identityTableDefinitions {
+            try requireSchemaObject(type: "table", name: entry.name, canonicalSQL: entry.sql)
         }
         for entry in CatalogMigrations.ExpectedState.triggerDefinitions {
             try requireSchemaObject(type: "trigger", name: entry.name, canonicalSQL: entry.sql)

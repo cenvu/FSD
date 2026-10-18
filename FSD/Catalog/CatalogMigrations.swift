@@ -22,7 +22,7 @@ public struct SchemaMigration: Sendable {
 public enum CatalogMigrations {
     /// The version a fresh `schema.sql` records and the version every supported
     /// catalog is brought to on open.
-    public static let currentVersion: Int64 = 9
+    public static let currentVersion: Int64 = 10
 
     /// The oldest version that can be migrated forward. Versions 1 through 3
     /// never existed as a materialized database, so they have no migration and
@@ -30,7 +30,7 @@ public enum CatalogMigrations {
     public static let oldestMigratableVersion: Int64 = 4
 
     public static let all: [SchemaMigration] = [
-        migrationToVersion5, migrationToVersion6, migrationToVersion7, migrationToVersion8, migrationToVersion9
+        migrationToVersion5, migrationToVersion6, migrationToVersion7, migrationToVersion8, migrationToVersion9, migrationToVersion10
     ]
 
     /// Version 4 to version 5.
@@ -289,19 +289,49 @@ public enum CatalogMigrations {
     /// in lockstep with `docs/database/schema.sql`: the test derives the
     /// canonical object set from the schema file and fails on any drift in
     /// either direction.
+    /// Additive only: no historical identity inference or backfill.
+    public static let migrationToVersion10 = SchemaMigration(version: 10, statements:
+        identityTableDefinitions.map(\.sql) + identityIndexDefinitions.map(\.sql) + identityTriggerDefinitions.map(\.sql)
+    )
+
+    public static let identityTableDefinitions: [(name: String, sql: String)] = [
+        ("physical_drives", "CREATE TABLE physical_drives (\n    id TEXT NOT NULL PRIMARY KEY CHECK (length(id) = 36),\n    label TEXT CHECK (label IS NULL OR length(CAST(label AS BLOB)) BETWEEN 1 AND 256),\n    admission TEXT NOT NULL CHECK (admission = 'explicit_local'),\n    provenance TEXT NOT NULL CHECK (length(CAST(provenance AS BLOB)) BETWEEN 1 AND 1024 AND instr(provenance, char(0)) = 0),\n    revision INTEGER NOT NULL DEFAULT 1 CHECK (revision >= 1),\n    retired INTEGER NOT NULL DEFAULT 0 CHECK (retired IN (0,1)),\n    created_at TEXT NOT NULL,\n    updated_at TEXT NOT NULL\n);"),
+        ("identity_observations", "CREATE TABLE identity_observations (\n    id TEXT NOT NULL PRIMARY KEY CHECK (length(id) = 36),\n    session_id TEXT NOT NULL CHECK (length(session_id) = 36),\n    revision INTEGER NOT NULL CHECK (revision >= 1),\n    scope TEXT NOT NULL CHECK (scope IN ('device','media','partition','volume','mountSession')),\n    state TEXT NOT NULL CHECK (state IN ('unknown','ambiguous','conflict')),\n    provenance TEXT NOT NULL CHECK (length(CAST(provenance AS BLOB)) BETWEEN 1 AND 1024 AND instr(provenance, char(0)) = 0),\n    observed_at TEXT NOT NULL,\n    UNIQUE (id, revision)\n);"),
+        ("identity_evidence", "CREATE TABLE identity_evidence (\n    id TEXT NOT NULL PRIMARY KEY CHECK (length(id) = 36),\n    observation_id TEXT NOT NULL,\n    observation_revision INTEGER NOT NULL,\n    scope TEXT NOT NULL,\n    kind TEXT NOT NULL,\n    provider TEXT NOT NULL CHECK (provider IN ('synthetic','diskArbitration','ioKit','foundation')),\n    property TEXT NOT NULL CHECK (length(CAST(property AS BLOB)) BETWEEN 1 AND 256 AND instr(property, char(0)) = 0),\n    dependency_group TEXT NOT NULL,\n    value TEXT CHECK (value IS NULL OR (length(CAST(value AS BLOB)) BETWEEN 1 AND 1024 AND instr(value, char(0)) = 0)),\n    validation TEXT NOT NULL CHECK (validation IN ('unverified','validated','unknown','conflict')),\n    provenance TEXT NOT NULL CHECK (length(CAST(provenance AS BLOB)) BETWEEN 1 AND 1024 AND instr(provenance, char(0)) = 0),\n    observed_at TEXT NOT NULL,\n    CHECK ((kind = 'filesystemUUID' AND dependency_group = 'filesystemUUID' AND scope = 'volume') OR (kind = 'mediaUUID' AND dependency_group = 'mediaUUID' AND scope = 'media') OR (kind = 'partitionUUID' AND dependency_group = 'partitionUUID' AND scope = 'partition') OR (kind = 'deviceSerial' AND dependency_group = 'deviceSerial' AND scope = 'device') OR (kind = 'displayName' AND dependency_group = 'displayName' AND scope = 'volume') OR (kind = 'mountPath' AND dependency_group = 'mountPath' AND scope = 'mountSession') OR (kind = 'bsdNode' AND dependency_group = 'bsdNode' AND scope = 'mountSession') OR (kind = 'vendorModel' AND dependency_group = 'vendorModel' AND scope = 'device')),\n    CHECK ((validation = 'unknown' AND value IS NULL) OR (validation != 'unknown' AND value IS NOT NULL)),\n    FOREIGN KEY (observation_id, observation_revision) REFERENCES identity_observations(id, revision) ON DELETE RESTRICT ON UPDATE RESTRICT,\n    UNIQUE (observation_id, provider, property)\n);"),
+        ("manual_drive_associations", "CREATE TABLE manual_drive_associations (\n    id TEXT NOT NULL PRIMARY KEY CHECK (length(id) = 36),\n    observation_id TEXT NOT NULL,\n    observation_revision INTEGER NOT NULL,\n    revision INTEGER NOT NULL CHECK (revision >= 1),\n    previous_event_id TEXT REFERENCES manual_drive_associations(id) ON DELETE RESTRICT ON UPDATE RESTRICT,\n    target_drive_id TEXT REFERENCES physical_drives(id) ON DELETE RESTRICT ON UPDATE RESTRICT,\n    target_revision INTEGER,\n    action TEXT NOT NULL CHECK (action IN ('associate','correct','revoke')),\n    actor TEXT NOT NULL CHECK (length(CAST(actor AS BLOB)) BETWEEN 1 AND 256 AND instr(actor, char(0)) = 0),\n    reason TEXT NOT NULL CHECK (length(CAST(reason AS BLOB)) BETWEEN 1 AND 1024 AND instr(reason, char(0)) = 0),\n    created_at TEXT NOT NULL,\n    CHECK ((action = 'revoke' AND target_drive_id IS NULL AND target_revision IS NULL) OR\n           (action != 'revoke' AND target_drive_id IS NOT NULL AND target_revision >= 1)),\n    FOREIGN KEY (observation_id, observation_revision) REFERENCES identity_observations(id, revision) ON DELETE RESTRICT ON UPDATE RESTRICT,\n    UNIQUE (observation_id, revision)\n);")
+    ]
+
+    public static let identityIndexDefinitions: [(name: String, sql: String)] = [
+        ("idx_identity_evidence_observation", "CREATE INDEX idx_identity_evidence_observation ON identity_evidence(observation_id, id);"),
+        ("idx_manual_associations_observation", "CREATE INDEX idx_manual_associations_observation ON manual_drive_associations(observation_id, revision DESC);")
+    ]
+
+    public static let identityTriggerDefinitions: [(name: String, sql: String)] = [
+        ("trg_physical_drives_no_delete", "CREATE TRIGGER trg_physical_drives_no_delete\nBEFORE DELETE ON physical_drives\nBEGIN\n    SELECT RAISE(ABORT, 'Local identity history cannot be deleted');\nEND;"),
+        ("trg_identity_observations_no_delete", "CREATE TRIGGER trg_identity_observations_no_delete\nBEFORE DELETE ON identity_observations\nBEGIN\n    SELECT RAISE(ABORT, 'Local identity history cannot be deleted');\nEND;"),
+        ("trg_identity_observations_no_update", "CREATE TRIGGER trg_identity_observations_no_update\nBEFORE UPDATE ON identity_observations\nBEGIN\n    SELECT RAISE(ABORT, 'Local identity evidence is immutable');\nEND;"),
+        ("trg_identity_evidence_no_delete", "CREATE TRIGGER trg_identity_evidence_no_delete\nBEFORE DELETE ON identity_evidence\nBEGIN\n    SELECT RAISE(ABORT, 'Local identity history cannot be deleted');\nEND;"),
+        ("trg_identity_evidence_no_update", "CREATE TRIGGER trg_identity_evidence_no_update\nBEFORE UPDATE ON identity_evidence\nBEGIN\n    SELECT RAISE(ABORT, 'Local identity evidence is immutable');\nEND;"),
+        ("trg_manual_drive_associations_no_delete", "CREATE TRIGGER trg_manual_drive_associations_no_delete\nBEFORE DELETE ON manual_drive_associations\nBEGIN\n    SELECT RAISE(ABORT, 'Local identity history cannot be deleted');\nEND;"),
+        ("trg_manual_drive_associations_no_update", "CREATE TRIGGER trg_manual_drive_associations_no_update\nBEFORE UPDATE ON manual_drive_associations\nBEGIN\n    SELECT RAISE(ABORT, 'Local identity evidence is immutable');\nEND;"),
+        ("trg_physical_drives_revision", "CREATE TRIGGER trg_physical_drives_revision\nBEFORE UPDATE ON physical_drives\nWHEN NEW.id IS NOT OLD.id OR NEW.admission IS NOT OLD.admission\n  OR NEW.provenance IS NOT OLD.provenance OR NEW.created_at IS NOT OLD.created_at\n  OR OLD.retired = 1 OR NEW.revision != OLD.revision + 1\nBEGIN\n    SELECT RAISE(ABORT, 'Invalid local drive revision or lifecycle');\nEND;"),
+        ("trg_identity_evidence_scope", "CREATE TRIGGER trg_identity_evidence_scope\nBEFORE INSERT ON identity_evidence\nWHEN NEW.scope IS NOT (SELECT scope FROM identity_observations WHERE id = NEW.observation_id AND revision = NEW.observation_revision)\nBEGIN\n    SELECT RAISE(ABORT, 'Evidence scope differs from observation');\nEND;"),
+        ("trg_manual_associations_admission", "CREATE TRIGGER trg_manual_associations_admission\nBEFORE INSERT ON manual_drive_associations\nBEGIN\n    SELECT CASE\n      WHEN NEW.revision != COALESCE((SELECT MAX(revision) FROM manual_drive_associations WHERE observation_id = NEW.observation_id),0) + 1\n        OR NEW.previous_event_id IS NOT (SELECT id FROM manual_drive_associations WHERE observation_id = NEW.observation_id ORDER BY revision DESC LIMIT 1)\n        THEN RAISE(ABORT, 'Stale manual association revision')\n      WHEN NEW.action = 'associate' AND NEW.revision != 1\n        THEN RAISE(ABORT, 'Association already has history; use correction')\n      WHEN NEW.action IN ('correct','revoke') AND NEW.revision = 1\n        THEN RAISE(ABORT, 'Correction requires prior history')\n      WHEN NEW.action != 'revoke' AND NOT EXISTS (SELECT 1 FROM physical_drives WHERE id = NEW.target_drive_id AND revision = NEW.target_revision AND retired = 0)\n        THEN RAISE(ABORT, 'Missing, retired or stale drive')\n      WHEN NEW.action != 'revoke' AND NOT EXISTS (SELECT 1 FROM identity_observations WHERE id = NEW.observation_id AND revision = NEW.observation_revision AND scope IN ('volume','partition') AND state != 'conflict')\n        THEN RAISE(ABORT, 'Invalid manual observation')\n    END;\nEND;")
+    ]
+
     public enum ExpectedState {
         public static let tables = [
             "schema_migrations", "volumes", "collections", "source_collection_defaults",
             "snapshots", "entries", "scan_issues", "comparison_profiles", "comparisons",
             "comparison_collision_groups", "comparison_collision_members",
             "comparison_results", "entry_classifications"
-        ]
+        ] + identityTableDefinitions.map(\.name)
 
         /// Every canonical trigger, name and DDL. The DDL text is the
         /// `CREATE TRIGGER ... END;` statement as written in
         /// `docs/database/schema.sql`; `normalizedObjectSQL` removes the
         /// textual differences SQLite itself applies when storing it.
-        public static let triggerDefinitions: [(name: String, sql: String)] = [
+        public static let triggerDefinitions: [(name: String, sql: String)] = identityTriggerDefinitions + [
             ("trg_snapshots_complete_root_check",
              "CREATE TRIGGER IF NOT EXISTS trg_snapshots_complete_root_check\nBEFORE UPDATE OF status ON snapshots\nWHEN NEW.status IN ('complete', 'complete_with_warnings')\nBEGIN\n    SELECT CASE\n        WHEN (SELECT COUNT(*) FROM entries WHERE snapshot_id = NEW.id AND parent_id IS NULL AND relative_path = '') != 1 THEN\n            RAISE(ABORT, 'Snapshot must have exactly one root entry to complete')\n        WHEN NEW.normalization_version != 'fsd-normalizer-v1_app-1.0_os-1' THEN\n            RAISE(ABORT, 'Snapshot normalization_version is not supported for completion')\n    END;\nEND;"),
             ("trg_snapshots_insert_scanning_only",
@@ -366,7 +396,7 @@ public enum CatalogMigrations {
 
         /// Every canonical index, name and DDL, with the same definition
         /// guarantee as the trigger list.
-        public static let indexDefinitions: [(name: String, sql: String)] = [
+        public static let indexDefinitions: [(name: String, sql: String)] = identityIndexDefinitions + [
             ("idx_volumes_persistent_uuid",
              "CREATE INDEX IF NOT EXISTS idx_volumes_persistent_uuid\nON volumes(persistent_uuid)\nWHERE persistent_uuid IS NOT NULL;"),
             ("idx_volumes_fallback_fingerprint",

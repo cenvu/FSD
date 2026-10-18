@@ -1276,3 +1276,68 @@ Separately authorized production sequence:
    PhysicalDrive/Drive Sets remain independent relations with no new cascade
    into saved evidence. Independent schema/recovery review and BRAIN acceptance
    precede any production completion claim. No such work is authorized here.
+
+## 14. Local PhysicalDrive foundation — Task058
+
+Task058 implements a backend-only catalog layer in `PhysicalDriveModels.swift`
+and `PhysicalDriveRepository.swift`. This is local identity persistence and
+manual organization; it provides no physical-device proof or live observation.
+ADR-036/037/038 retain their proposed status and technical proof gates.
+
+Schema v10 adds four tables without changing any legacy table or row:
+
+- `physical_drives`: random catalog-local UUID, optional nonunique label,
+  explicit-local admission provenance, timestamps, revision and retirement flag.
+  ID generation uses no observed property. Retirement increments the expected
+  revision; hard deletion and revival are rejected.
+- `identity_observations`: immutable local subject ID, scope, caller-supplied
+  session UUID/revision, observation time, provenance and unresolved state.
+  Each new observation gets its own local ID; sessions are supplied records,
+  not an implemented mount service. No legacy volume or snapshot foreign key.
+- `identity_evidence`: immutable typed facts with scope, kind, explicit provider
+  and property, host-defined dependency group, bounded candidate value,
+  validation state, provenance and observation revision/time. UUID kinds require
+  a syntactically valid UUID and store its canonical spelling. `validated`
+  describes a caller-validated fact, never verified physical identity. Unknown
+  values are NULL; contradictory values remain conflict evidence. Limit: 32
+  facts per repository-created observation, 1024 UTF-8 bytes per candidate or
+  provenance, 256 bytes per property, with blank/NUL rejection. Aliases from
+  different providers for the same kind share one dependency group; conflicting
+  non-null values fail closed. The repository exposes no evidence score.
+- `manual_drive_associations`: append-only associate/correct/revoke events,
+  operation UUID, observation revision, assertion revision, previous-event ID,
+  target drive/revision, actor, reason and time. Non-null targets are existing,
+  active local IDs; missing, retired, stale or conflicting targets/observations
+  reject before mutation. A correction/revocation appends history. Exact operation
+  retries return the original event; changed retry intent rejects. Revocation is
+  permitted for a conflicting/retired relationship to preserve correction access.
+
+Manual selection applies only to one volume/partition observation, its session
+and revision. It creates no reconnect rule and no capture authorization. A new
+observation remains unresolved until separately confirmed. `resolution` preserves
+Unknown/Ambiguous/Conflict and may return ManualAssociation for the current local
+assertion. Retirement makes a retained association Conflict. UniqueStrongMatch
+is reserved in the model and has no producer: approved real strong profiles = 0.
+There are no hardware adapters, mount listeners, device enumeration or source I/O.
+
+All writes use the existing serialized `BEGIN IMMEDIATE` transaction boundary.
+Target and assertion revisions are rechecked inside it, including separate
+connections. SQL unique constraints reject duplicate operation IDs and assertion
+revisions. FKs use RESTRICT, immutable history has update/delete guards, and no
+new relation references legacy volumes, snapshots, entries, Collections or
+comparisons. Later local assertions cannot reattribute historical captures.
+
+The explicit v9→v10 migration creates only the new objects. The current-version
+ExpectedState check runs inside the migration transaction before its version row
+and commit; incomplete or substituted DDL rolls back too. Unsupported versions
+are rejected before changing the persistent journal mode. Every open still
+verifies canonical tables, triggers, indexes and required legacy columns. New
+tables additionally require exact canonical DDL, which includes their column,
+CHECK, FK and unique definitions. Fresh and migrated catalogs share that DDL.
+Reads use stable-ID lookups and indexed keyset pages, clamped to 1–200 records
+with truncation flags; evidence reads are bounded to detect an oversized set.
+
+Synthetic production-stack XCTest covers schema parity, legacy-row preservation,
+rollback/reopen and repository behavior. It does not validate hardware identity,
+H01–H14, live observer lifecycle, real crash/power-loss behavior, capture receipts,
+Drive Sets, UI or Owner catalog migration. Those remain separate work.

@@ -29,7 +29,7 @@ navigation lacks ancestor projection; live-comparison retention remains
 transient unless a future explicit save is implemented.
 
 **Exact gaps:** observation-only mount detection; opt-in Auto Capture (default
-OFF); multi-evidence PhysicalDrive identity and manual association; paged
+OFF); hardware-backed PhysicalDrive resolution and manual-association UI; paged
 per-drive history; Drive Sets; bounded dashboard aggregates; This Drive/Library
 search; classification search; compare hierarchy/ancestor reveal; explicit
 Save Comparison with separate durable captured evidence; full capture
@@ -40,14 +40,15 @@ The Owner approved Wave A architecture direction on 2026-10-18. Three distinct
 states must stay separated here:
 
 - **Current implementation:** Tasks047–052 and the Phase 1.5 runtime, as listed
-  below. Nothing in Wave A is implemented yet.
+  below. Task058 adds a backend-only local PhysicalDrive/evidence/manual-assertion
+  foundation (Worker implementation pending BRAIN review); no hardware proof.
 - **Accepted feasibility (synthetic, not implementation):** Tasks054–056 are
   BRAIN-accepted `PASS_WITH_ADVISORY` for ADR-036 identity, ADR-037 Drive Sets and
   ADR-038 Save Comparison respectively. They are research and isolated synthetic
   SQLite/resolver prototypes only; they prove deterministic rule/relational
   behavior, not any product code, schema, hardware or migration.
 - **Future FSD2 Full work (not started):** observation-only mount status, validated
-  PhysicalDrive identity, explicit manual association, Drive Sets, completion
+  PhysicalDrive identity, manual-association UI, Drive Sets, completion
   receipts, Save Comparison and the remaining UX/gaps below.
 
 ADR-036–038 remain Proposed / Owner Direction Approved / Technical Proof Pending;
@@ -59,12 +60,19 @@ See [DECISIONS.md](DECISIONS.md), [MVP_PLAN.md](MVP_PLAN.md) and
 ## Implemented capabilities
 
 - Native macOS 15+ arm64 SwiftUI app and XCTest target in `FSD.xcodeproj`.
-- SQLite catalog schema **v9**; explicit transactional v4→v5 (both known v4
-  variants), v5→v6, v6→v7, v7→v8 and v8→v9 migrations. The v9 change appends nullable/no-default `provider_identifier`; legacy rows retain NULL without backfill. Fresh and migrated catalogs
+- SQLite catalog schema **v10**; explicit transactional v4→v5 (both known v4
+  variants), v5→v6, v6→v7, v7→v8, v8→v9 and additive v9→v10 migrations. The v9 change appends nullable/no-default `provider_identifier`; legacy rows retain NULL without backfill. Fresh and migrated catalogs
   converge. `schema.sql` creates fresh catalogs only; `CatalogMigrations` moves
   existing ones. Complete ExpectedState inventory detects damaged/substituted
   schemas; per-connection foreign-key enforcement, normalization completion
   guards and integrity checks protect catalog data.
+- Task058 local PhysicalDrive repository/model: opaque catalog-local UUIDs,
+  explicit-local admission, duplicate labels, revision-protected retirement,
+  immutable typed observations/evidence and append-only manual association,
+  correction/revocation events. Backend only, no legacy attribution/backfill,
+  no hardware match, observer, UI or capture integration. Approved real strong
+  profiles remain empty. See [ARCHITECTURE.md §14](ARCHITECTURE.md#14-local-physicaldrive-foundation--task058)
+  and [TEST_PLAN.md §14](TEST_PLAN.md#14-task058-production-local-identity-tests--synthetic-only).
 - Catalog-path override, automatic XCTest-host isolation and single-process
   catalog lock before open/recovery (ADR-025/026). Tests do not use the owner catalog.
 - Metadata-only native mounted capture: detected source/capture-time volume

@@ -1,3 +1,6 @@
+-- Schema version 10 (Task058): additive local/manual identity only; no hardware
+-- verification, legacy attribution or backfill. New history is append-only.
+--
 -- Schema version 9 (P15 runtime Slice 01; ADR-032): adds only the nullable,
 -- no-default provider_identifier after the existing entry_classifications
 -- columns. Legacy rows remain NULL; detector/model/provider are independent.
@@ -793,7 +796,7 @@ INSERT OR IGNORE INTO comparison_profiles (
 );
 
 INSERT OR IGNORE INTO schema_migrations(version, applied_at)
-VALUES (9, CURRENT_TIMESTAMP);
+VALUES (10, CURRENT_TIMESTAMP);
 
 CREATE TRIGGER IF NOT EXISTS trg_collections_last_used_at_insert
 AFTER INSERT ON snapshots
@@ -853,3 +856,144 @@ CREATE TABLE IF NOT EXISTS entry_classifications (
     CHECK (confidence IS NULL OR (confidence >= 0.0 AND confidence <= 1.0)),
     UNIQUE(entry_id, classification_run_id)
 );
+
+-- Task058 local identity foundation BEGIN
+CREATE TABLE physical_drives (
+    id TEXT NOT NULL PRIMARY KEY CHECK (length(id) = 36),
+    label TEXT CHECK (label IS NULL OR length(CAST(label AS BLOB)) BETWEEN 1 AND 256),
+    admission TEXT NOT NULL CHECK (admission = 'explicit_local'),
+    provenance TEXT NOT NULL CHECK (length(CAST(provenance AS BLOB)) BETWEEN 1 AND 1024 AND instr(provenance, char(0)) = 0),
+    revision INTEGER NOT NULL DEFAULT 1 CHECK (revision >= 1),
+    retired INTEGER NOT NULL DEFAULT 0 CHECK (retired IN (0,1)),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE identity_observations (
+    id TEXT NOT NULL PRIMARY KEY CHECK (length(id) = 36),
+    session_id TEXT NOT NULL CHECK (length(session_id) = 36),
+    revision INTEGER NOT NULL CHECK (revision >= 1),
+    scope TEXT NOT NULL CHECK (scope IN ('device','media','partition','volume','mountSession')),
+    state TEXT NOT NULL CHECK (state IN ('unknown','ambiguous','conflict')),
+    provenance TEXT NOT NULL CHECK (length(CAST(provenance AS BLOB)) BETWEEN 1 AND 1024 AND instr(provenance, char(0)) = 0),
+    observed_at TEXT NOT NULL,
+    UNIQUE (id, revision)
+);
+
+CREATE TABLE identity_evidence (
+    id TEXT NOT NULL PRIMARY KEY CHECK (length(id) = 36),
+    observation_id TEXT NOT NULL,
+    observation_revision INTEGER NOT NULL,
+    scope TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    provider TEXT NOT NULL CHECK (provider IN ('synthetic','diskArbitration','ioKit','foundation')),
+    property TEXT NOT NULL CHECK (length(CAST(property AS BLOB)) BETWEEN 1 AND 256 AND instr(property, char(0)) = 0),
+    dependency_group TEXT NOT NULL,
+    value TEXT CHECK (value IS NULL OR (length(CAST(value AS BLOB)) BETWEEN 1 AND 1024 AND instr(value, char(0)) = 0)),
+    validation TEXT NOT NULL CHECK (validation IN ('unverified','validated','unknown','conflict')),
+    provenance TEXT NOT NULL CHECK (length(CAST(provenance AS BLOB)) BETWEEN 1 AND 1024 AND instr(provenance, char(0)) = 0),
+    observed_at TEXT NOT NULL,
+    CHECK ((kind = 'filesystemUUID' AND dependency_group = 'filesystemUUID' AND scope = 'volume') OR (kind = 'mediaUUID' AND dependency_group = 'mediaUUID' AND scope = 'media') OR (kind = 'partitionUUID' AND dependency_group = 'partitionUUID' AND scope = 'partition') OR (kind = 'deviceSerial' AND dependency_group = 'deviceSerial' AND scope = 'device') OR (kind = 'displayName' AND dependency_group = 'displayName' AND scope = 'volume') OR (kind = 'mountPath' AND dependency_group = 'mountPath' AND scope = 'mountSession') OR (kind = 'bsdNode' AND dependency_group = 'bsdNode' AND scope = 'mountSession') OR (kind = 'vendorModel' AND dependency_group = 'vendorModel' AND scope = 'device')),
+    CHECK ((validation = 'unknown' AND value IS NULL) OR (validation != 'unknown' AND value IS NOT NULL)),
+    FOREIGN KEY (observation_id, observation_revision) REFERENCES identity_observations(id, revision) ON DELETE RESTRICT ON UPDATE RESTRICT,
+    UNIQUE (observation_id, provider, property)
+);
+
+CREATE TABLE manual_drive_associations (
+    id TEXT NOT NULL PRIMARY KEY CHECK (length(id) = 36),
+    observation_id TEXT NOT NULL,
+    observation_revision INTEGER NOT NULL,
+    revision INTEGER NOT NULL CHECK (revision >= 1),
+    previous_event_id TEXT REFERENCES manual_drive_associations(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+    target_drive_id TEXT REFERENCES physical_drives(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+    target_revision INTEGER,
+    action TEXT NOT NULL CHECK (action IN ('associate','correct','revoke')),
+    actor TEXT NOT NULL CHECK (length(CAST(actor AS BLOB)) BETWEEN 1 AND 256 AND instr(actor, char(0)) = 0),
+    reason TEXT NOT NULL CHECK (length(CAST(reason AS BLOB)) BETWEEN 1 AND 1024 AND instr(reason, char(0)) = 0),
+    created_at TEXT NOT NULL,
+    CHECK ((action = 'revoke' AND target_drive_id IS NULL AND target_revision IS NULL) OR
+           (action != 'revoke' AND target_drive_id IS NOT NULL AND target_revision >= 1)),
+    FOREIGN KEY (observation_id, observation_revision) REFERENCES identity_observations(id, revision) ON DELETE RESTRICT ON UPDATE RESTRICT,
+    UNIQUE (observation_id, revision)
+);
+
+CREATE INDEX idx_identity_evidence_observation ON identity_evidence(observation_id, id);
+
+CREATE INDEX idx_manual_associations_observation ON manual_drive_associations(observation_id, revision DESC);
+
+CREATE TRIGGER trg_physical_drives_no_delete
+BEFORE DELETE ON physical_drives
+BEGIN
+    SELECT RAISE(ABORT, 'Local identity history cannot be deleted');
+END;
+
+CREATE TRIGGER trg_identity_observations_no_delete
+BEFORE DELETE ON identity_observations
+BEGIN
+    SELECT RAISE(ABORT, 'Local identity history cannot be deleted');
+END;
+
+CREATE TRIGGER trg_identity_observations_no_update
+BEFORE UPDATE ON identity_observations
+BEGIN
+    SELECT RAISE(ABORT, 'Local identity evidence is immutable');
+END;
+
+CREATE TRIGGER trg_identity_evidence_no_delete
+BEFORE DELETE ON identity_evidence
+BEGIN
+    SELECT RAISE(ABORT, 'Local identity history cannot be deleted');
+END;
+
+CREATE TRIGGER trg_identity_evidence_no_update
+BEFORE UPDATE ON identity_evidence
+BEGIN
+    SELECT RAISE(ABORT, 'Local identity evidence is immutable');
+END;
+
+CREATE TRIGGER trg_manual_drive_associations_no_delete
+BEFORE DELETE ON manual_drive_associations
+BEGIN
+    SELECT RAISE(ABORT, 'Local identity history cannot be deleted');
+END;
+
+CREATE TRIGGER trg_manual_drive_associations_no_update
+BEFORE UPDATE ON manual_drive_associations
+BEGIN
+    SELECT RAISE(ABORT, 'Local identity evidence is immutable');
+END;
+
+CREATE TRIGGER trg_physical_drives_revision
+BEFORE UPDATE ON physical_drives
+WHEN NEW.id IS NOT OLD.id OR NEW.admission IS NOT OLD.admission
+  OR NEW.provenance IS NOT OLD.provenance OR NEW.created_at IS NOT OLD.created_at
+  OR OLD.retired = 1 OR NEW.revision != OLD.revision + 1
+BEGIN
+    SELECT RAISE(ABORT, 'Invalid local drive revision or lifecycle');
+END;
+
+CREATE TRIGGER trg_identity_evidence_scope
+BEFORE INSERT ON identity_evidence
+WHEN NEW.scope IS NOT (SELECT scope FROM identity_observations WHERE id = NEW.observation_id AND revision = NEW.observation_revision)
+BEGIN
+    SELECT RAISE(ABORT, 'Evidence scope differs from observation');
+END;
+
+CREATE TRIGGER trg_manual_associations_admission
+BEFORE INSERT ON manual_drive_associations
+BEGIN
+    SELECT CASE
+      WHEN NEW.revision != COALESCE((SELECT MAX(revision) FROM manual_drive_associations WHERE observation_id = NEW.observation_id),0) + 1
+        OR NEW.previous_event_id IS NOT (SELECT id FROM manual_drive_associations WHERE observation_id = NEW.observation_id ORDER BY revision DESC LIMIT 1)
+        THEN RAISE(ABORT, 'Stale manual association revision')
+      WHEN NEW.action = 'associate' AND NEW.revision != 1
+        THEN RAISE(ABORT, 'Association already has history; use correction')
+      WHEN NEW.action IN ('correct','revoke') AND NEW.revision = 1
+        THEN RAISE(ABORT, 'Correction requires prior history')
+      WHEN NEW.action != 'revoke' AND NOT EXISTS (SELECT 1 FROM physical_drives WHERE id = NEW.target_drive_id AND revision = NEW.target_revision AND retired = 0)
+        THEN RAISE(ABORT, 'Missing, retired or stale drive')
+      WHEN NEW.action != 'revoke' AND NOT EXISTS (SELECT 1 FROM identity_observations WHERE id = NEW.observation_id AND revision = NEW.observation_revision AND scope IN ('volume','partition') AND state != 'conflict')
+        THEN RAISE(ABORT, 'Invalid manual observation')
+    END;
+END;
+-- Task058 local identity foundation END

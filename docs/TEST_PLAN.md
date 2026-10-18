@@ -1179,3 +1179,31 @@ mutates a different schema and recovery boundary and may proceed in parallel at
 that boundary. Hardware proof (06) and the integrated acceptance session (20)
 require separate Owner authorization. No matrix row is silently marked DONE, no
 ADR is promoted, and no feature is implemented or authorized by this matrix.
+
+## 14. Task058 production local identity tests — synthetic only
+
+`PhysicalDriveIdentityTests` and `PhysicalDriveMigrationTests` exercise production
+Swift/SQLite using generated catalogs in unique temporary directories. They
+prove local persistence and transaction rules, not empirical drive identity.
+Task058's handoff records executed counts, exact commands and build receipts.
+
+| Requirement | Executable coverage |
+|---|---|
+| Fresh v10; supported v4 variants/v5/v6/v7/v8/v9 converge | Fresh identity, all-supported parity, complete SchemaMigration/CatalogDatabase suites |
+| No historical identity/backfill; preserve every legacy row | v9 generated fixtures in every legacy relation, full before/after row equality, zero new identity rows |
+| Opaque IDs, duplicate labels, stability, explicit retries | Identity ID/reopen and exact-operation retry tests |
+| Existence/revision checks, independent writers, correction/revocation | Missing/stale targets and observations, separate-connection stale writer, retained event chain |
+| No UUID/name/path fallback or hardware verification | Unknown/ambiguous/conflict, duplicate/missing UUID, reused path, zero approved profiles |
+| Typed evidence/provenance/aliases | All scopes/kinds, canonical UUID spelling, malformed/oversized/NUL/blank/duplicate facts, shared dependency group, contradictions |
+| Retirement/delete safety; capture/comparison immutability | Retained associations, retirement conflicts, no-delete/no-update guards, unchanged legacy rows and existing regression suites |
+| Atomic writes and FK enforcement | Injected observation/evidence/event failures, composite observation FK failure with actual FK error assertion, outer transaction rollback |
+| Migration DDL/version/inventory rollback and reopen | Failure at every DDL boundary and version write; successful-but-missing/altered DDL; successful repair then no-replay reopen |
+| Canonical schema and safe future rejection | Exact new-table DDL, all canonical triggers/indexes and columns, damaged schema rejection, newer version preserved, unsupported-version file bytes/journal unchanged |
+| Bounded deterministic repository reads | Clamped keyset pages, continuation/truncation, EXPLAIN QUERY PLAN index assertions |
+| Source safety and dependency scope | Changed-source review plus existing generated-fixture source-boundary/read-only tests; no new source/device/observer API |
+
+Observation records are supplied by the caller. There is no live adapter,
+automatic candidate matcher, hardware UniqueStrongMatch, reconnect, capture or
+UI. Manual association is neither hardware verification nor a capture receipt.
+H01–H14 remain empirically untested; ADR-036/037/038 are not promoted by these
+tests. Owner catalog access/migration is outside Task058.

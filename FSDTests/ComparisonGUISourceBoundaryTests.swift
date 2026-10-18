@@ -1,4 +1,5 @@
 import XCTest
+import FSD
 
 /// Deterministic source-boundary checks for the Milestone 4 comparison GUI
 /// correction: no raw SQL, no schema/table-name knowledge, and no
@@ -110,6 +111,6 @@ final class ComparisonGUISourceBoundaryTests: XCTestCase {
     func testSchemaFileRecordsVersionNine() throws {
         let schema = try String(contentsOf: repoRoot.appendingPathComponent("docs/database/schema.sql"), encoding: .utf8)
         XCTAssertTrue(schema.contains("INSERT OR IGNORE INTO schema_migrations(version, applied_at)"), "schema version row seeding must remain")
-        XCTAssertTrue(schema.contains("VALUES (9, CURRENT_TIMESTAMP);"), "schema must record current version 9")
+        XCTAssertTrue(schema.contains("VALUES (\(CatalogDatabase.currentSchemaVersion), CURRENT_TIMESTAMP);"), "schema must record the current version")
     }
 }
