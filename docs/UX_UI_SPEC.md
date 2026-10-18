@@ -430,6 +430,24 @@ failure behavior, and bounded large-tree handling are candidate requirements in
 ADR-038. Exact copying/cloning, reference remapping, schema, and migration
 mechanics remain `TECHNICAL_PROOF_PENDING`; ADR-012 and ADR-028 remain binding.
 
+Task056 candidate: a dedicated saved artifact with separate copies of both
+sides' metadata, results and completion-time profile/evidence receipt is
+preferred for further review. This is a feasibility recommendation, not an
+implemented Save action or a final accepted schema. Saved evidence is browsed
+under its own stable IDs, with original left/reference and right/changed
+orientation and Content Not Verified disclosure; it does not create ordinary
+user captures, change Collections or depend on physical-drive verification.
+
+Save eligibility must require a complete evidence closure and a trustworthy
+completion receipt. Schema-v9 comparisons without that receipt cannot be
+silently upgraded from current mutable profile/header values. No rescan or
+historical backfill supplies missing truth. Pending save work is never shown
+as saved; failure/cancellation preserves the workspace. After an uncertain
+acknowledgement, retry the same operation ID; deleting a saved artifact is
+explicit and never deletes ordinary captures or shared evidence still in use.
+The current application has none of this new Save/reopen flow. Production
+receipt creation, UI, copy limits and real crash/recovery proof remain pending.
+
 ## 15. LIBRARY / BACKUP / MULTI-MACHINE
 
 Direction only:

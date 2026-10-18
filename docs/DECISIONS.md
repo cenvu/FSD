@@ -1000,10 +1000,12 @@ comparison. It must not silently rescan a changed live source. Conceptually,
 the save creates new durable backing objects from the completed transient
 evidence and points the saved artifact at those objects; it never changes the
 transient's `snapshot_kind`, capture facts, status, entries, or identifiers.
-Existing user-snapshot sides may be referenced by their stable snapshot IDs.
-Whether live evidence is copied into newly created user snapshots or stored in
-a separate durable evidence type, and how entries/results are cloned or
-remapped, are `TECHNICAL_PROOF_PENDING`.
+Existing user-snapshot references are an alternative requiring retention guards;
+Task056 instead recommends separate dedicated evidence copies of **both** sides
+for further review. This isolates saved ownership from user-capture deletion and
+mutable organization metadata. It creates no new ordinary user snapshot and
+never changes an existing snapshot's kind. Final production storage and migration
+remain `TECHNICAL_PROOF_PENDING`.
 
 The saved artifact must have valid references to complete backing evidence and
 retain comparison orientation, profile identity/version, outcome counts, and
@@ -1012,6 +1014,71 @@ workspace-only comparison row or a transient that normal cleanup can delete.
 The original terminal comparison evidence remains untouched. Save applies only
 to a completed comparison; cancelled, failed, or still-running work cannot be
 presented as a saved successful comparison.
+
+### Task056 backing analysis and proposed contract — 2026-10-18
+
+The Owner's **Option B** means explicit Save; the backing alternatives below
+are implementation candidates inside that direction, not new Owner decisions.
+
+| Backing alternative | Benefits | Evidence / cost / disposition |
+|---|---|---|
+| A — New durable user snapshots with new IDs | Can reuse ordinary snapshot/entry browsing and many existing guards | Requires scanning-first insert, new session/volume ownership, exact entry/result/group remapping, provenance for copied captures and deletion retention. Adds ordinary history/Collection lifecycle questions. Feasible in principle, not implemented or synthetically executed here |
+| B — Dedicated saved evidence graph | Independent IDs and ownership; copies both user/live sides; no legacy cleanup FK dependency or fabricated user capture | 47-case generated SQLite prototype plus 10k/100k-entry copying supports relational feasibility. New readers/guards/serializer and migration cost remain. **Preferred candidate, not final acceptance** |
+| C — Retain existing transients by reference | Avoids copying tree rows | New references alone conflict with current close/cleanup policy; durable reuse also depends on mutable headers/profile registry, original disposal and lifetime changes. Not proposed; no executable proof of a safe revised lifecycle here |
+
+All candidates must preserve orientation, exact frozen profile revision/results,
+offline reopen and immutable originals. Choosing C to save migration lines would
+not establish safe ownership. Choosing B does not adopt automatic retention or
+replace the unsaved ADR-012 lifecycle.
+
+**Completion-time truth gap:** v9 stores profile ID/revision, but no historical
+full profile definition. Reader presentation joins the current profile name;
+compatibility warnings are derived, not persisted. Snapshot headers/aggregates
+and scan-issue update/delete are not all DB-immutable. Accepted runtime contracts
+still forbid rewriting captured evidence, but Save cannot infer missing history
+from those mutable rows. A future additive completion receipt must freeze the
+actual profile definition used, engine/normalization/warning contract, exact
+orientation/summary and side headers/issues as comparison completion commits.
+Entries/results/collision evidence keep their accepted guards. Legacy comparisons
+without a trustworthy receipt are **ineligible for an exact Save** under this
+candidate; no current-profile substitution, backfill, rescan or historical claim.
+The prototype generates receipts; production has no such mechanism today.
+
+**Identity and mapping:** Save acts on `(catalog generation, completion token,
+ComparisonID)` captured by the explicit action. The operation ID binds that
+request and returns the same saved artifact after retry, including after original
+cleanup. Never use names, paths, drive identity or first-match UUIDs. Saved side
+IDs fix left/right; each side points to a sealed backing tree. Every copied
+entry gets a new tree-scoped ID with a unique original-entry mapping; parent,
+result-entry, collision-member and result-parent links all use that mapping.
+Keep every result kind, difference bit, count and group member; inaccessible is
+an entry flag/uncertain evidence, not a fabricated persisted result enum. Profile
+ID/revision/definition is archived by value; numeric origin IDs are provenance,
+not foreign keys to disposable originals. No lookup joins mutable volume facts
+into a historical capture. No physical hardware verification is required.
+
+**Ownership and atomicity:** one explicit save transaction owns a building
+artifact, separate trees, sides, issues, results, collision graph and operation
+receipt. Validate complete closure before ready+receipt commit; rollback leaves
+none visible. UI reads only ready artifacts, never staging rows. Dedicated copies
+of user sides avoid retaining/deleting ordinary user snapshots. Artifact deletion
+removes its sides/results/groups; a tree may be removed only after all saved
+side references are gone. Preserve a deleted operation receipt so retry cannot
+resurrect an explicitly deleted save. Sharing is optional and permitted only for
+an explicitly verified identical completion/tree identity, never path/UUID/hash
+similarity. The prototype exercises restricted shared ownership; deduplication
+policy, receipt retention and deletion recovery still require review.
+
+**Bounds and proof:** 256-row pages, ID mapping in SQLite, cooperative row/byte/
+elapsed budgets and cancellation checkpoints were exercised. All 47 deterministic
+cases passed; 10,000 and 100,000 generated entries were copied/read in bounded
+pages. Memory SQLite and Python timings do not prove Swift memory, actual disk
+transactions, process-crash recovery or production throughput. The preferred
+single-transaction approach is limited to a separately measured/approved budget;
+oversized saves fail before publication. No multi-transaction staging design is
+accepted as a silent fallback. See [architecture §13](ARCHITECTURE.md#13-saved-live-comparison-backing-feasibility--task056)
+and [test plan §12](TEST_PLAN.md#12-adr-038-saved-comparison-feasibility--task056)
+for source inventory, full ownership/mapping, measured limits and pending gates.
 
 ### Transaction, recovery, cleanup, idempotency, and bounds
 
@@ -1082,9 +1149,11 @@ accepted, tests must prove:
   documented transaction/size limits, cancellation, deterministic replay, and
   acceptable recovery time without whole-tree materialization.
 
-Specific copying/cloning, identifier/reference remapping, table ownership,
-schema objects, migration path from schema v9, and large-save transaction
-mechanics remain `TECHNICAL_PROOF_PENDING`. The cited runtime and hardware
-behavior has not been tested by this documentation task. Traceability:
+Task056 supplies a candidate ownership/remapping contract and synthetic evidence;
+final schema/serialization, production completion receipts, migration from v9,
+UI/read/export integration, shared retention, large-save budgets and real
+crash/disk/concurrency behavior remain `TECHNICAL_PROOF_PENDING`. ADR-038 remains
+**Proposed / Owner Direction Approved / Technical Proof Pending**, not finalized.
+No production Save, runtime migration or hardware behavior was tested. Traceability:
 [PRD.md](PRD.md) §§5.4, 5.5, 7; [UX_UI_SPEC.md](UX_UI_SPEC.md) §§13–14;
-[ARCHITECTURE.md](ARCHITECTURE.md) §8; [TEST_PLAN.md](TEST_PLAN.md) §§1, 5, and 8.
+[ARCHITECTURE.md](ARCHITECTURE.md) §§8/13; [TEST_PLAN.md](TEST_PLAN.md) §§1/5/8/12.

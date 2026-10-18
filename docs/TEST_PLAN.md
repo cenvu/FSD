@@ -928,3 +928,189 @@ the whole Wave A matrix still is not complete (ADR-038 and integrated acceptance
 pending). PRD §6.1/§8.1 and ARCHITECTURE §8 legacy language are outside this task's
 narrow reconciliation. None is silently rewritten here. PRODUCT_STATE,
 SNAPSHOT_COLLECTIONS and MVP_PLAN remain untouched.
+
+## 12. ADR-038 saved comparison feasibility — Task056
+
+**SYNTHETIC_PROTOTYPE; 2026-10-18.** [ADR-038](DECISIONS.md#adr-038--durable-live-comparison-via-explicit-save-option-b-candidate)
+remains Proposed / Owner Direction Approved / Technical Proof Pending. Preferred
+candidate B is a dedicated copied evidence graph; production Save, completion
+receipts, offline reopen, schema/migration, UI/export and crash durability are
+not implemented or accepted. [Architecture §13](ARCHITECTURE.md#13-saved-live-comparison-backing-feasibility--task056)
+contains the v9 source inventory, A/B/C decision analysis, exact mapping/ownership,
+transaction/deletion/recovery contract, official sources and implementation plan.
+ADR-012/024/027/028/036/037 and existing Collections/Drive Sets remain unchanged.
+
+### Reproduction and generated input boundary
+
+Run from repository root:
+
+```sh
+python3 .ai-scratch/task056/harness.py
+python3 .ai-scratch/task056/harness.py --large 10000
+python3 .ai-scratch/task056/harness.py --large 100000
+```
+
+Standard-library Python 3.15.0 / SQLite 3.54.0; every connection is `:memory:` and
+asserts foreign_keys=ON before transactions. The repository v9 DDL is read as
+text and executed only against new generated memory. No database filename,
+filesystem scan/root, device API, source payload or Owner catalog is accepted.
+The full runnable source is embedded in the immutable Task056 handoff for
+recovery; receipts remain ignored under `.ai-scratch/task056/`.
+
+Generated inputs: two 9-entry multilevel trees, root/a/b/duplicate filenames,
+case-fold collision `a/dup` vs `a/DUP`, inaccessible entry/reader warning,
+matched/added/removed/changed/ignored/uncertain results (7 rows), result-parent
+links, one collision group/four side-specific members; tied-path case adds an
+8th ignored result. Source kinds vary user/user, user/transient and
+transient/transient. A synthetic completion receipt freezes the profile revision
+and definition, comparison summary and side headers/issues. Production has no
+such receipt today. The fixture intentionally supplies generated conclusions;
+it is not an execution of the Swift comparison engine.
+
+Every case verifies FK/integrity and compares full ordered original row values
+via streaming metadata digest. The only deliberate original-data changes are
+synthetic close/cleanup cases and current-profile/header mutation cases, which
+assert their stated expected outcomes; they are not save-side mutations. Most
+cases require the original digest unchanged. Basic/exact-copy assertions cover
+all entry/header/issue/result/group/member values, remapped parent and entry IDs,
+counts and orientation. Fixed new-data timestamps/IDs make inputs reproducible;
+v9 seed CURRENT_TIMESTAMP values are local seed facts, never asserted equal
+across different runs. Comparison/profile/entry origin IDs in JSON are provenance,
+not retained live FKs. A future Drive Set relation is represented only by an
+untouched sentinel, not by an accepted ADR-037 schema.
+
+**Final: 47 executed / 47 PASS / 0 FAIL, exit 0.** No unexpected failing test
+occurred. Review strengthened UPDATE guards to reject moves into sealed owners,
+added explicit issue-stage injections, tied-path paging, missing-entry and
+completion-generation cases, and closure-count checks; full reruns stayed green.
+These are isolated prototype refinements, not production fixes.
+
+| Case | Generated scenario | Explicit expected outcome | Actual |
+|---|---|---|---|
+| SV01 | snapshot-snapshot | exact complete archive | PASS — exact complete archive |
+| SV02 | live-user | exact complete archive | PASS — exact complete archive |
+| SV03 | live-live | exact complete archive | PASS — exact complete archive |
+| SV04 | status-failed | no saved artifact | PASS — no saved artifact |
+| SV05 | status-cancelled | no saved artifact | PASS — no saved artifact |
+| SV06 | status-running | no saved artifact | PASS — no saved artifact |
+| SV07 | mapping-closure | orientation/profile/parents/results/collisions/duplicate paths exact | PASS — orientation/profile/parents/results/collisions/duplicate paths exact |
+| SV08 | warnings | warnings and inaccessible evidence retained | PASS — warnings and inaccessible evidence retained |
+| SV09 | CL-offline-cleanup | offline archive survives original live cleanup | PASS — offline archive survives original live cleanup |
+| SV10 | snapshot-persistence | ordinary comparison retained | PASS — ordinary comparison retained |
+| SV11 | kind-guard | transient conversion rejected | PASS — transient conversion rejected |
+| SV12 | original-guards | original terminal/capture evidence rejects mutation | PASS — original terminal/capture evidence rejects mutation |
+| SV13 | fail-artifact | rollback and known-failure retry exact | PASS — rollback and known-failure retry exact |
+| SV14 | fail-left_tree | rollback and known-failure retry exact | PASS — rollback and known-failure retry exact |
+| SV15 | fail-left_entries | rollback and known-failure retry exact | PASS — rollback and known-failure retry exact |
+| SV16 | fail-left_issues | rollback and known-failure retry exact | PASS — rollback and known-failure retry exact |
+| SV17 | fail-left_side | rollback and known-failure retry exact | PASS — rollback and known-failure retry exact |
+| SV18 | fail-right_tree | rollback and known-failure retry exact | PASS — rollback and known-failure retry exact |
+| SV19 | fail-right_entries | rollback and known-failure retry exact | PASS — rollback and known-failure retry exact |
+| SV20 | fail-right_issues | rollback and known-failure retry exact | PASS — rollback and known-failure retry exact |
+| SV21 | fail-right_side | rollback and known-failure retry exact | PASS — rollback and known-failure retry exact |
+| SV22 | fail-results | rollback and known-failure retry exact | PASS — rollback and known-failure retry exact |
+| SV23 | fail-groups | rollback and known-failure retry exact | PASS — rollback and known-failure retry exact |
+| SV24 | fail-members | rollback and known-failure retry exact | PASS — rollback and known-failure retry exact |
+| SV25 | fail-validated | rollback and known-failure retry exact | PASS — rollback and known-failure retry exact |
+| SV26 | fail-ready | rollback and known-failure retry exact | PASS — rollback and known-failure retry exact |
+| SV27 | fail-operation | rollback and known-failure retry exact | PASS — rollback and known-failure retry exact |
+| SV28 | fail-precommit | rollback and known-failure retry exact | PASS — rollback and known-failure retry exact |
+| SV29 | idempotent | uncertain-ack retry returns same committed artifact | PASS — uncertain-ack retry returns same committed artifact |
+| SV30 | operation-conflict | operation ID cannot name different comparison | PASS — operation ID cannot name different comparison |
+| SV31 | cancel-batch | cancelled save leaves no partial graph | PASS — cancelled save leaves no partial graph |
+| SV32 | cancel-precommit | cancelled save leaves no partial graph | PASS — cancelled save leaves no partial graph |
+| SV33 | legacy-no-receipt | legacy comparison without receipt fails closed | PASS — legacy comparison without receipt fails closed |
+| SV34 | PF-current-profile-change | archive uses completion profile not current profile | PASS — archive uses completion profile not current profile |
+| SV35 | HD-current-header-change | archive uses completion header not mutable save-time header | PASS — archive uses completion header not mutable save-time header |
+| SV36 | backing-fks | missing and referenced backing rejected | PASS — missing and referenced backing rejected |
+| SV37 | shared-delete | shared trees retained until final explicit delete; receipt prevents resurrection | PASS — shared trees retained until final explicit delete; receipt prevents resurrection |
+| SV38 | archive-guards | published dedicated evidence immutable | PASS — published dedicated evidence immutable |
+| SV39 | row-limit | budget rejection is atomic | PASS — budget rejection is atomic |
+| SV40 | byte-limit | budget rejection is atomic | PASS — budget rejection is atomic |
+| SV41 | time-limit | budget rejection is atomic | PASS — budget rejection is atomic |
+| SV42 | page-edges | first/root/tied path/end pages deterministic | PASS — first/root/tied path/end pages deterministic |
+| SV43 | memory-reopen | memory-copy reopen retries committed receipt exactly | PASS — memory-copy reopen retries committed receipt exactly |
+| SV44 | cross-side-fk | cross-side reference rejected before publication | PASS — cross-side reference rejected before publication |
+| SV45 | CL-retry-after-disposal | committed operation retry works after original disposal | PASS — committed operation retry works after original disposal |
+| SV46 | missing-entry-fk | missing entry FK rejected in unsealed construction | PASS — missing entry FK rejected in unsealed construction |
+| SV47 | generation-bound-operation | same numeric comparison ID with different completion token rejected | PASS — same numeric comparison ID with different completion token rejected |
+
+SV13–28 inject exceptions at all 16 insertion/publication boundaries: artifact,
+left tree/entries/issues/side, right tree/entries/issues/side, results, groups,
+members, validation, ready, operation receipt and precommit. Each proves complete
+new-graph rollback and known-failure retry without original mutation. SV29/43
+model lost acknowledgement by retrying committed memory state; SV43 uses memory
+backup into a new memory connection. Neither is process termination, filesystem
+reopen or disk durability. SV45 retries after originals are disposed. SV47 uses
+the same numeric comparison ID with a different requested completion token;
+receipt identity conflict fails instead of selecting a first match.
+
+SV34/35 deliberately demonstrate why reading the current profile or header at
+Save cannot recover comparison-time truth; the archive reads its generated
+completion receipt. Legacy no-receipt Save fails (SV33). SV09 copies then disposes
+live-side comparison/transient rows using a source-reviewed equivalent SQL
+predicate, not executed Swift cleanup. SV10 proves snapshot/snapshot history is
+outside that predicate. SV36/44/46 enforce missing/shared/side-entry FK ownership
+before ready guards. SV37 proves explicit delete/shared-tree retention and deleted
+operation tombstones; no ordinary user snapshot, Collection or sentinel changes.
+SQL guards and foreign keys are bounded proof of this graph, not a complete
+production parser, operation-receipt policy or schema audit.
+
+### Isolated large-entry runs — measured, not production performance
+
+One fresh Python process per size; total entries are across two trees, half per
+side. Each archive also has 7 result rows, 4 collision members and 2 issue rows.
+Results do not claim 100k comparison-result rows or real filesystem throughput.
+All Python batch lists are at most 256 rows; no whole-tree Python list/map is
+constructed. Both sizes require original digest unchanged, complete copied/read
+entry counts, deterministic increasing keysets, FK=[] and integrity_check=ok.
+
+| Total entries copied/read | Batch / max | Copy transaction seconds | Seed seconds | Read+validation seconds | Copied accounting rows / serialized bytes | Process high-water before / after (bytes, Darwin) | Checkpoints |
+|---|---|---|---|---|---|---|---|
+| 10,000 / 10,000 | 256 / 256 | 0.381197 | 0.159792 | 0.063329 | 10017 / 8481409 | 28164096 / 45580288 | 64 |
+| 100,000 / 100,000 | 256 / 256 | 4.856924 | 1.551805 | 0.723615 | 100017 / 84961422 | 69353472 / 223002624 | 416 |
+
+Observed keyset plan at both sizes:
+`SEARCH saved_entries USING INDEX sqlite_autoindex_saved_entries_2 (tree=? AND origin_id>?)`;
+no temporary sort. Result browsing uses the `(artifact,path,id)` index; the
+small tied-path/first/root/end page case exercises deterministic ordering.
+`getrusage(RUSAGE_SELF).ru_maxrss` is process-wide high-water, including original
+and archive memory SQLite, indexes, Python, seed and validation. It is not an
+isolated copier allocation figure; maxrss growth cannot be assumed to be exact
+copy allocation. Darwin byte units follow the
+[Apple Darwin getrusage manual](https://github.com/apple/darwin-xnu/blob/main/bsd/man/man2/getrusage.2).
+Read+validation timing includes FK/integrity checks, not just page fetch time.
+No Swift RSS, SQLite file/WAL bytes, disk flush, crash or source I/O was measured.
+
+Experiment ceilings: 300,000 accounted input rows, 512 MiB serialized metadata,
+60-second cooperative elapsed budget, batch and precommit checkpoints. Rejection
+of row/byte/time limits is executed in SV39–41; these do not prove a production
+hard timeout or memory/disk ceiling. Serialization-accounting bytes include
+receipt/headers and copied input rows; they are not actual database allocation.
+Per-row/string limits, remaining disk headroom, commit/rollback time and actual
+catalog-lock duration must be measured before choosing production safeguards.
+Do not silently truncate evidence or switch to unreviewed staged commits.
+
+### Requirements-to-future-production matrix
+
+| Requirement / authority | Executed synthetic evidence | Required production proof — NOT EXECUTED |
+|---|---|---|
+| Explicit completed Save / UX§14 / ADR038 | SV01–06/33; generated completion receipts | Actual completion-profile/side/issue receipt atomically with terminalization; explicit UI gating; no auto-save/rescan |
+| Preserve default lifecycle / ADR012 | SV09/10/11/45 | Swift workspace close/startup orchestration; ordinary history retained; no transient conversion, no broad cleanup |
+| Exact profile/orientation/result truth / ADR027/028 | SV01–08/12/34/35/44/46/47 | Real engine/key/warning contract version receipt; no current-profile/volume joins; unsupported legacy remains ineligible |
+| Parents, aggregates, duplicate/collision/uncertain metadata | SV07/08/12/42; full copied payload assertions | Typed metadata-only serializer, NULL/BLOB/integer extremes, cyclic/corrupt graphs, original guards preserved, all descendant/ref closure |
+| Atomic publication / cancellation | SV13–28/31/32 | Other-connection UI visibility; cancellation during DB/busy/commit; actual source and last-complete safety; no partial saved success |
+| Operation retry / recovery | SV29/30/37/43/45/47 | Persisted opaque catalog/completion/operation tokens, uncertain COMMIT and delete acknowledgement, stale/reused IDs, receipt guards/retention; process kill at every boundary |
+| Missing/shared backing and explicit deletion | SV36/37/38/44/46 | Final FK/guard graph and deletion rollback; deep shared trees; no raw graph mutation or dangling references; no history/Collection/Drive Set cascades |
+| Bounded large copying/reads | 10k/100k entries, 256 batches; SV39–42 | Swift+file-backed catalogs; many result/collision/issue rows, extreme row byte sizes; plan/index coverage on supported SQLite; disk/lock/rollback/cancel limits and latency |
+| Additive migration / ADR024 | v9 DDL read-only; new graph built in generated memory | Fresh and all supported v4 variants→v9→future versions; DDL+version atomic failure; exact expected-object/FK inventory; newer/malformed rejection unchanged; no backfill |
+| Offline browsing/export / PRD US04/05 | SV09/45 catalog-only result/entry reopen | Full saved inspector/navigation/warning display; metadata-only versioned JSON/HTML export; no classification/content/live source fallback |
+| Source identity and organizers | Every normal save original digest; Collection/Drive Set sentinel preservation | Independent of ADR036 hardware proof; actual later Drive Set FK graph remains isolated; manual/VoiceOver integrated acceptance |
+
+A/B/C analysis and preferred B remain candidate design. Completion receipt
+creation, final archive format/schema/migration, large transaction budgets,
+optional sharing/retention, UI/export and actual crash/disk/concurrency behavior
+are TECHNICAL_PROOF_PENDING. No Xcode build or production XCTest ran. Manual
+E2E/VoiceOver, Task041/047 privacy and hardware proof advisories remain unchanged.
+Other PRD/PRODUCT_STATE/MVP_PLAN/Collection-document alignment is read-only here;
+Task056 does not claim all Wave A or internal acceptance gates complete.

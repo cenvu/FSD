@@ -313,7 +313,12 @@ To support live folder/volume comparison seamlessly within the snapshot-backed d
 - Transient snapshots are identical in schema, atomicity, and constraints to user snapshots but are marked `snapshot_kind = 'transient'`.
 - Transient captures that fail or are interrupted cannot be presented as complete comparison sources.
 - Transient snapshots are excluded from standard capture history and user-facing lists.
-- **Lifecycle:** Transient snapshots are automatically deleted from SQLite when the comparison session is closed, or cleaned up on application launch if abandoned during a crash. Promotion to a user snapshot may be offered in the future but is deferred.
+- **Lifecycle:** Workspace close disposes live-side comparisons before cleaning
+  unreferenced transients. Startup marks orphaned running comparisons failed and
+  removes only unreferenced transients; referenced evidence remains protected.
+  Completed transient `snapshot_kind` cannot be promoted in place. Proposed
+  ADR-038 explicit Save creates separate durable metadata evidence; it preserves
+  this default unsaved lifecycle and remains technical-proof-pending. See §13.
 
 ## 9. Nullable enrichment boundary — `LocalFileClassificationProvider` (implemented Phase 1.5 runtime)
 
@@ -1012,3 +1017,262 @@ not execute Swift migration code or construct historical v4–v8 catalogs. Its
 memory-copy reopen test proves repeated validation of committed synthetic state;
 it is not process-crash, WAL/power-loss or filesystem durability proof.
 Requirements and all receipts: [TEST_PLAN §11](TEST_PLAN.md#11-adr-037-drive-sets-sqlite-feasibility--task055).
+
+## 13. Saved live comparison backing feasibility — Task056
+
+**2026-10-18; SYNTHETIC_PROTOTYPE.** [ADR-038](DECISIONS.md#adr-038--durable-live-comparison-via-explicit-save-option-b-candidate)
+remains Proposed / Owner Direction Approved / Technical Proof Pending. Dedicated
+saved evidence is the preferred candidate, not an accepted schema or implemented
+Save. ADR-012/024/027/028 and ADR-036/037 are unchanged. No hardware identity
+profile is needed; the approved real strong profile set remains empty.
+
+### Current v9 source, reference graph and truth boundaries
+
+Read-only baseline `3b81377ca03e9e4478658051118bc42d4560f27f`:
+
+| Actual object / source | Persisted facts and ownership | Consequence for saving / original cleanup |
+|---|---|---|
+| `volumes`, `snapshots`; `SnapshotWriter`, `SnapshotModels` | `snapshots.volume_id` CASCADE from volume; capture kind, provider/access, source fields, versions/times, optional capture-time volume facts, totals/signatures and mutable organization metadata | Do not use volume registry values as capture facts. Preserve recorded NULLs. Completed transient kind cannot become user. New archive has no FK into these rows |
+| `entries` | Snapshot FK CASCADE; composite `(parent_id,snapshot_id)` self FK CASCADE; unique original relative path, preserved/folded paths, flags, sizes/times, aggregates and metadata signatures | A result's entry reference depends on the entire source snapshot. Copy by original IDs, preserve parents/metadata; equal folded paths or filenames are not mapping keys |
+| `scan_issues` | Snapshot CASCADE, optional entry SET NULL; path/severity/source/error/skipped/message | Copy frozen issues with remapped optional entry link; no new source read to recreate a warning |
+| `comparisons`, `comparison_profiles`; `ComparisonEngine` | Left/right snapshot FKs RESTRICT; profile FK; frozen profile version, terminal status/counts; detailed results persisted in batches | Left=reference, right=changed. Save only complete. Profile ID/version alone is not a historical full definition |
+| `comparison_results` | Comparison CASCADE; parent result CASCADE; optional left/right entries SET NULL; kind, difference bits and paths | Original disposal deletes results; deleting an entry could null its link. Dedicated copies need new result/entry/parent IDs and owned side FKs |
+| `comparison_collision_groups/members` | Groups CASCADE from comparison; member CASCADE from group and entry; side-ownership triggers | Preserve every group/member, including both uncertain sides. Never pick a representative first match |
+| `TransientSnapshotLifecycle`, `ComparisonService` | Close cancels running live-side comparisons, deletes live-side comparison rows, then unreferenced transients. Startup marks orphaned running comparisons failed with persisted counts; only unreferenced transients are deleted | Startup does not indiscriminately delete all referenced transient evidence. Ordinary snapshot/snapshot records persist. An archive must survive comparison AND transient cleanup |
+| `ComparisonResultRepository`, `ComparisonBrowserModel` | Catalog-only rows/paging/filtering; inspector reads entry metadata; profile name joined from current registry; compatibility warnings re-derived | Copy stored results/bits and versioned derivation inputs; current labels and UI formatting are not frozen historical evidence |
+| `JSONSnapshotExporter` | Streams snapshot metadata/issues; no classifications/payload reads | Existing exporter is snapshot-only, not a saved-comparison export. Future archive read/export adapters must remain offline, paged and metadata-only |
+
+Exact immutability inventory: `trg_snapshots_capture_facts_immutable` includes
+kind, source identity/provider/root/version/times (not every snapshot column).
+Completed entry INSERT/UPDATE/DELETE guards preserve captured rows. Terminal
+snapshot status is guarded. Comparison-source IDs are immutable; terminal
+comparison status/summary and result INSERT/UPDATE/DELETE are guarded. Collision
+group/member INSERT/UPDATE/DELETE are guarded after terminal state. Whole
+comparison disposal is intentionally allowed: child guards no longer find the
+parent during CASCADE (ADR-028). The dedicated parent-result index from v8
+bounds disposal's self-FK lookup. All remain unchanged.
+
+**Observed gap, not a product repair:** v9 has no immutable full profile-revision
+history or engine contract receipt. Comparison profile ID/version fields are not
+covered by the terminal status/count trigger. Snapshot totals, warning counts,
+features/authorization and mutable labels/notes are not all guarded capture
+facts; scan-issue INSERT is guarded for completed captures, UPDATE/DELETE are
+not. Accepted runtime semantics remain binding, but Save cannot prove what a
+mutable row held at completion by reading it later. No experiment rewrites a
+real catalog. Generated tests explicitly distinguish these gaps from protected
+entry/result truth.
+
+Future eligibility therefore needs an additive **completion receipt**: a stable
+catalog generation plus unique completion token bound to ComparisonID; actual
+profile definition used (including name, field flags, ignore JSON, tolerance,
+ID/revision); engine/result/warning/normalization versions and selected comparison
+key; frozen summary/orientation; side headers/aggregates and issue evidence as
+completion commits. Receipt publication and terminalization must be atomic.
+The fixture creates this receipt in memory; production does not. Legacy v9
+comparisons without it fail closed for exact Save; no current-profile guess,
+legacy receipt backfill, rescan, historical warning fabrication or content read.
+
+### Backing alternatives and preferred candidate
+
+Official research basis (retrieved 2026-10-18):
+[SQLite foreign keys](https://www.sqlite.org/foreignkeys.html) documents
+connection-local enforcement, deferred composite references, RESTRICT/CASCADE
+and child indexes. [Transactions](https://www.sqlite.org/lang_transaction.html)
+and [isolation](https://www.sqlite.org/isolation.html) support one serialized
+writer and committed-reader visibility; BEGIN IMMEDIATE may fail busy.
+[Conflict resolution](https://www.sqlite.org/lang_conflict.html) explains why
+REPLACE can delete prior rows and why statement ABORT needs explicit operation
+rollback. [Atomic commit](https://www.sqlite.org/atomiccommit.html) has storage/
+flush assumptions; an in-memory test does not exercise them.
+[Row-value paging](https://www.sqlite.org/rowvalue.html) and
+[query plans](https://www.sqlite.org/eqp.html) support indexed keysets; EQP output
+is diagnostic, not a stable serialized contract. Python's
+[resource measurement](https://docs.python.org/3/library/resource.html#resource.getrusage)
+reports process high-water usage, not an isolated Swift allocation profile.
+
+| Dimension | A: new user-snapshot copies | B: dedicated saved evidence | C: retain original transients |
+|---|---|---|---|
+| Immutability | New scanning→complete rows could reuse guards; never convert original kind | Separate sealed graph; original rows untouched | Retention alone cannot freeze mutable header/profile dependencies |
+| Compatibility/readers | Reuses snapshot readers but adds copied-capture provenance/history/Collection questions | New archive adapters/serializer/guards required | Existing readers work until close/disposal semantics conflict |
+| FKs/deletion | New session/volume identity and user-snapshot retention restrictions; full result remapping still needed | No outgoing FK into legacy truth; exact owned graph and shared-tree restriction | A retaining FK may block current workspace cleanup; changing cleanup needs another lifecycle policy |
+| Orientation/profile/offline | Must archive profile definition and exact left/right/result closure | Same, copied by value with source provenance | Current profile join and cleanup prevent a sufficient simple-reference solution |
+| Size/remapping | Copies live entries; more lifetime coordination if user sides stay referenced | Candidate copies both sides, increasing size but isolating all lifetime dependencies | Initially cheap storage, growing retained scaffolding and coordination cost |
+| Recovery/migration/maintenance | Existing table constraints plus new retention/provenance/save metadata | More additive objects/read paths; one independently disposable graph | Fewer initial copy lines do not remove migration/recovery/ownership work |
+| Evidence/disposition | Analyzed only; no executed A prototype | **Preferred for further review**: 47 cases plus 10k/100k entry runs | Analyzed and not selected; no safe revised lifecycle claimed |
+
+B is justified by explicit disposal isolation and synthetic FK/remapping/rollback
+results, not a claim that production integration is trivial. The Owner's Option B
+is the explicit Save behavior; dedicated backing B here preserves that behavior
+and the current unsaved ADR-012 default. Sharing/deduplication is not required for
+an initial production implementation; the prototype exercises shared reference
+protection so future reuse cannot silently delete another artifact's evidence.
+
+### Candidate entities, ownership and exact mappings
+
+These are logical relations. Actual table/column layout, typed serialization,
+version numbers, receipt retention and guard inventory need separate review.
+
+| Relation | Candidate keys and references / lifetime |
+|---|---|
+| Completion receipt / side headers / issues | Unique catalog-scoped completion token bound to original ComparisonID. Immutable profile/summary/contracts; two side header records and paged issue rows. Owned by the original comparison until archive copy. Prototype `p_*` tables simulate this future mechanism |
+| `saved_artifacts` | New opaque ID, completion provenance, complete comparison/profile/contract copies, building/ready state, creation time. No FK to disposable comparison/profile registry; ready evidence immutable |
+| `saved_trees` | New opaque ID; completion+side provenance; original SnapshotID as informational origin; frozen header/aggregates, sealed state. Separate from ordinary snapshot kind/history |
+| `saved_sides` | PK `(artifact_id,side)` where side is left/right; artifact DELETE CASCADE; tree DELETE RESTRICT; unique `(artifact_id,side,tree_id)` supports orientation FKs; reverse tree index |
+| `saved_entries` | PK `(tree_id,new_entry_id)`; unique `(tree_id,origin_entry_id)` and original path; optional composite parent FK within same tree, deferred until commit. Tree CASCADE; parent lookup index; origin/page index |
+| `saved_issues` | Tree ownership; original issue provenance; optional remapped entry composite FK within tree; severity/source/error/skipped data retained. Tree CASCADE; entry-child index |
+| `saved_results` | Artifact CASCADE; new ID + unique origin-result mapping; parent-result composite FK within artifact; path/kind/bits and row metadata. Composite side FKs bind left/right tree to the artifact; each optional entry FK binds that tree. Indexes on artifact/path/ID, parent and both entry references |
+| `saved_groups`, `saved_members` | New group IDs within artifact, unique group path, exact original provenance. Member FK to group CASCADE, to artifact side/tree and copied entry. Group/member/entry lookup indexes; no arbitrary collision pairing |
+| `save_operations` | Unique operation ID bound to catalog/completion token and original requested comparison; committed/deleted outcome and nullable archive reference. Artifact deletion detaches reference, retaining a deleted tombstone; no retry resurrection |
+
+No relation depends on PhysicalDrive, Drive Set, Collection, source mount or
+volume UUID. Origins are informational and must include catalog/completion
+provenance; a reused numeric comparison or entry ID is not the same completion.
+The fixture uses generated literal generations/IDs and deterministic scoped
+strings; production must generate collision-checked opaque tokens and maintain
+an explicit mapping, not concatenate global IDs or infer equivalent devices.
+
+Mapping algorithm:
+
+1. Freeze explicit request `(catalog generation, completion token, ComparisonID,
+   operation ID)`; compare its full identity on every retry. Under the catalog
+   transaction/ownership lock, reject non-complete/missing/mismatched receipts.
+   The profile definition comes from the actual comparison-time value, not from
+   a profile registry whose revision now differs.
+2. Allocate an artifact ID and left/right tree IDs. Preserve the original side
+   order; the live/user service normally puts user reference left/live right,
+   but copying never swaps sides based on which is live. Both sides are copied.
+3. For each tree, stream original entries by indexed SnapshotID+entry ID. Insert
+   a unique original→new mapping; point parent IDs through it, allowing deferred
+   FK checks/two-pass reference patching before sealing. Do not require parent
+   IDs to arrive before children. Exact paths, names/folded forms, types, flags,
+   source dates/sizes, resource identifiers, symlink metadata, aggregates and
+   existing metadata signatures retain original values. Never follow symlinks.
+4. Copy frozen issues and headers. NULL capture-time facts stay NULL; current
+   `volumes` cannot fill them. Header display_name/user_note/collection_id copies,
+   if retained, are **completion-time organization annotations**, not active
+   memberships or immutable original-capture assertions. Do not copy current
+   mutable volume registry values. Metadata BLOBs use explicit typed encoding;
+   they are existing identifiers/signatures, never sampled source payloads.
+5. Map result IDs and parent-result IDs independently. Copy every result type,
+   difference_flags, display/path/times, including ignored rows and NULL-side
+   rows. Added/removed orientation is never recomputed. Copy every collision
+   group/member and remap side-specific entry IDs. FK checks alone do not prove
+   counts/closure: validate both sides, roots, full row/mapping counts and exact
+   frozen summary. Preserve uncertain conclusions, do not rerun comparison.
+6. Seal trees and ready artifact only after validation, then commit its operation
+   receipt in the same transaction. Saved offline readers use archive IDs only.
+   `Content Not Verified` remains explicit. Derived warning text/field formatting
+   must use stored versioned rules/facts; if unsupported, show stored facts with
+   an explicit limitation rather than reinterpreting conclusions.
+
+The prototype encodes full generated v9 row dictionaries as sorted JSON (metadata
+BLOBs as tagged hex) plus typed structural FK columns. Original references inside
+JSON are informational; live links use remapped columns. This preserves generated
+values, but is not a final production archive format. A production serializer
+needs an explicit metadata-only allowlist, schema/version validation, lossless
+NULL/BLOB/integer round-trip, row/string/JSON size limits and rejection of
+unsupported fields. SQL FK enforcement cannot validate JSON payload semantics.
+Classifications/payload bytes/previews are excluded; no source or content hash is
+computed. The harness hashes synthetic metadata only to assert nonmutation.
+
+### Save transaction, retry, cleanup and recovery
+
+- **Eligibility:** explicit action on complete comparison plus complete side
+  snapshots (`complete`/`complete_with_warnings`), same supported normalization,
+  receipt/profile consistency, all evidence still present and a permitted budget.
+  Failed/cancelled/running work is not a successful save. No scan or source access.
+- **Single transaction candidate:** existing serialized `BEGIN IMMEDIATE` under
+  per-catalog process ownership pins original rows against close/delete; copy
+  building graph, validate, seal, ready+receipt and COMMIT. Any exception,
+  cancellation, missing reference or limit rolls back the entire new graph.
+  Original capture/result rows and last complete captures are untouched.
+  No `REPLACE`, first-match lookup or partial-success error recovery.
+- **Visibility:** readers expose only committed ready artifacts. Building is
+  transaction-local; do not commit a resumable staging phase under this candidate.
+  If real budgets require multi-transaction staging, stop and design explicit
+  original-evidence leases, staging ownership, atomic publication and recovery
+  separately; do not introduce it as a fallback.
+- **Retry:** before loading originals, look up the exact operation ID and compare
+  its full request identity. A committed ready record returns the same artifact,
+  even if original rows have since been disposed. A conflicting token rejects.
+  If known rollback left no operation row, retry may reuse the same operation
+  ID. A deleted receipt returns AlreadyDeleted, not a recreated archive. Receipt lifetime and
+  uncertain-delete reconciliation remain production design gates.
+- **Explicit saved deletion:** mark operation deleted, delete that artifact's
+  result/group/side graph, then delete only its unreferenced trees in one
+  transaction. Shared tree references RESTRICT deletion; never sweep all trees
+  or delete ordinary snapshots/Collections. A tree deletion removes its owned
+  entries/issues only. Reference checks/indexes and child-delete immutability
+  guards must permit whole-owner disposal without permitting direct mutation.
+- **Crash/startup:** after restart, committed receipt+ready graph or no save is
+  the target. Preserve accepted scanning/comparison recovery and last-complete
+  behavior. Reconcile by exact operation IDs; a missing/inconsistent ready graph
+  is an integrity error, not permission to rescan or broadly delete history.
+  Unexpected committed building rows fail validation/quarantine for a separately
+  scoped repair. Do not replay Save/capture or delete shared evidence at startup.
+  Real process kill, WAL/fsync, disk-full and ambiguous COMMIT are NOT tested by
+  rollback or in-memory backup. Error UI is bounded and omits raw paths/SQL.
+
+Prototype guards reject ready/sealed evidence writes and protect side ownership
+through composite FKs. It has no full production expected-object manifest,
+parser, completion-event adapter, operation-receipt write guards/retention policy,
+concurrent UI reader or file-backed crash simulator. The repository API plus final
+schema must enforce those pending boundaries before any product acceptance.
+
+### Large-tree evidence, safeguards and migration sequence
+
+Measured isolated Python/SQLite results are in [TEST_PLAN §12](TEST_PLAN.md#12-adr-038-saved-comparison-feasibility--task056).
+Both 10k and 100k **total metadata entries across two trees** were copied and
+read; these are not 100k result rows or filesystem measurements. All copy lists
+are at most 256 rows; mappings are scoped in SQLite, not a whole-tree Python dict.
+Tree read uses `(tree_id,origin_entry_id)` keyset index. Result read uses
+`(artifact_id,path,id)` and a first-page query/root-safe cursor. Support tied paths
+with ID tie-breaks, empty/end pages and exact orientation. Production pages must
+clamp invalid sizes (candidate 1–256) and expose continuation; the toy API uses
+fixed positive sizes and does not implement the UI clamp.
+
+Prototype safeguards: 300,000 copied-accounting rows, 512 MiB serialized metadata,
+60 seconds cooperative elapsed time; checkpoint each batch and before commit.
+These are experiment ceilings, **not approved production limits**. Serialized
+bytes are counted from the receipt/header and copied input rows, not actual
+SQLite/index/WAL allocation. No hard RSS, COMMIT/rollback duration, per-row byte
+bound or disk-free check is claimed. A 256-row cap alone cannot bound bytes if
+one row is huge. Production must preflight row+byte/disk budgets with headroom,
+cap individual metadata records without truncating evidence, measure lock/
+commit/rollback time, report progress and cancellation, and reject over-budget
+saves. Whole-catalog FK/integrity scans in the prototype are test observations;
+production save needs bounded scoped closure validation plus enforced FKs, with
+full catalog checks at migration/maintenance gates. No unbounded source read.
+
+Separately authorized production sequence:
+
+1. Review/finalize B vs alternatives, completion receipt granularity, metadata
+   allowlist/encoding, warning/engine contracts, ID-generation/retry/deletion
+   retention, ownership/guard/index inventory and measured single-transaction
+   limits. Dedicated archive readers/export are separate required work.
+2. Choose additive versions against the then-current schema, not a reserved v10.
+   Supported materialized v4 variants→v5→v6→v7→v8→v9 follow existing explicit
+   steps; then apply reviewed new objects. Fresh schema and migrated catalogs
+   converge. No v1–v3 guess, implicit cumulative schema replay, history backfill,
+   content read or change to existing snapshot kinds/terminal evidence.
+3. Apply each migration's DDL/required indexes/triggers/FKs plus version row as
+   one transaction under process ownership. Verify expected canonical definitions,
+   typed columns, FK actions and both integrity/FK checks. Inject failure at each
+   boundary; partial upgrade rolls back without version advancement. Reject
+   newer/incompatible or malformed catalogs unchanged; older binaries refuse new
+   versions. Test old/fresh/migrated paths with generated catalogs only.
+4. Implement additive completion receipts in actual comparison orchestration,
+   freezing the profile value used and side/issue/summary facts before atomically
+   publishing completion; no rewrite of old comparison truth. Legacy receiptless
+   comparisons retain current persistence/disposal behavior and remain ineligible
+   for exact Save. Do not synthesize receipts during migration.
+5. Implement bounded Save/read/delete under separate authorization; validate
+   closure, all remappings, original guards and exact operation receipts. Retain
+   current unsaved cleanup. Integrate offline inspector/filter/navigation and
+   future metadata-only JSON/HTML export without current-source/profile joins.
+6. Prove disk/WAL crash/reopen and uncertain acknowledgement, cancelled/failed
+   migration/save/delete, shared backing, no orphan/resurrection, normalization/
+   serializer upgrades, UI/source-independent behavior and production scale.
+   PhysicalDrive/Drive Sets remain independent relations with no new cascade
+   into saved evidence. Independent schema/recovery review and BRAIN acceptance
+   precede any production completion claim. No such work is authorized here.
