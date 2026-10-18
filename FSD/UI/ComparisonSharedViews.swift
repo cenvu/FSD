@@ -108,6 +108,7 @@ private enum FSDDestination: Hashable {
     case libraryOverview
     case allDrives
     case recentCaptures
+    case collections
     case comparisons
     case capture
 
@@ -116,6 +117,7 @@ private enum FSDDestination: Hashable {
         case .libraryOverview: return "FSD  ›  Home"
         case .allDrives: return "Library  /  All Drives"
         case .recentCaptures: return "Library  /  Recent Captures"
+        case .collections: return "Library  /  Collections"
         case .comparisons: return "Compare  /  Comparisons"
         case .capture: return "Library  /  Capture"
         }
@@ -211,6 +213,15 @@ struct FSDAppShellView: View {
                 )
             case .recentCaptures:
                 FSDCaptureHistoryView(model: model)
+            case .collections:
+                if let catalog = model.database {
+                    SnapshotCollectionsView(database: catalog) { summary in
+                        model.openSnapshot(summary)
+                        selection = .recentCaptures
+                    }
+                } else {
+                    EmptyStateView(title: "Catalog unavailable", systemImage: "exclamationmark.triangle")
+                }
             case .comparisons:
                 if let catalog = model.database {
                     ComparisonDestinationView(database: catalog)
@@ -242,6 +253,7 @@ private struct FSDSidebarView: View {
 
                     sectionTitle("LIBRARY")
                     navigationRow("Recent Captures", icon: "clock.arrow.circlepath", destination: .recentCaptures)
+                    navigationRow("Collections", icon: "square.stack.3d.up", destination: .collections)
 
                     sectionTitle("COMPARE")
                     navigationRow("Comparisons", icon: "arrow.left.arrow.right", destination: .comparisons)
@@ -1451,6 +1463,555 @@ enum ComparisonUIErrorDescription {
 /// indicator: every result row and summary pill carries these words, and
 /// the canonical orientation (left = reference/before, right = changed/after)
 /// is expressed in the wording for added/removed.
+/// Which grouping the Collections organizer is showing. `.unsorted` is a
+/// presentation of `collection_id IS NULL`, never a stored Collection row.
+enum CollectionFilter: Hashable {
+    case all
+    case unsorted
+    case collection(id: Int64, name: String)
+
+    var membershipFilter: CollectionMembershipFilter {
+        switch self {
+        case .all: return .all
+        case .unsorted: return .unsorted
+        case let .collection(id, _): return .collection(id)
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .all: return "All Snapshots"
+        case .unsorted: return "Unsorted"
+        case let .collection(_, name): return name
+        }
+    }
+}
+
+/// Bounded, observable state for the Collections organizer. It reads and writes
+/// only the local catalog through `SnapshotCollectionRepository`; it never
+/// probes a source, classifies content or infers a Collection from names.
+@MainActor
+final class SnapshotCollectionsModel: ObservableObject {
+    @Published private(set) var collections: [SnapshotCollection] = []
+    @Published private(set) var counts = CollectionMembershipCounts(total: 0, unsorted: 0, byCollection: [:])
+    @Published private(set) var snapshots: [CollectionSnapshot] = []
+    @Published private(set) var isTruncated = false
+    @Published private(set) var loadError: String?
+    @Published private(set) var actionError: String?
+    @Published private(set) var selectedFilter: CollectionFilter = .all
+    @Published var selectedSnapshotID: SnapshotID?
+    @Published var newCollectionName = ""
+    @Published var isComposingCollection = false
+
+    let database: CatalogDatabase
+    private let repository: SnapshotCollectionRepository
+    private let historyRepository: SnapshotHistoryRepository
+    private let collectionLimit: Int
+    private let snapshotLimit: Int
+
+    init(
+        database: CatalogDatabase,
+        collectionLimit: Int = SnapshotCollectionRepository.defaultCollectionLimit,
+        snapshotLimit: Int = SnapshotCollectionRepository.defaultSnapshotLimit
+    ) {
+        self.database = database
+        self.repository = SnapshotCollectionRepository(database: database)
+        self.historyRepository = SnapshotHistoryRepository(database: database)
+        self.collectionLimit = collectionLimit
+        self.snapshotLimit = snapshotLimit
+    }
+
+    /// Reloads the sidebar and the current grouping. A read failure is surfaced
+    /// as `loadError`, never as an empty Collections list.
+    func reload() {
+        do {
+            let collectionPage = try repository.listCollections(limit: collectionLimit)
+            collections = collectionPage.collections
+            counts = try repository.membershipCounts()
+            let snapshotPage = try repository.listSnapshots(filter: selectedFilter.membershipFilter, limit: snapshotLimit)
+            snapshots = snapshotPage.snapshots
+            isTruncated = snapshotPage.isTruncated
+            loadError = nil
+            reconcileSelection()
+        } catch {
+            collections = []
+            counts = CollectionMembershipCounts(total: 0, unsorted: 0, byCollection: [:])
+            snapshots = []
+            isTruncated = false
+            loadError = Self.userMessage(for: error)
+        }
+    }
+
+    func select(_ filter: CollectionFilter) {
+        guard filter != selectedFilter else { return }
+        selectedFilter = filter
+        selectedSnapshotID = nil
+        reload()
+    }
+
+    func createCollection() {
+        do {
+            let created = try repository.createCollection(name: newCollectionName)
+            newCollectionName = ""
+            isComposingCollection = false
+            actionError = nil
+            selectedFilter = .collection(id: created.id, name: created.name)
+            selectedSnapshotID = nil
+            reload()
+        } catch {
+            actionError = Self.userMessage(for: error)
+        }
+    }
+
+    /// Moves the selected snapshot by its stable SnapshotID. `nil` moves it to
+    /// Unsorted. Never infers a target from a display or source name.
+    func moveSelectedSnapshot(to collectionID: Int64?) {
+        guard let snapshotID = selectedSnapshotID else { return }
+        do {
+            try repository.assign(snapshotID: snapshotID, to: collectionID)
+            actionError = nil
+            reload()
+        } catch {
+            actionError = Self.userMessage(for: error)
+        }
+    }
+
+    /// Resolves the stored-history summary needed to browse a snapshot. Reads
+    /// the catalog only; a missing source never blocks this.
+    func summary(for snapshot: CollectionSnapshot) -> SnapshotSummary? {
+        try? historyRepository.summary(id: snapshot.id)
+    }
+
+    func collectionName(for id: Int64?) -> String? {
+        guard let id else { return nil }
+        return collections.first(where: { $0.id == id })?.name
+    }
+
+    func clearActionError() {
+        actionError = nil
+    }
+
+    private func reconcileSelection() {
+        if let selectedSnapshotID, snapshots.contains(where: { $0.id == selectedSnapshotID }) {
+            return
+        }
+        selectedSnapshotID = snapshots.first?.id
+    }
+
+    /// Bounded, user-facing descriptions; raw SQLite text is never shown.
+    static func userMessage(for error: Error) -> String {
+        if let collectionError = error as? SnapshotCollectionError {
+            switch collectionError {
+            case let .database(databaseError):
+                return ComparisonUIErrorDescription.message(for: databaseError)
+            default:
+                return collectionError.errorDescription ?? "The Collection operation could not be completed."
+            }
+        }
+        return ComparisonUIErrorDescription.message(for: error)
+    }
+}
+
+/// Responsive dimensions for the Collections list and snapshot pane, sized
+/// against the FSD window width (the same breakpoint the app shell uses).
+enum SnapshotCollectionsLayout {
+    static let compactSidebarWidth: CGFloat = 250
+    static let desktopSidebarWidth: CGFloat = 290
+    static let compactSnapshotPaneMinimumWidth: CGFloat = 460
+    static let desktopSnapshotPaneMinimumWidth: CGFloat = 520
+
+    static func sidebarWidth(for viewportWidth: CGFloat) -> CGFloat {
+        viewportWidth < FSDDesignTokens.sidebarBreakpoint ? compactSidebarWidth : desktopSidebarWidth
+    }
+
+    static func snapshotPaneMinimumWidth(for viewportWidth: CGFloat) -> CGFloat {
+        viewportWidth < FSDDesignTokens.sidebarBreakpoint ? compactSnapshotPaneMinimumWidth : desktopSnapshotPaneMinimumWidth
+    }
+}
+
+struct SnapshotCollectionsView: View {
+    @StateObject private var model: SnapshotCollectionsModel
+    let onBrowse: (SnapshotSummary) -> Void
+
+    init(model: SnapshotCollectionsModel, onBrowse: @escaping (SnapshotSummary) -> Void) {
+        _model = StateObject(wrappedValue: model)
+        self.onBrowse = onBrowse
+    }
+
+    init(database: CatalogDatabase, onBrowse: @escaping (SnapshotSummary) -> Void) {
+        self.init(model: SnapshotCollectionsModel(database: database), onBrowse: onBrowse)
+    }
+
+    var body: some View {
+        GeometryReader { geometry in
+            HSplitView {
+                collectionSidebar
+                    .frame(
+                        minWidth: SnapshotCollectionsLayout.sidebarWidth(for: geometry.size.width),
+                        idealWidth: SnapshotCollectionsLayout.sidebarWidth(for: geometry.size.width),
+                        maxWidth: SnapshotCollectionsLayout.sidebarWidth(for: geometry.size.width) + 60
+                    )
+                snapshotPane
+                    .frame(minWidth: SnapshotCollectionsLayout.snapshotPaneMinimumWidth(for: geometry.size.width))
+            }
+            .background(FSDDesignTokens.window)
+        }
+        .background(FSDDesignTokens.window)
+        .foregroundStyle(FSDDesignTokens.primaryText)
+        .onAppear { model.reload() }
+    }
+
+    // MARK: - Sidebar
+
+    private var collectionSidebar: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Collections")
+                    .font(.system(size: FSDDesignTokens.overviewTitleSize, weight: .semibold))
+                    .accessibilityAddTraits(.isHeader)
+                Text("Logical groupings stored in the local catalog. Not physical drives.")
+                    .font(.system(size: FSDDesignTokens.overviewSubtitleSize))
+                    .foregroundStyle(FSDDesignTokens.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 18)
+            .padding(.bottom, 12)
+
+            Rectangle().fill(FSDDesignTokens.separator).frame(height: 1)
+
+            ScrollView(.vertical) {
+                VStack(alignment: .leading, spacing: 4) {
+                    filterRow(.all, icon: "square.stack.3d.up", count: model.counts.total)
+                    filterRow(.unsorted, icon: "tray", count: model.counts.unsorted)
+
+                    Text("NAMES")
+                        .font(.system(size: FSDDesignTokens.labelSize, weight: .bold))
+                        .tracking(1.0)
+                        .foregroundStyle(FSDDesignTokens.mutedText)
+                        .padding(.horizontal, 10)
+                        .padding(.top, 8)
+
+                    if !model.collections.isEmpty {
+                        ForEach(model.collections) { collection in
+                            filterRow(
+                                .collection(id: collection.id, name: collection.name),
+                                icon: "square.stack.3d.up.fill",
+                                count: model.counts.count(for: .collection(collection.id))
+                            )
+                        }
+                    } else if model.loadError == nil {
+                        Text("No Collections yet")
+                            .font(.system(size: FSDDesignTokens.bodySize))
+                            .foregroundStyle(FSDDesignTokens.secondaryText)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                    }
+
+                    createCollectionForm
+                        .padding(.top, 8)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+            }
+            .scrollIndicators(.hidden)
+        }
+        .background(FSDDesignTokens.sidebar)
+    }
+
+    private func filterRow(_ filter: CollectionFilter, icon: String, count: Int64) -> some View {
+        let isSelected = model.selectedFilter == filter
+        return Button {
+            model.select(filter)
+        } label: {
+            HStack(spacing: 9) {
+                Image(systemName: icon)
+                    .font(.system(size: FSDDesignTokens.bodySize, weight: isSelected ? .semibold : .regular))
+                    .frame(width: 16)
+                Text(filter.title)
+                    .font(.system(size: FSDDesignTokens.bodySize, weight: isSelected ? .semibold : .regular))
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+                Text("\(count)")
+                    .font(.system(size: FSDDesignTokens.labelSize, weight: .medium))
+                    .foregroundStyle(FSDDesignTokens.mutedText)
+            }
+            .foregroundStyle(isSelected ? FSDDesignTokens.primaryText : FSDDesignTokens.secondaryText)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .frame(minHeight: FSDDesignTokens.sidebarRowHeight)
+            .background(
+                isSelected ? FSDDesignTokens.selected : .clear,
+                in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius)
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(filter.title), \(count) snapshot\(count == 1 ? "" : "s")")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    @ViewBuilder
+    private var createCollectionForm: some View {
+        if model.isComposingCollection {
+            VStack(alignment: .leading, spacing: 8) {
+                TextField("Collection name", text: $model.newCollectionName)
+                    .textFieldStyle(.roundedBorder)
+                    .accessibilityLabel("New Collection name")
+                    .onSubmit { model.createCollection() }
+                HStack(spacing: 8) {
+                    Button("Create") { model.createCollection() }
+                        .keyboardShortcut(.defaultAction)
+                        .accessibilityLabel("Create Collection")
+                    Button("Cancel") {
+                        model.newCollectionName = ""
+                        model.isComposingCollection = false
+                    }
+                    .keyboardShortcut(.cancelAction)
+                    .accessibilityLabel("Cancel new Collection")
+                }
+                .buttonStyle(FSDSecondaryActionButtonStyle())
+            }
+            .padding(.horizontal, 4)
+        } else {
+            Button {
+                model.isComposingCollection = true
+            } label: {
+                Label("Create Collection", systemImage: "plus")
+                    .font(.system(size: FSDDesignTokens.bodySize, weight: .medium))
+                    .frame(minHeight: 34)
+            }
+            .buttonStyle(FSDSecondaryActionButtonStyle())
+            .accessibilityLabel("Create a new Collection")
+        }
+    }
+
+    // MARK: - Snapshot pane
+
+    private var snapshotPane: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            snapshotHeader
+            Rectangle().fill(FSDDesignTokens.separator).frame(height: 1)
+
+            if let loadError = model.loadError {
+                errorBanner(loadError, isLoad: true)
+            }
+            if let actionError = model.actionError {
+                errorBanner(actionError, isLoad: false)
+            }
+
+            if model.snapshots.isEmpty {
+                emptySnapshots
+            } else {
+                snapshotList
+            }
+        }
+        .background(FSDDesignTokens.window)
+    }
+
+    private var snapshotHeader: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(model.selectedFilter.title)
+                    .font(.system(size: FSDDesignTokens.overviewTitleSize, weight: .semibold))
+                    .lineLimit(1)
+                    .accessibilityAddTraits(.isHeader)
+                Spacer(minLength: 8)
+                Text("\(model.counts.count(for: model.selectedFilter.membershipFilter)) snapshot\(model.counts.count(for: model.selectedFilter.membershipFilter) == 1 ? "" : "s")")
+                    .font(.system(size: FSDDesignTokens.labelSize, weight: .medium))
+                    .foregroundStyle(FSDDesignTokens.mutedText)
+            }
+
+            HStack(spacing: 10) {
+                Menu {
+                    Button("Unsorted") { model.moveSelectedSnapshot(to: nil) }
+                    ForEach(model.collections) { collection in
+                        Button(collection.name) { model.moveSelectedSnapshot(to: collection.id) }
+                    }
+                } label: {
+                    Label("Move to Collection", systemImage: "folder.badge.plus")
+                        .frame(minHeight: 34)
+                }
+                .disabled(model.selectedSnapshotID == nil)
+                .accessibilityLabel("Move selected snapshot to a Collection")
+
+                Button {
+                    if let snapshot = model.snapshots.first(where: { $0.id == model.selectedSnapshotID }),
+                       let summary = model.summary(for: snapshot) {
+                        onBrowse(summary)
+                    }
+                } label: {
+                    Label("Browse Snapshot", systemImage: "folder")
+                        .frame(minHeight: 34)
+                }
+                .disabled(model.selectedSnapshotID == nil)
+                .accessibilityLabel("Browse selected snapshot's stored metadata")
+
+                Spacer(minLength: 8)
+
+                if model.isTruncated {
+                    Text("Showing first \(model.snapshots.count)")
+                        .font(.system(size: FSDDesignTokens.labelSize))
+                        .foregroundStyle(FSDDesignTokens.mutedText)
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 18)
+        .padding(.bottom, 14)
+    }
+
+    private func errorBanner(_ message: String, isLoad: Bool) -> some View {
+        HStack(alignment: .top, spacing: 9) {
+            Image(systemName: "exclamationmark.triangle")
+                .foregroundStyle(FSDDesignTokens.destructive)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(isLoad ? "Collections unavailable" : "Collection action failed")
+                    .font(.system(size: FSDDesignTokens.bodySize, weight: .semibold))
+                Text(message)
+                    .font(.system(size: FSDDesignTokens.overviewSubtitleSize))
+                    .foregroundStyle(FSDDesignTokens.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 8)
+            if !isLoad {
+                Button("Dismiss") { model.clearActionError() }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(FSDDesignTokens.accent)
+                    .accessibilityLabel("Dismiss Collection error")
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(FSDDesignTokens.panel, in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
+        .overlay(RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius).stroke(FSDDesignTokens.destructive.opacity(0.5), lineWidth: 1))
+        .padding(.horizontal, 16)
+        .padding(.top, 12)
+    }
+
+    private var emptySnapshots: some View {
+        VStack(spacing: 9) {
+            Image(systemName: "square.stack.3d.up.slash")
+                .font(.system(size: 26, weight: .regular))
+                .foregroundStyle(FSDDesignTokens.accent)
+                .accessibilityHidden(true)
+            Text(emptyStateTitle)
+                .font(.system(size: FSDDesignTokens.sectionTitleSize, weight: .semibold))
+                .accessibilityAddTraits(.isHeader)
+            Text(emptyStateDetail)
+                .font(.system(size: FSDDesignTokens.bodySize))
+                .foregroundStyle(FSDDesignTokens.secondaryText)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 360)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(24)
+    }
+
+    private var emptyStateTitle: String {
+        switch model.selectedFilter {
+        case .all: return "No saved captures yet"
+        case .unsorted: return "Nothing unsorted"
+        case .collection: return "This Collection is empty"
+        }
+    }
+
+    private var emptyStateDetail: String {
+        switch model.selectedFilter {
+        case .all:
+            return "Capture a source, or use Move to Collection to file existing captures into a Collection."
+        case .unsorted:
+            return "Every saved capture currently belongs to a Collection."
+        case .collection:
+            return "Select a capture above and choose Move to Collection to file it here."
+        }
+    }
+
+    private var snapshotList: some View {
+        ScrollView(.vertical) {
+            LazyVStack(spacing: 0) {
+                ForEach(model.snapshots) { snapshot in
+                    Button {
+                        model.selectedSnapshotID = snapshot.id
+                    } label: {
+                        SnapshotCollectionRow(
+                            snapshot: snapshot,
+                            collectionName: model.collectionName(for: snapshot.collectionID),
+                            isSelected: snapshot.id == model.selectedSnapshotID
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    if snapshot.id != model.snapshots.last?.id {
+                        Rectangle().fill(FSDDesignTokens.separator).frame(height: 1)
+                    }
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+        }
+        .scrollIndicators(.hidden)
+        .background(FSDDesignTokens.window)
+    }
+}
+
+private struct SnapshotCollectionRow: View {
+    let snapshot: CollectionSnapshot
+    let collectionName: String?
+    let isSelected: Bool
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: snapshot.isComplete ? "checkmark.seal" : "exclamationmark.octagon")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(snapshot.isComplete ? FSDDesignTokens.connected : FSDDesignTokens.destructive)
+                .frame(width: 26, height: 26)
+                .background(FSDDesignTokens.selected, in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(snapshot.displayName)
+                    .font(.system(size: FSDDesignTokens.bodySize, weight: .semibold))
+                    .foregroundStyle(FSDDesignTokens.primaryText)
+                    .lineLimit(1)
+                HStack(spacing: 6) {
+                    Text(statusText)
+                    Text("·")
+                    Text(snapshot.startedAt)
+                    Text("·")
+                    Text("Collection: \(collectionName ?? "Unsorted")")
+                }
+                .font(.system(size: FSDDesignTokens.labelSize))
+                .foregroundStyle(FSDDesignTokens.secondaryText)
+                .lineLimit(1)
+                Text("Source at capture: \(sourceLabel)")
+                    .font(.system(size: FSDDesignTokens.labelSize))
+                    .foregroundStyle(FSDDesignTokens.mutedText)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(isSelected ? FSDDesignTokens.selected : .clear, in: RoundedRectangle(cornerRadius: FSDDesignTokens.cornerRadius))
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(snapshot.displayName), \(statusText), started \(snapshot.startedAt), Collection \(collectionName ?? "Unsorted"), snapshot #\(snapshot.id.rawValue)")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    private var statusText: String {
+        snapshot.status.rawValue.replacingOccurrences(of: "_", with: " ").capitalized
+    }
+
+    private var sourceLabel: String {
+        guard let label = snapshot.sourceLabelAtCapture?.trimmingCharacters(in: .whitespacesAndNewlines), !label.isEmpty else {
+            return "not recorded at capture time"
+        }
+        return label
+    }
+}
+
 enum ComparisonOutcomeWording {
     static func label(for type: ComparisonResultType) -> String {
         switch type {

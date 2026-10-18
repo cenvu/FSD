@@ -1,170 +1,165 @@
-UPDATED_AT: 2026-10-18T11:45:36+07:00
+UPDATED_AT: 2026-10-18T13:03:08+07:00
 
-# Task050 — Three-Point Explore UX Polish
+# Task051 — Snapshot Collections Organizer Slice
 
 ## HOT
 
 HMD_SCHEMA=FSD_HANDOFF_MARKDOWN
 HMD_VERSION=1.0.0
 PROJECT=FSD
-WORKSTREAM_ID=FSD2_STAGE1_OFFLINE_SNAPSHOT_EXPLORE_UX_POLISH_050
-HANDOFF_ID=handoffs/FSD_FSD2_OFFLINE_SNAPSHOT_EXPLORE_UX_POLISH_050_D_20261018-114340.md
+WORKSTREAM_ID=FSD2_STAGE1_SNAPSHOT_COLLECTIONS_ORGANIZER
+HANDOFF_ID=handoffs/FSD_FSD2_SNAPSHOT_COLLECTIONS_ORGANIZER_SLICE_051_D_20261018-130245.md
 REPO=/Users/cenvu/DEV/FSD
 BRANCH=main
-LOCAL_HEAD=ae1c4564e0cfd38884fa3772687c2ea2b387d272
-REMOTE_HEAD=ae1c4564e0cfd38884fa3772687c2ea2b387d272
-LAST_VERIFIED_AT=2026-10-18T11:43:40+07:00
-AUTHORITY_PTRS=AGENTS.md|docs/BRAIN_OPERATOR.md|STATE/PROJECT_STATE.md|STATE/TASK_LEDGER.tsv|handoffs/CURRENT_HANDOFF.md|docs/UX_UI_SPEC.md|.agents/skills/fsd-task-execution/SKILL.md|.agents/skills/fsd-handoff-finalizer/SKILL.md|scripts/check_control_plane.py
+LOCAL_HEAD=2703f1c00ce5dbfcf29e8ed9daa35561cad1c95a
+REMOTE_HEAD=2703f1c00ce5dbfcf29e8ed9daa35561cad1c95a
+LAST_VERIFIED_AT=2026-10-18T13:03:08+07:00
+AUTHORITY_PTRS=AGENTS.md|docs/BRAIN_OPERATOR.md|STATE/PROJECT_STATE.md|STATE/TASK_LEDGER.tsv|handoffs/CURRENT_HANDOFF.md|docs/UX_UI_SPEC.md|docs/SNAPSHOT_COLLECTIONS.md|.agents/skills/fsd-task-execution/SKILL.md|.agents/skills/fsd-handoff-finalizer/SKILL.md|scripts/check_control_plane.py
 CURRENT_PHASE=POST_V0_1_FSD2_FOUNDATION
-CURRENT_GATE=FSD2_OFFLINE_SNAPSHOT_EXPLORE_UX_POLISH_050
+CURRENT_GATE=FSD2_SNAPSHOT_COLLECTIONS_ORGANIZER_SLICE_051
 STATUS=WORKER_COMPLETE_PENDING_BRAIN
-BLOCKER=NONE;ADVISORY=OWNER_EXPLORER_VISUAL_ACCEPTANCE_PENDING|MANUAL_VOICEOVER_NOT_PERFORMED|TASK047_EXTERNAL_RETENTION_UNPROVEN
-PROPOSED_NEXT=WAIT(OWNER_TASK050_EXPLORE_VISUAL_ACCEPTANCE)
+BLOCKER=NONE;ADVISORY=OWNER_COLLECTIONS_VISUAL_ACCEPTANCE_PENDING|MANUAL_VOICEOVER_NOT_PERFORMED|TASK047_EXTERNAL_RETENTION_UNPROVEN|TASK041_PROCESS_PRIVACY_UNPROVEN_OWNER_ACCEPTED
+PROPOSED_NEXT=WAIT(OWNER_TASK051_COLLECTIONS_VISUAL_ACCEPTANCE)
 NO_AUTO_NEXT=YES
 
 ## Task lock and authority
 
 PROJECT=FSD
-TASK_ID=FSD2_OFFLINE_SNAPSHOT_EXPLORE_UX_POLISH_050
+TASK_ID=FSD2_SNAPSHOT_COLLECTIONS_ORGANIZER_SLICE_051
 ROLE=WORKER
 REPO=/Users/cenvu/DEV/FSD
 BRANCH=main
-BASE_HEAD=ae1c4564e0cfd38884fa3772687c2ea2b387d272
-UPSTREAM_HEAD=ae1c4564e0cfd38884fa3772687c2ea2b387d272
+BASE_HEAD=2703f1c00ce5dbfcf29e8ed9daa35561cad1c95a
+UPSTREAM_HEAD=2703f1c00ce5dbfcf29e8ed9daa35561cad1c95a
 ACCEPTED_STATE=STATE/PROJECT_STATE.md
-SCOPE=OWNER_APPROVED_THREE_POINT_EXPLORE_UX_POLISH
-ALLOWED_PATHS=FSD/UI/SnapshotBrowserView.swift|FSDTests/ComparisonGUIValidationTests.swift|FSDTests/LazyTreeBrowsingTests.swift|STATE/TASK_LEDGER.tsv|STATE/EVENTS.jsonl|handoffs/CURRENT_HANDOFF.md|handoffs/FSD_FSD2_OFFLINE_SNAPSHOT_EXPLORE_UX_POLISH_050_D_20261018-114340.md
-FORBIDDEN_PATHS=STATE/PROJECT_STATE.md|STATE/RULE_PROMOTION_LEDGER.tsv|AGENTS.md|docs/BRAIN_OPERATOR.md|database/schema/migrations|search_backend|scanner_providers_classifier_helper|comparison_engine|Task049_historical_handoff|public_release_assets_tags
-SUCCESS_CRITERIA=RESPONSIVE_TREE_INSPECTOR|COMPACT_THIS_SNAPSHOT_SEARCH|SEARCH_SELECTION_CONTEXT|EXISTING_LAZY_PAGING|EXISTING_NAVIGATION|TESTS_BUILDS_SCREENSHOTS|PRIVACY_BOUNDARIES
-VALIDATIONS=FOCUSED_XCTEST|ARM64_DEBUG_RELEASE|FSD_WINDOW_SYNTHETIC_SCREENSHOTS|BOUNDED_FSD_AX|GIT_DIFF_CHECK|CANONICAL_CHECKER|DESKTOP_CURRENT_PARITY|NORMAL_PUBLICATION
+SCOPE=OWNER_APPROVED_ONE_STAGE1_SNAPSHOT_COLLECTIONS_ORGANIZER_VERTICAL_SLICE
+ALLOWED_PATHS=FSD/Catalog/SnapshotCollectionRepository.swift|FSD/UI/ComparisonSharedViews.swift|FSD.xcodeproj/project.pbxproj|FSDTests/SnapshotCollectionsTests.swift|docs/UX_UI_SPEC.md|STATE/TASK_LEDGER.tsv|STATE/EVENTS.jsonl|handoffs/CURRENT_HANDOFF.md|handoffs/FSD_FSD2_SNAPSHOT_COLLECTIONS_ORGANIZER_SLICE_051_D_20261018-130245.md
+FORBIDDEN_PATHS=STATE/PROJECT_STATE.md|STATE/RULE_PROMOTION_LEDGER.tsv|AGENTS.md|docs/BRAIN_OPERATOR.md|database/schema/migrations|scanner_providers_classifier_helper|SnapshotHistoryRepository|comparison_engine|historical_handoffs|public_release_assets_tags
+SUCCESS_CRITERIA=LOGICAL_COLLECTIONS_BY_STABLE_ID|UNSORTED_IS_NULL|BOUNDED_DETERMINISTIC_READS|SCHEMA_V9_UNCHANGED|SOURCE_READ_ONLY|NO_SOURCE_OR_CLASSIFICATION_ACCESS|TESTS_BUILDS_SCREENSHOTS|CANONICAL_REPORTING
+VALIDATIONS=FOCUSED_XCTEST|ARM64_DEBUG_RELEASE|FSD_WINDOW_SYNTHETIC_SCREENSHOTS|GIT_DIFF_CHECK|CANONICAL_CHECKER|DESKTOP_CURRENT_PARITY|NORMAL_PUBLICATION
 NEXT_BOUNDARY=RETURN_TO_BRAIN_ONLY
 
-The Owner directly authorized these three corrections after reviewing Task049 screenshots. The old PROJECT_STATE visual-review WAIT remains byte-identical; the Owner's explicit Task050 instruction resolves it for this bounded task only. Task049 stays BRAIN-accepted PASS_WITH_ADVISORY. No other Stage1 slice, Stage2 work, release, or automatic continuation is authorized.
-
-The required local Owner Policy, docs/BRAIN_OPERATOR.md, accepted PROJECT_STATE, CURRENT HOT, UX specification, task-execution skill, finalizer skill and canonical checker were read. Owner Issue #1 was applied: ordinary in-scope debugging, tests, code review and reporting were completed inside this one Task050.
+The Owner decision of 2026-10-18 authorized exactly one Task051 Snapshot Collections organizer slice after visually accepting the Task050 Explorer polish from synthetic screenshots. The authorization is limited to logical Collection create/list and moving existing user snapshots by stable SnapshotID, with Unsorted represented as NULL and schema v9 unchanged. Collections are explicitly not physical Drive Sets. The required local Owner Policy (AGENTS.md Owner Policy Always Read), docs/BRAIN_OPERATOR.md, accepted STATE/PROJECT_STATE.md, CURRENT HOT, docs/UX_UI_SPEC.md, docs/SNAPSHOT_COLLECTIONS.md, the task-execution skill, the finalizer skill and the canonical checker were read. Ordinary in-scope implementation, iterative compile/debug, test correction, code review and reporting were completed inside this one Task051 per Owner Issue #1.
 
 ## Re-anchor and protected state
 
-Physical repository: /Users/cenvu/DEV/FSD. Origin: https://github.com/cenvu/FSD.git. Branch main. A non-destructive fetch confirmed local HEAD=origin/main=ae1c4564e0cfd38884fa3772687c2ea2b387d272 and ahead/behind 0/0. The initial baseline was clean. The implementation diff contains only FSD/UI/SnapshotBrowserView.swift and the two authorized focused tests.
+Physical repository: /Users/cenvu/DEV/FSD. Origin: https://github.com/cenvu/FSD.git. Branch main. A non-destructive `git fetch origin` confirmed local HEAD=origin/main=2703f1c00ce5dbfcf29e8ed9daa35561cad1c95a and ahead/behind 0/0 at re-anchor. The baseline working tree was clean. Implementation changes are confined to the authorized paths: FSD/Catalog/SnapshotCollectionRepository.swift (new), FSD/UI/ComparisonSharedViews.swift (add-only), FSD.xcodeproj/project.pbxproj (two file registrations), FSDTests/SnapshotCollectionsTests.swift (new) and docs/UX_UI_SPEC.md (new subsection 5.3).
 
-STATE/PROJECT_STATE.md stayed unchanged (SHA-256 228a369db69c271363d8a6f80019279454f37d67e41bcb766539c9f2f62dd94b); STATE/RULE_PROMOTION_LEDGER.tsv and the accepted Task049 historical handoff stayed unchanged (Task049 handoff SHA-256 23afcaa87960c1dfeff0741c5f76f451f41a7804c0c76b38e97ed09e3265b00c). Existing Main/Home files, comparison engine, search service, database/schema, scanner/providers/classifier/helper, public release assets, and UX documentation were not changed. Task050 was absent from the ledger and events before this return.
-
-The existing Desktop packet was byte-copied before finalizer work to .ai-scratch/task050/finalizer/04_FSD_BRAIN.prepublication.md. Both original and backup SHA-256 are 0644a424a24a9610d5a5947db3a2ae326ba0f828e06faf6376c9b629a5248523. The backup is preserved as recovery evidence.
+STATE/PROJECT_STATE.md stayed byte-identical to the base (SHA-256 a4716931c102f53d2d3db6237e75f0c11459e1f91adc61a1c826e70e6c52b4b4). STATE/RULE_PROMOTION_LEDGER.tsv and all accepted historical handoffs stayed unchanged. No schema, migration, scanner, provider, classifier, helper, comparison-engine or public release asset was changed. FSD/Catalog/SnapshotHistoryRepository.swift was not modified. The existing Desktop packet was byte-copied before finalizer work to .ai-scratch/task051/finalizer/04_FSD_BRAIN.prepublication.md (SHA-256 55250b373de3180c53e20f7b8233318f007426fdc03c8eaec339318864b49217) as recovery evidence.
 
 ## Work completed
 
-### Responsive tree and inspector
+### Catalog repository
 
-The existing AppKit NSOutlineView and its lazy SnapshotTreeDataSource remain. SnapshotTreeColumnLayout uses the actual NSClipView viewport width. Frame-change observers on the scroll view and clip view update columns after pane resizing and are removed on browser exit. Name keeps at least 170 pt, Kind stays 90 pt, and Logical size is hidden below a 580 pt tree viewport; Logical size remains visible in the selected-entry metadata inspector. The tree minimum is 297 pt and the scrollable inspector minimum is 220 pt, so the existing inspector toggle can collapse it when needed.
+`FSD/Catalog/SnapshotCollectionRepository.swift` (new, 383 lines) is the only new access layer. It reads and writes the existing schema-version-9 `collections` table and `snapshots.collection_id` and nothing else: no `FileManager`, no URL/provider access, no filesystem or classification call. Types: `SnapshotCollection`, `SnapshotCollectionPage`, `CollectionSnapshot`, `CollectionSnapshotPage`, `CollectionMembershipFilter` (`.all` / `.unsorted` / `.collection(Int64)`), `CollectionMembershipCounts`, and `SnapshotCollectionError` (blankName, duplicateName, collectionNotFound, snapshotNotFound, snapshotNotUser, database) with bounded `errorDescription` that never surfaces raw SQLite text.
 
-The real FSD window measured these pane frames through a bounded accessibility query of the FSD window only:
+- `normalize` applies the single ADR-009/ADR-019 recipe: trim, then whole-string `PathIdentity.caseFold` (NFC + `en_US_POSIX` case fold).
+- `createCollection` rejects a blank name and rejects a name whose normalized form already exists, then inserts and reads the row back inside one transaction.
+- `listCollections` orders by `normalized_name ASC, id ASC` with a bounded page (`LIMIT limit+1`) and an explicit truncation flag; a single query, no per-row reads.
+- `assign(snapshotID:to:)` verifies the row is a `user` snapshot, verifies the target Collection exists, and performs one `UPDATE snapshots SET collection_id = ?`. The existing trigger advances the target `last_used_at`; nothing else is touched.
+- `listSnapshots(filter:)` excludes `snapshot_kind = 'transient'` in SQL, filters Unsorted by `collection_id IS NULL` or by exact Collection id, orders newest-first with a bounded page and truncation flag.
+- `membershipCounts()` is one bounded `GROUP BY collection_id` aggregate for the sidebar.
 
-| Window width | Tree pane | Inspector pane | Visible outline columns |
-|---:|---:|---:|---|
-| 1120 pt | 320 pt | 237 pt | Name, Kind; Logical size hidden |
-| 1330 pt | 389 pt | 288 pt | Name, Kind; Logical size hidden |
-| 1440 pt | 430 pt | 319 pt | Name, Kind; Logical size hidden |
+### Collections UI
 
-At 1120 pt, hiding and restoring the inspector retained the selected CLIP_0001.MOV metadata. Pane changes did not replace the outline, alter SQL paging, eagerly load descendants, change stable entry identity/cache limits, or add reloadItem calls from data-source callbacks.
+`FSD/UI/ComparisonSharedViews.swift` was extended add-only: a new `FSDDestination.collections` case with breadcrumb "Library / Collections", a sidebar `navigationRow("Collections", …)`, and a destination switch that hosts `SnapshotCollectionsView`, routing Browse back through `model.openSnapshot(summary)` and `selection = .recentCaptures` (falling back to the existing "Catalog unavailable" empty state when the catalog is absent). A new block adds `CollectionFilter`, `@MainActor final class SnapshotCollectionsModel`, `enum SnapshotCollectionsLayout`, `struct SnapshotCollectionsView` and `private struct SnapshotCollectionRow`. The sidebar lists All Captures / Unsorted / each Collection with counts; the snapshot pane lists captured user snapshots with a Move menu labelled "Move to Collection" and a Create Collection form. Create uses `.keyboardShortcut(.defaultAction)`/`.keyboardShortcut(.cancelAction)` with accessibility labels "Create a new Collection" and "Move selected snapshot to a Collection". Layout widths key off `FSDDesignTokens.sidebarBreakpoint` (1280). All pre-existing view text and route callbacks are unchanged.
 
-The custom paging cell now lays out message and actions inside its real Name-cell bounds. On resize it switches between full and compact page text; the full state remains its accessibility label. The visible “Next” and “Retry” buttons stay inside the narrow cell. This retains direct-child pages and the prior error-retry behavior.
+### Reporting and tests
 
-### Search and inspector context
-
-The toolbar is a two-row responsive composition: THIS SNAPSHOT and the flexible query field first; a readable field Picker, Search, conditional Clear and loading indicator second. Visible “Search field” wording is removed while the Picker's accessible description remains “Search field”. Return submission, Search, Clear, existing field choices and MetadataSearchService bounds are unchanged. Result view rendering is guarded by the current SnapshotID.
-
-SnapshotInspectorSearchContext derives its message from the actual summary SnapshotID, selectedEntryID, searchResults, searchFailureMessage and isSearching values. It marks an earlier selection when it is outside submitted results, gives no misleading prior-selection message when the selected ID is in results, and distinguishes in-progress and failed queries. Clearing the query restores normal selection context. Failed detail lookup clears old details, and rendering requires the loaded details ID to equal selectedEntryID. Closing or replacing a browser clears selection, selected details, query and error, then invalidates the search generation. Classification remains explicit behind its existing button; the browsing/search path never reads file contents or starts classification.
-
-### Recovery discipline after repeated narrow-cell failures
-
-Early focused runs recorded the same narrow AppKit cell failure: the Next/Retry hit target exceeded the visible Name cell by 2–4 pt (for example, narrow-pane v1 logged 194 vs 192 pt and v13 logged 186 vs 182 pt). After repeated same-cause attempts, official Apple AppKit docs were consulted. Apple documents custom NSView layout for arrangements not expressible with constraints and frame-change notifications for observing resized views: [NSView.layout()](https://developer.apple.com/documentation/appkit/nsview/layout%28%29) and [NSView.postsFrameChangedNotifications](https://developer.apple.com/documentation/appkit/nsview/postsframechangednotifications). The implementation switched to a cell-local custom layout driven by its live bounds and verified resize behavior in the final outline test and FSD window.
+`FSDTests/SnapshotCollectionsTests.swift` (new, 405 lines) exercises the repository, the model and the view against isolated synthetic catalogs. `docs/UX_UI_SPEC.md` gained subsection 5.3 recording the implemented contract and the explicit deferrals.
 
 ## Validation evidence
 
-Full focused command:
+Focused command:
 
-xcodebuild test -project FSD.xcodeproj -scheme FSD -configuration Debug -destination 'platform=macOS,arch=arm64' -derivedDataPath .ai-scratch/task050/DerivedData -resultBundlePath .ai-scratch/task050/results/focused-suites-final-v9.xcresult -only-testing:FSDTests/ComparisonGUIValidationTests -only-testing:FSDTests/LazyTreeBrowsingTests -only-testing:FSDTests/MetadataSearchTests -only-testing:FSDTests/SnapshotHistoryTests
+xcodebuild test-without-building -project FSD.xcodeproj -scheme FSD -configuration Debug -destination 'platform=macOS,arch=arm64' -resultBundlePath .ai-scratch/task051/results/focused-suites.xcresult -only-testing:FSDTests/SnapshotCollectionsTests -only-testing:FSDTests/SnapshotHistoryTests -only-testing:FSDTests/ComparisonGUIValidationTests -only-testing:FSDTests/ComparisonGUISourceBoundaryTests -only-testing:FSDTests/SnapshotLifecycleTests -only-testing:FSDTests/ComparisonWorkspaceModelTests -only-testing:FSDTests/ComparisonBrowserModelTests -only-testing:FSDTests/SchemaMigrationTests -only-testing:FSDTests/CatalogDatabaseTests -only-testing:FSDTests/SnapshotBrowserClassificationTests
 
-Result: exit 0; 94 executed, 94 passed, 0 failed, 0 skipped. Suites: ComparisonGUIValidationTests 40, LazyTreeBrowsingTests 13, MetadataSearchTests 13, SnapshotHistoryTests 28. Evidence log: .ai-scratch/task050/logs/focused-suites-final-v9.log.
+Result: exit 0; 169 executed, 169 passed, 0 failed, 0 skipped. Per suite: SnapshotCollectionsTests 18, SnapshotHistoryTests 28, ComparisonGUIValidationTests 40, ComparisonGUISourceBoundaryTests 7, SnapshotLifecycleTests 10, ComparisonWorkspaceModelTests 5, ComparisonBrowserModelTests 2, SchemaMigrationTests 25, CatalogDatabaseTests 6, SnapshotBrowserClassificationTests 28. Evidence log: .ai-scratch/task051/logs/focused-suites.log. The first build of the new test file failed once on an argument-order diagnostic (`kind` must precede `name`) and was corrected in-scope; the test-only source-scan assertion was corrected to ignore comment lines; a model-error assertion was corrected from an accidental double-optional check. These are ordinary in-scope corrections.
 
-The final narrow-page resize test was rerun after its added assertions:
+Normal arm64 builds passed: `xcodebuild build -project FSD.xcodeproj -scheme FSD -configuration Debug -destination 'platform=macOS,arch=arm64'` and the equivalent Release build both report BUILD SUCCEEDED. `git diff --check` passes.
 
-xcodebuild test -project FSD.xcodeproj -scheme FSD -configuration Debug -destination 'platform=macOS,arch=arm64' -derivedDataPath .ai-scratch/task050/DerivedData -resultBundlePath .ai-scratch/task050/results/narrow-pane-final-v20.xcresult -only-testing:FSDTests/LazyTreeBrowsingTests/testNarrowTreePaneKeepsNextAndRetryButtonsInsideVisibleNameColumn
+GUI evidence used only the FSD window and an isolated synthetic catalog. `SnapshotCollectionsTests.testCollectionsGUIRendersAtSupportedWidthsAndCapturesScreenshots` hosts `SnapshotCollectionsView` in an `NSWindow`, resizes it, and writes five synthetic screenshots:
 
-Result: exit 0; 1 executed, 1 passed, 0 failed. It resizes the actual outline window from 297 to 430 pt and back, verifies compact/full/compact page text and confirms Next and Retry remain in the Name cell while full accessibility messages remain available. Evidence log: .ai-scratch/task050/logs/narrow-pane-final-v20.log.
+- .ai-scratch/task051/screenshots/collections-all-1120.png — All Captures at 1120 pt with two Collections and Unsorted.
+- .ai-scratch/task051/screenshots/collections-all-1330.png — All Captures at 1330 pt.
+- .ai-scratch/task051/screenshots/collections-unsorted-1120.png — Unsorted grouping.
+- .ai-scratch/task051/screenshots/collections-assigned-1330.png — a Collection holding an assigned snapshot with the Move control.
+- .ai-scratch/task051/screenshots/collections-empty-1120.png — an empty Collection.
 
-Normal macOS arm64 builds passed: Debug log .ai-scratch/task050/logs/debug-build-final-v9.log and Release log .ai-scratch/task050/logs/release-build-final-v9.log both report BUILD SUCCEEDED.
-
-Final Debug candidate screenshots used only the FSD window and an isolated synthetic catalog at .ai-scratch/task050/fixtures/explore-synthetic.sqlite3. SQLite integrity_check returned ok; foreign_key_check returned zero rows. FSD-window AX confirmed Search field description “Search field” and value “Name or path”. A bounded keyboard interaction submitted CLIP with Return, selected CLIP_0001.MOV, then submitted ZZZ with Return. The zero-match view retained that item in the inspector and showed the selection-context message. No native folder picker, Owner catalog/media, Finder or other application was inspected.
-
-- .ai-scratch/task050/screenshots/explore-1120.png — Explorer, no query, 1120 pt window.
-- .ai-scratch/task050/screenshots/explore-1330.png — Explorer, no query, 1330 pt window.
-- .ai-scratch/task050/screenshots/explore-1440-measure.png — Explorer, no query, 1440 pt window.
-- .ai-scratch/task050/screenshots/search-1120.png — THIS SNAPSHOT, two CLIP results, SnapshotID 3, readable Picker.
-- .ai-scratch/task050/screenshots/search-selected-inspector-1120.png — selected CLIP_0001.MOV metadata.
-- .ai-scratch/task050/screenshots/search-no-matches-selected.png — ZZZ returns zero matches while CLIP_0001.MOV stays visible with the not-in-results label.
-- .ai-scratch/task050/screenshots/inspector-collapsed-1120.png and .ai-scratch/task050/screenshots/inspector-toggle-restored-1120.png — collapse/restore retained metadata.
+No native folder picker, Owner catalog/media, Finder, global/recursive accessibility probe or other application was inspected.
 
 ## Code review and privacy
 
-Code review: PASS. Column updates respond to actual viewport frames and are width-guarded. The paging cell only relayouts its own label/buttons from its actual bounds; no tree data reload or paging callback semantics changed. Observer tokens are removed at browser exit. Selection details are cleared before lookup and only rendered for the matching selected ID. Search rows/results remain bounded and exact-SnapshotID-scoped. Inspector state distinctions are derived from real model fields. Main/Home and route implementations are untouched. No source contents, Owner folders, or physical media were read; no source was changed; no native picker or classification was launched. Manual VoiceOver was not performed. Task047 external-retention remains UNPROVEN and open. Owner visual acceptance of the Task050 Explorer polish remains pending. No release, Task051, or other Stage1/Stage2 work started.
+Code review: PASS. The repository is a pure catalog access layer using one bounded query per operation and one single-row UPDATE per move; all `CatalogDatabaseError` values are wrapped and presented as bounded text. `createCollection` and `assign` run inside transactions; a failed assignment leaves the snapshot unchanged. The organizer never deletes snapshot or Collection rows and never writes entry rows. The UI change is add-only; existing Main/Home, Explore, Compare and Capture routes and their asserted source strings are preserved. No source contents, Owner folders or physical media were read; no source was changed; no picker or classification was launched. Manual VoiceOver was not performed. Task047 external accessibility retention and the Task041/Task044 process-privacy residual remain UNPROVEN and open. Owner visual acceptance of the Collections organizer remains pending. No release, Task052 or other Stage1/Stage2 work started.
 
 ## Worker execution requirement map
 
 | # | Requirement | Outcome | Evidence |
 |---:|---|---|---|
-| 1 | Fresh canonical root, origin, main, expected base and ahead/behind zero | EVIDENCED | Final fetch and Git receipt; HEAD=origin/main=ae1c4564e0cfd38884fa3772687c2ea2b387d272. |
-| 2 | Owner authorization resolves the old Task049 visual-review WAIT for exactly these three corrections | EVIDENCED | Owner direct Task050 request; no other Stage1 or Stage2 scope taken. |
-| 3 | Task049 remains BRAIN-accepted PASS_WITH_ADVISORY | EVIDENCED | Accepted PROJECT_STATE and ledger remain authoritative and unchanged. |
-| 4 | Only SnapshotBrowserView and the two focused test files changed | EVIDENCED | git diff --name-status; no ComparisonSharedViews, backend, database or release changes. |
-| 5 | BRAIN-owned PROJECT_STATE, rule ledger and Task049 history remain byte-identical | EVIDENCED | Protected hashes recorded in prepublication manifest; State SHA-256 228a369db69c271363d8a6f80019279454f37d67e41bcb766539c9f2f62dd94b; Task049 handoff SHA-256 23afcaa87960c1dfeff0741c5f76f451f41a7804c0c76b38e97ed09e3265b00c. |
-| 6 | Actual tree and inspector widths measured at 1120, 1330 and 1440 pt | EVIDENCED | FSD-only AX pane frames: 320/237, 389/288 and 430/319 pt respectively. |
-| 7 | Tree column adaptation follows the actual NSClipView viewport width | EVIDENCED | Frame notifications update the existing outline columns; resize test and live measurements. |
-| 8 | Name and Kind stay visible; Logical size is hidden at these pane widths and remains in inspector metadata | EVIDENCED | FSD-window screenshots and measured widths; selected inspector shows Logical size. |
-| 9 | Tree and inspector do not overlap or clip essential controls; inspector remains scrollable and collapsible | EVIDENCED | 1120/1330/1440 screenshots; 1120 Hide/Show screenshots retain selected metadata. |
-| 10 | Page state compacts against the actual cell width and expands again after resize | EVIDENCED | Live 1120 screenshot shows Page 1 of 1; narrow-pane test resizes 297↔430 and verifies compact/full text. |
-| 11 | Next and Retry hit targets stay inside the narrow Name cell | EVIDENCED | Targeted LazyTree test validates actual NSOutlineView cell/button frames at 297 pt window width. |
-| 12 | Direct-child paging, page boundaries, Retry recovery, root expansion, cache limits and entry identity remain intact | EVIDENCED | Existing LazyTreeBrowsingTests; only cell presentation and column layout changed. |
-| 13 | No reloadItem was added to a data-source callback | EVIDENCED | Full source diff review; existing data-source callback bodies and paging/SQL semantics are unchanged. |
-| 14 | Search scope is visibly THIS SNAPSHOT | EVIDENCED | FSD-window search screenshot and bounded FSD accessibility label. |
-| 15 | Search uses the selected exact SnapshotID and does not mix same-label snapshots | EVIDENCED | GUI validation test creates duplicate labels with distinct SnapshotIDs and checks isolated results. |
-| 16 | Existing MetadataSearchService fields and bounded/truncated result behavior remain in use | EVIDENCED | Search service was not changed; MetadataSearchTests and GUI result-label checks pass. |
-| 17 | Search input is dominant and picker is readable with the redundant visible wording removed | EVIDENCED | 1120 screenshot shows flexible input and Name or path picker without a visible Search field caption. |
-| 18 | Search, Return submission and Clear remain available with descriptive accessibility labels | EVIDENCED | FSD-only keyboard interaction, focused GUI tests, picker AX description Search field and value Name or path. |
-| 19 | Loading indication remains visible while search is active | EVIDENCED | Existing isSearching spinner branch retained and reviewed; model generation tests pass. |
-| 20 | Empty results, successful results, truncation and query failure stay distinct | EVIDENCED | GUI validation and MetadataSearch tests; 0-match and 2-match FSD screenshots. |
-| 21 | Clear and browser close invalidate displayed results and pending search generations | EVIDENCED | GUI model tests validate empty query, close, and stale-response generation handling. |
-| 22 | A selected item outside current results is labeled; a hit does not get a misleading prior-selection label | EVIDENCED | Inspector context tests cover zero, matching result and selection identity; live 0-match screenshot. |
-| 23 | Searching and failed-query inspector context is distinct from retained metadata | EVIDENCED | Model tests assert in-progress and failure labels while keeping valid selected details. |
-| 24 | A failed selected-entry lookup never leaves prior metadata displayed | EVIDENCED | GUI test selects a valid ID then a missing ID; inspector checks details ID against selectedEntryID. |
-| 25 | Switching same-label snapshots leaves no prior search or inspector ownership | EVIDENCED | Open/close model tests use distinct SnapshotIDs and verify previous query/details are cleared. |
-| 26 | Classification remains explicit and browsing/search never starts it | EVIDENCED | Classification button is unchanged and database classification count remains zero in GUI test. |
-| 27 | Offline/read-only wording does not claim physical source connection or identity | EVIDENCED | Explorer screenshots and code review; no source probes, mount-path identity or source reads. |
-| 28 | Home, Browse Snapshot, Recent Captures, Explorer, History, Compare and Capture routes remain intact | EVIDENCED | Navigation source outside the primary view is unchanged; existing GUI navigation tests pass. |
-| 29 | Four required screenshots and supplemental inspector states are FSD-window-only with synthetic data | EVIDENCED | Exact screenshots under .ai-scratch/task050/screenshots; window-ID capture of the Debug candidate. |
-| 30 | All four required XCTest suites pass | EVIDENCED | 94/94: ComparisonGUIValidation 40, LazyTreeBrowsing 13, MetadataSearch 13, SnapshotHistory 28; 0 failed/skipped. |
-| 31 | Final narrow paging test passes after resize assertions were added | EVIDENCED | LazyTreeBrowsingTests.testNarrowTreePaneKeepsNextAndRetryButtonsInsideVisibleNameColumn: 1/1. |
-| 32 | Normal arm64 Debug and Release builds pass | EVIDENCED | Final build logs report BUILD SUCCEEDED for both configurations. |
-| 33 | Full diff review and whitespace check pass | EVIDENCED | Diff is limited to the authorized product and focused test files; git diff --check passes. |
-| 34 | Task047 external-retention advisory remains open and is not claimed resolved | EVIDENCED | Explicitly preserved as UNPROVEN/OPEN; no new external data disclosure. |
-| 35 | No Owner catalog, source media, native picker, global/recursive AX or other-app inspection was used | EVIDENCED | Isolated synthetic SQLite catalog and bounded FSD-window accessibility only. |
-| 36 | No release, Task051 or broader Stage1/Stage2 work was started | EVIDENCED | No release paths changed; next boundary is return to BRAIN only. |
-| 37 | Manual VoiceOver and Owner visual acceptance of Task050 Explorer | NOT_APPLICABLE | Not performed; both remain advisory/pending under the task instructions. |
+| 1 | Fresh canonical root, origin, main, expected base and ahead/behind zero | EVIDENCED | Fetch receipt; HEAD=origin/main=2703f1c00ce5dbfcf29e8ed9daa35561cad1c95a. |
+| 2 | Exactly one authorized Task051 slice; no broader Stage1/Stage2 or release | EVIDENCED | Owner decision 2026-10-18; scope limited to the allowed paths. |
+| 3 | Collections are logical catalog rows, not physical Drive Sets | EVIDENCED | Repository and UI use only `collections`; docs/UX_UI_SPEC.md 5.3 states the boundary. |
+| 4 | Create trims the name and rejects a blank name | EVIDENCED | testCreateListAndReloadPersistAcrossInstances, testBlankNameRejected. |
+| 5 | Case- and Unicode-normalized duplicate names are rejected outright | EVIDENCED | testCaseAndUnicodeDuplicateNamesRejected (XYZ/xyz and NFC/NFD café). |
+| 6 | Deterministic normalized_name order with a bounded page and truncation flag | EVIDENCED | testListOrderIsDeterministicAndBoundedWithTruncation. |
+| 7 | Unsorted is `collection_id IS NULL`, never a stored built-in row | EVIDENCED | testUnsortedIsNullNotBuiltInRow; raw column check. |
+| 8 | Membership by stable SnapshotID and Collection id only | EVIDENCED | testMoveAssignsByStableIDAndUpdatesLastUsedAt; assign by SnapshotID. |
+| 9 | Identical display names remain distinct snapshots | EVIDENCED | testSameDisplayNamesRemainDistinctSnapshots. |
+| 10 | Move into a Collection assigns; move back to Unsorted clears without deleting | EVIDENCED | testMoveBackToUnsortedClearsMembershipWithoutDeleting. |
+| 11 | `last_used_at` advances on real assignment and not on view or move-out | EVIDENCED | testMoveAssignsByStableIDAndUpdatesLastUsedAt, testMoveBackToUnsortedClearsMembershipWithoutDeleting. |
+| 12 | Invalid snapshot/collection IDs fail safely with no partial write | EVIDENCED | testInvalidIDsFailSafely. |
+| 13 | Transient snapshots are excluded from lists and rejected for assignment | EVIDENCED | testTransientSnapshotsExcludedAndRejected. |
+| 14 | Captured facts, entries and aggregates stay immutable across moves | EVIDENCED | testCollectionWritesNeverModifyCapturedFacts; row fingerprint unchanged across assign/unassign. |
+| 15 | Organizing works offline with the original source removed | EVIDENCED | testAssignmentsWorkWhenSourceDisappears; browse route reads the catalog. |
+| 16 | Moving never writes to source files | EVIDENCED | testMovingSnapshotsNeverWritesToSourceFiles; modification date and content unchanged. |
+| 17 | Repository has no source, filesystem or classification access | EVIDENCED | testRepositoryHasNoSourceOrClassificationAccess; no FileManager/URL/provider/classif. |
+| 18 | Catalog read/write failures are surfaced, not shown as an empty list | EVIDENCED | testModelSurfacesCatalogErrorsInsteadOfEmptyCollections; bounded "code 1" text only. |
+| 19 | A new Collections destination is reachable from the sidebar | EVIDENCED | testNavigatorWiresCollectionsAndPreservesExistingRoutes; navigationRow("Collections"). |
+| 20 | Browse from the organizer reuses the stored-snapshot route | EVIDENCED | onBrowse routes to model.openSnapshot(summary) and selection = .recentCaptures. |
+| 21 | Move and Create controls carry keyboard shortcuts and accessibility labels | EVIDENCED | Source assertions for .keyboardShortcut(.defaultAction/.cancelAction) and both labels. |
+| 22 | Layout fits the supported 1120/1330/1440 pt window widths | EVIDENCED | testLayoutFitsSupportedWidths. |
+| 23 | Existing Main/Home, Explore, Compare and Capture routes remain intact | EVIDENCED | Pre-existing route source strings asserted unchanged. |
+| 24 | Schema version 9 and all migrations are unchanged | EVIDENCED | No schema/migration file changed; SchemaMigrationTests 25/25 pass. |
+| 25 | Deferred work (rename/delete/note/capture sheet/default Collection/Drive Sets) is not implemented | EVIDENCED | No such code paths added; docs/UX_UI_SPEC.md 5.3 lists deferrals. |
+| 26 | Focused XCTest passes with no failures | EVIDENCED | 169/169 executed in the focused command; log .ai-scratch/task051/logs/focused-suites.log. |
+| 27 | Normal arm64 Debug and Release builds pass | EVIDENCED | Both xcodebuild configurations report BUILD SUCCEEDED. |
+| 28 | Full diff and whitespace check pass within scope | EVIDENCED | `git diff --check` passes; changes confined to the allowed paths. |
+| 29 | BRAIN-owned PROJECT_STATE and rule ledger remain byte-identical | EVIDENCED | PROJECT_STATE SHA-256 a4716931c102f53d2d3db6237e75f0c11459e1f91adc61a1c826e70e6c52b4b4; rule ledger unchanged. |
+| 30 | GUI evidence is FSD-window-only with synthetic data | EVIDENCED | Five screenshots under .ai-scratch/task051/screenshots from a hosted NSWindow. |
+| 31 | No global/recursive AX, native picker, other-app or Owner-media inspection | EVIDENCED | Isolated synthetic catalog and window-hosted view only. |
+| 32 | Task047 external-retention and Task041 privacy advisories remain open | EVIDENCED | Preserved as UNPROVEN/OPEN; no new disclosure. |
+| 33 | Single Worker return, append-only events, flat immutable history | EVIDENCED | One new handoff, one worker_return, prior history unchanged. |
+| 34 | Manual VoiceOver and Owner visual acceptance of the Collections organizer | NOT_APPLICABLE | Not performed; both remain advisory/pending. |
 
 ## Finalizer closure boundary
 
-At the instant this immutable handoff was sealed, the canonical prepublication checker, Desktop parity, commit/push and postpublication checker had not yet run. They are part of this same authorized Task050 finalizer round and their actual outcomes are recorded in the dated Desktop Task050 receipt. The publication SHA is resolved from Git history after push and is not self-referenced in this immutable handoff. No BRAIN-owned classification or accepted-state projection is authored here.
+At the instant this immutable handoff was sealed, the canonical prepublication checker, Desktop parity, commit/push and postpublication checker had not yet run. They are part of this same authorized Task051 finalizer round and their actual outcomes are recorded in the dated Desktop Task051 receipt. The publication SHA is resolved from Git history after push and is not self-referenced in this immutable handoff. No BRAIN-owned classification or accepted-state projection is authored here.
 
 RESULT=PASS_WITH_ADVISORY
 WORKER_RESULT=PASS_WITH_ADVISORY
+COLLECTION_CREATE=TRIM;BLANK_REJECTED;CASE_AND_UNICODE_DUPLICATE_REJECTED;ONE_TRANSACTION
+COLLECTION_LIST=NORMALIZED_NAME_ASC;ID_ASC;BOUNDED_LIMIT_PLUS_ONE;TRUNCATION_FLAG
+UNSORTED=COLLECTION_ID_IS_NULL;NEVER_A_STORED_ROW
+SNAPSHOT_ASSIGNMENT=BY_STABLE_SNAPSHOT_ID;SINGLE_ROW_UPDATE;TRIGGER_ADVANCES_LAST_USED_AT;MOVE_OUT_CLEARS_WITHOUT_DELETE
+IMMUTABILITY=ENTRIES_AGGREGATES_TIMESTAMPS_AND_CAPTURE_FACTS_UNCHANGED;NO_DELETE;NO_ENTRY_WRITES
+OFFLINE_PRIVACY=CATALOG_ONLY;NO_SOURCE_READ_OR_WRITE;NO_PICKER_OR_OTHER_APP;NO_CLASSIFICATION;BOUNDED_ERRORS
+NAVIGATION=SIDEBAR_COLLECTIONS_DESTINATION;EXISTING_ROUTES_PRESERVED;BROWSE_REUSES_STORED_SNAPSHOT_ROUTE
+TESTS=169_EXECUTED_169_PASS_0_FAIL_0_SKIP;COLLECTIONS_SUITE_18
+DEBUG_RELEASE=ARM64_DEBUG_PASS;ARM64_RELEASE_PASS
+SCREENSHOTS=.ai-scratch/task051/screenshots/collections-all-1120.png|.ai-scratch/task051/screenshots/collections-all-1330.png|.ai-scratch/task051/screenshots/collections-unsorted-1120.png|.ai-scratch/task051/screenshots/collections-assigned-1330.png|.ai-scratch/task051/screenshots/collections-empty-1120.png
+CODE_REVIEW=PASS
+CHECKER_PRE=RECORDED_IN_DESKTOP_RECEIPT
+CHECKER_POST=RECORDED_IN_DESKTOP_RECEIPT
+PUBLICATION_SHA=RESOLVED_FROM_GIT_AFTER_PUSH
 PUBLIC_RELEASE=UNCHANGED;NO_NEW_RELEASE_OR_ZIP
 OWNER_VISUAL_ACCEPTANCE=PENDING
 MANUAL_VOICEOVER=NOT_PERFORMED
 TASK047_EXTERNAL_RETENTION=UNPROVEN;OPEN
+WORKER_LEDGER_CLASSIFICATION_FIELD=PENDING_BRAIN
 WORKER_EXECUTION_GUARD=FSD_WORKER_EXECUTION_V1
 WORKER_PREFLIGHT=PASS
-WORKER_REQUIREMENTS_TOTAL=37
-WORKER_REQUIREMENTS_EVIDENCED=36
+WORKER_REQUIREMENTS_TOTAL=34
+WORKER_REQUIREMENTS_EVIDENCED=33
 WORKER_REQUIREMENTS_NOT_APPLICABLE=1
 WORKER_REQUIREMENTS_UNPROVEN=0
 WORKER_POSTFLIGHT=PASS

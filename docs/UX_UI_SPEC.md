@@ -158,6 +158,52 @@ collapse without clearing its selected metadata. Classification remains an
 explicit inspector action. No schema, capture facts, comparison evidence,
 Home semantics or physical-drive identity behavior changes in this slice.
 
+### 5.3 Owner-authorized Snapshot Collections organizer slice — Task051
+
+Task051 implements the first bounded Stage1 Collections vertical slice on top of
+the existing schema version 9 `collections` table and `snapshots.collection_id`
+field. It adds one new destination, **Collections**, reachable from the sidebar
+alongside Home, Recent Captures, Comparisons and Capture.
+
+The implemented contract is:
+
+- A Collection is catalog metadata only: a user-defined logical grouping of
+  saved user captures. It is never a folder on a source volume and never mutates
+  snapshot contents, entry rows, aggregates, capture timestamps, `session_number`
+  or any source-identity field.
+- "Unsorted" is never a stored Collection row. It is `collection_id IS NULL`,
+  rendered as Unsorted in the UI only. A missing Collection is never invented.
+- The sidebar lists All Captures, Unsorted (with live counts) and each Collection
+  in deterministic normalized-name order. Each row shows its bounded snapshot
+  count and the selected grouping is clearly indicated.
+- The snapshot pane lists saved user captures newest-first, bounded with an
+  explicit truncation indicator. Membership is carried by stable `SnapshotID`
+  and Collection id only; display names, source labels and mount paths are never
+  used to infer a Collection. Identical display names remain distinct records.
+- A snapshot is moved into a Collection, or back to Unsorted, through an
+  explicit Move control attached to the selected snapshot. Moving updates only
+  `snapshots.collection_id`; the database trigger advances the target
+  Collection's `last_used_at`. It never deletes a snapshot.
+- Creating a Collection trims the name, rejects a blank name, and rejects a name
+  whose normalized form (ADR-009/ADR-019 NFC + locale-independent case fold)
+  already exists rather than silently creating a case/Unicode near-duplicate.
+- Transient comparison snapshots are excluded from every list and rejected for
+  assignment; only saved user captures can be organized.
+- Organizing works fully offline: it reads and writes the catalog and never
+  accesses a source, a mount path or a provider. A capture stays in its
+  Collection when its original source is disconnected, erased or never
+  reconnected, and its physical identity is never asserted from the grouping.
+- Catalog read/write failures are surfaced as bounded user-facing text; raw
+  SQLite text, internal table names and paths are never shown, and a read
+  failure is never presented as an empty Collections list.
+
+Deferred and **not** implemented in this slice: renaming or deleting a
+Collection; editing a snapshot's display name or user note; the capture-time
+organization sheet; a remembered default Collection and `source_collection_defaults`
+writes; Auto Capture; Drive Sets; physical source identity and mount detection;
+library-wide search; content preview and auto-classification; and any schema,
+migration or comparison-engine change.
+
 ## 6. DRIVE SET DIRECTION
 
 A Drive Set is a user-created group of PHYSICAL DRIVES.
