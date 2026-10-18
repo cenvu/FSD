@@ -1114,3 +1114,68 @@ are TECHNICAL_PROOF_PENDING. No Xcode build or production XCTest ran. Manual
 E2E/VoiceOver, Task041/047 privacy and hardware proof advisories remain unchanged.
 Other PRD/PRODUCT_STATE/MVP_PLAN/Collection-document alignment is read-only here;
 Task056 does not claim all Wave A or internal acceptance gates complete.
+
+## 13. Integrated Wave A requirements-to-proof matrix — Task057
+
+**Documentation synthesis; 2026-10-18.** This integrates the accepted Tasks054–056
+feasibility evidence for [ADR-036](DECISIONS.md#adr-036--physical-drive-identity-and-mount-policy-wave-a-candidate),
+[ADR-037](DECISIONS.md#adr-037--drive-sets-vs-snapshot-collections-wave-a-candidate)
+and [ADR-038](DECISIONS.md#adr-038--durable-live-comparison-via-explicit-save-option-b-candidate)
+into one traceable readiness view. It does not rerun, reinterpret or overwrite the
+individual case receipts in §§10–12, and makes no product, schema, hardware,
+migration or acceptance claim. The three ADRs remain Proposed / Owner Direction
+Approved / Technical Proof Pending; every accepted feasibility result is
+`SYNTHETICALLY_TESTED` only. Completed Tasks047–052 and Phase 1.5 are included so
+no finished work is reclassified as unimplemented.
+
+Legend. **Impl** = current implementation: `DONE`, `PARTIAL`, `NONE`.
+**Dir/Design** = `DIR` binding Owner direction versus `DESIGN` proposed candidate
+technical design (not accepted). **Synthetic** = accepted feasibility evidence and
+its explicit limit. **Production proof** = required future proof, with
+hardware/manual noted where relevant. **Dep** = prerequisite slice. **Ord** =
+recommended bounded order (Task057; see [MVP_PLAN.md](MVP_PLAN.md)). **Class** =
+`BLOCKER` (hard gate for the requirement) versus `ADVISORY`. **Gate** = relevance
+to Feature Complete (`FC`) / Internal Acceptance (`IA`) / neither.
+
+| # | Requirement — source | Impl | Dir/Design | Synthetic evidence / limit | Production proof (hw/manual) | Dep | Ord | Class | Gate |
+|---|---|---|---|---|---|---|---|---|---|
+| 01 | Observation-only mount status / Connected Now — UX §§8–9, PRD §5.1 | NONE | DIR observation-only, never mount/eject/payload; DESIGN IOMedia ancestry adapter | Task054 E1–E8 API research only; no observer executed | Observer allowlist/lifecycle, dedup/late/startup events, macOS 15+ runtime | ADR-036 | 2 | BLOCKER | FC |
+| 02 | Fail-closed multi-evidence identity (UniqueStrongMatch/Unknown/Ambiguous/Conflict) — UX §9, ADR-036 | NONE | DIR fail-closed; DESIGN typed evidence + precedence | Task054 S01–S32 (32/32); strong branch only under a hypothetical profile | Approved real strong profile from H01–H14; hardware study | 01 | 1–2 | BLOCKER | FC |
+| 03 | Explicit manual association + revision-bound correction — UX §9, ADR-036 | NONE | DIR manual is never hardware verification; DESIGN append-only events | Task054 S14–S17/S32 | Durable event persistence, UI, recovery | 01 | 1 | BLOCKER | FC/IA |
+| 04 | Auto Capture default OFF, explicit opt-in, event grants no capture — UX §8, PRD §6, ADR-036 | NONE | DIR default OFF; DESIGN eligibility gate | Task054 S07/S14/S19–25/S28/S31; only hypothetical S21 eligible | Production observer/capture isolation; manual opt-in | 01,02 | 7 | BLOCKER | FC/IA |
+| 05 | Immutable capture facts / contemporaneous admission receipt — ADR-004/023; architecture §11 | PARTIAL (facts immutable; no identity receipt) | DIR never rewrite history; DESIGN receipt in admission transaction | No identity-receipt synthetic case | Additive receipt atomic with capture admission | 01 | 1/7 | BLOCKER | FC |
+| 06 | Physical-device validation H01–H14 — TEST_PLAN §10 | NONE | DIR targets strong identity | None; every empirical cell NO | Designated-media study under separate safety authorization | Owner media approval | 2 | BLOCKER for strong match / ADVISORY overall | FC |
+| 07 | Drive Sets many-to-many over local IDs, separate from Collections — UX §6, ADR-037 | NONE | DIR separate grouping; DESIGN `drive_sets`+`drive_set_memberships` | Task055 DS01–07/12/36 | ID generation/collision, repositories, UI, member selection | 01 (ADR-036 entity) | 3 | BLOCKER | FC/IA |
+| 08 | Drive Set name normalization / duplicate policy — ADR-037 | NONE | DESIGN versioned NFC+casefold; alternatives open | Task055 DS08–11/34/35 (Python surrogate only) | Owner/BRAIN name policy; Foundation parity; upgrade collisions | 07 | 3 | ADVISORY | FC |
+| 09 | Safe set-only deletion preserving snapshots/Collections/evidence — ADR-037, ADR-019/020 | NONE | DIR preserve all evidence; DESIGN CASCADE to membership only | Task055 DS20–22/32/36/37 | Final FK graph incl. future ADR-038 tables | 07 | 3 | BLOCKER | FC |
+| 10 | Additive v9 migration, no historical identity backfill — ADR-024, ADR-037 | NONE | DESIGN explicit forward version, no legacy ID | Task055 DS24–27/33 bounded surrogates | Real v4–v8→v9→future Swift migration; crash/reopen | 07 | 3 | BLOCKER | FC |
+| 11 | Explicit Save only after completion; transient default unchanged — UX §§13–14, ADR-012/038 | PARTIAL (transient default DONE; Save NONE) | DIR explicit Save; DESIGN candidate B | Task056 SV01–06/09–11/33 | Swift Save gating; workspace close/startup orchestration | 12 | 6 | BLOCKER | FC/IA |
+| 12 | Completion-time receipt frozen atomically with terminalization — ADR-038 critical gate | NONE (v9 has no receipt) | DIR no guess/backfill; DESIGN additive receipt | Task056 SV33–35/47 use generated receipts; production has none | Receipt contract committed with terminal comparison | ADR-038 | 4 | BLOCKER (prerequisite) | FC |
+| 13 | Separate durable metadata-only backing with exact remapping — UX §14, ADR-038 | NONE | DESIGN dedicated copied evidence graph (B) | Task056 SV01–08/12/34/35/44/46 | Final schema/serializer; NULL/BLOB/extreme graphs | 12 | 5 | BLOCKER | FC |
+| 14 | Offline reopen without source volume or live folder — UX §§10/14, PRD US-04 | NONE | DIR durable metadata-only | Task056 SV09/43/45 | Real file-backed reopen; saved export | 12,13 | 5 | BLOCKER | FC/IA |
+| 15 | Atomic save / rollback / idempotency / no-resurrection / cleanup — ADR-038 | NONE | DESIGN single transaction + operation receipt | Task056 SV13–32/36–38 | Real crash/disk/busy/commit; other-connection visibility | 12 | 5 | BLOCKER | FC |
+| 16 | Bounded large-tree copy, cancellation, size/time budgets — ADR-038, TEST_PLAN §12 | NONE | DESIGN 256-row pages, cooperative budgets | Task056 10k/100k entries (memory SQLite; not Swift) | Swift + file-backed perf, disk/lock/rollback limits | 12 | 5 | ADVISORY | FC |
+| 17 | Main/Home, offline Explore, Collections organizer, labels/notes (Tasks047–052) — UX §§5.1–5.4, PROJECT_STATE | DONE | accepted implementation | Accepted technical tests (e.g. 494/491/0/3; 260/260) | Manual VoiceOver/installed E2E pending | — | done | DONE | FC baseline |
+| 18 | Phase 1.5 classifier runtime — PROJECT_STATE; ADR-031/032/035 | DONE | accepted implementation | Accepted Task036 evidence (260/260; provider filetype v1.1.3) | Manual VoiceOver/physical-media deferred | — | done | DONE | FC baseline |
+| 19 | Snapshot Collections zero-or-one/Unsorted semantics — ADR-019/020 | DONE | binding accepted contract | Task051 accepted tests | — | — | done | DONE | FC baseline |
+| 20 | Integrated internal acceptance session — MVP IA gate, UX §§6–14 | NONE | DIR Owner-approved session | None | Integrated build; every workflow incl. Wave A; Owner record | 01–16 | 7 | BLOCKER for IA | IA |
+| 21 | Developer ID signing / notarization / public distribution — ADR-006, PRD §4 | NONE | explicit non-goal for internal acceptance | — | Future separate Owner distribution decision | — | later | ADVISORY / out-of-scope | neither (deferred distribution) |
+
+**Cross-ADR dependency map.** ADR-037 (07–10) depends on ADR-036's local
+`PhysicalDrive` entity (01/03) but **not** on an approved strong hardware match
+(02/06); explicit unverified local records safely support manual organization.
+ADR-038 (11–16) is independent of ADR-036/037 across a different schema and
+lifecycle. The one shared ADR-038 prerequisite is row 12, the completion-time
+receipt: schema v9 has no receipt/saved-comparison table and its
+`comparison_profiles`/`comparisons` rows remain mutable, so a legacy comparison
+without a trustworthy receipt cannot be exactly Saved.
+
+**Safe implementation order and non-overlap.** Rows 01/03, 07–10 and 11–16 form
+three workstreams. The ADR-036 local-entity slice (01/03, order 1) is the shared
+schema prerequisite for ADR-037 (order 3) and for ADR-036's resolver/hardware
+slice (02/06, order 2); these touch the same PhysicalDrive/Drive-Set schema and
+lifecycle, so slices 01–10 must not overlap. ADR-038 (12→13/14/15/16, then 11)
+mutates a different schema and recovery boundary and may proceed in parallel at
+that boundary. Hardware proof (06) and the integrated acceptance session (20)
+require separate Owner authorization. No matrix row is silently marked DONE, no
+ADR is promoted, and no feature is implemented or authorized by this matrix.

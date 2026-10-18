@@ -36,10 +36,24 @@ Save Comparison with separate durable captured evidence; full capture
 organization/default controls; and consolidated rendered-window, accessibility,
 and manual internal acceptance.
 
-The Owner approved Wave A architecture direction on 2026-10-18. ADR-036–038 are
-proposed, not BRAIN-accepted; the identity evidence threshold, Drive Set schema,
-and durable comparison backing/migration mechanics remain
-`TECHNICAL_PROOF_PENDING`. See [DECISIONS.md](DECISIONS.md) and
+The Owner approved Wave A architecture direction on 2026-10-18. Three distinct
+states must stay separated here:
+
+- **Current implementation:** Tasks047–052 and the Phase 1.5 runtime, as listed
+  below. Nothing in Wave A is implemented yet.
+- **Accepted feasibility (synthetic, not implementation):** Tasks054–056 are
+  BRAIN-accepted `PASS_WITH_ADVISORY` for ADR-036 identity, ADR-037 Drive Sets and
+  ADR-038 Save Comparison respectively. They are research and isolated synthetic
+  SQLite/resolver prototypes only; they prove deterministic rule/relational
+  behavior, not any product code, schema, hardware or migration.
+- **Future FSD2 Full work (not started):** observation-only mount status, validated
+  PhysicalDrive identity, explicit manual association, Drive Sets, completion
+  receipts, Save Comparison and the remaining UX/gaps below.
+
+ADR-036–038 remain Proposed / Owner Direction Approved / Technical Proof Pending;
+the identity evidence threshold and strong-profile set, Drive Set schema/migration,
+and completion-receipt/durable comparison backing remain `TECHNICAL_PROOF_PENDING`.
+See [DECISIONS.md](DECISIONS.md), [MVP_PLAN.md](MVP_PLAN.md) and
 [UX_UI_SPEC.md](UX_UI_SPEC.md). This status record authorizes no implementation.
 
 ## Implemented capabilities

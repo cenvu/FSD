@@ -34,8 +34,11 @@ Status reconciliation (2026-10-18): milestone-level deferrals below preserve
 what was deferred at each planning stage. The current implementation baseline
 supersedes old “not implemented” claims for accepted Tasks047–052 and Phase 1.5.
 The Owner has since placed observation-only mount status, optional Auto Capture
-(default OFF), Drive Sets, and explicit Save Comparison in the FSD2 Full target;
-their implementation and technical proof are still pending.
+(default OFF), Drive Sets, and explicit Save Comparison in the FSD2 Full target.
+Tasks054–056 added BRAIN-accepted **feasibility** evidence for ADR-036/037/038
+(synthetic only), but none of that target is implemented; ADRs remain Proposed /
+Owner Direction Approved / Technical Proof Pending. Accepted feasibility is not
+implementation, and no proof claim changes here.
 
 ## Milestone 1 — Application, catalog, and snapshot foundation
 
@@ -136,21 +139,77 @@ contracts in [UX_UI_SPEC.md](UX_UI_SPEC.md) §§6–14. This section separates
 implementation completion, internal application acceptance, and future public
 distribution readiness. It is a roadmap gate definition, not implementation
 authorization. Current implementation and known gaps remain in
-[PRODUCT_STATE.md](PRODUCT_STATE.md); ADR-036–038 remain Proposed / Owner
-Direction Approved / Technical Proof Pending until BRAIN review.
+[PRODUCT_STATE.md](PRODUCT_STATE.md); ADR-036–038 have accepted **feasibility**
+evidence (Tasks054–056) but remain Proposed / Owner Direction Approved /
+Technical Proof Pending until BRAIN accepts their final technical text and the
+per-ADR gates below close.
 
 | Gate | Measurable completion criteria | Evidence and authority |
 |---|---|---|
-| **Feature Complete** | (1) A requirements ledger accounts for 100% of normative target items in UX §§6–14 and every still-applicable PRD/MVP requirement, with each item marked implemented, explicitly deferred/out of scope by Owner, or superseded by an identified accepted decision; zero unclassified items. (2) ADR-036, ADR-037, and ADR-038 have BRAIN-accepted final text and no unresolved `TECHNICAL_PROOF_PENDING` item that blocks implemented behavior. (3) Every required automated test in the accepted traceability ledger passes; zero unexpected failures/skips; schema migrations, integrity, foreign-key, immutability, recovery, and source-read-only checks pass; clean arm64 Debug and Release builds. (4) Identity tests cover `UniqueStrongMatch`, `Unknown`, `Ambiguous`, `Conflict`, and `ManualAssociation`, and the approved physical-device matrix has no false automatic association. (5) Drive Set create/rename/membership/delete tests prove many-to-many behavior and zero snapshot/Collection/evidence deletion on set deletion. (6) Save Comparison tests prove offline reopen, exact profile/result evidence, atomicity, idempotency, recovery, cleanup, cancellation/failure rollback, and bounded large-tree behavior; the existing transient default remains unchanged. | UX §§6–14; [PRD.md](PRD.md) §§5–7; accepted ADR-012/019/020/028 and proposed ADR-036–038; [TEST_PLAN.md](TEST_PLAN.md) §§1–7 and 9; schema verification and task-scoped build/test receipts. Wave A-specific rows are not yet in TEST_PLAN and must be added through an authorized documentation change before this gate can pass. |
-| **Internal Acceptance Complete** | Feature Complete is already satisfied; an integrated internal app build launches on the supported macOS 15+ Apple Silicon environment; an Owner-approved internal acceptance session records a result and evidence for every required end-to-end workflow (capture and source unchanged, reconnect/ambiguity behavior, Auto Capture default OFF and explicit opt-in, offline browse/search, Drive Sets vs Collections, snapshot/live comparisons, Save Comparison and offline reopen, recovery/failure states); zero unresolved hard-gate failures; Owner explicitly accepts the internal application. Existing deferred manual acceptance is not silently lifted by this roadmap text; its availability and exact session must be explicitly authorized and recorded. Developer ID signing and notarization are not gates here. | [PRD.md](PRD.md) §§5–7 and 9; UX §§6–14; [TEST_PLAN.md](TEST_PLAN.md) §§6–8 plus the authorized Wave A acceptance plan; Owner acceptance record and integrated-build receipt. |
+| **Feature Complete** | (1) A requirements ledger accounts for 100% of normative target items in UX §§6–14 and every still-applicable PRD/MVP requirement, with each item marked implemented, explicitly deferred/out of scope by Owner, or superseded by an identified accepted decision; zero unclassified items. (2) ADR-036, ADR-037, and ADR-038 have BRAIN-accepted final text and no unresolved `TECHNICAL_PROOF_PENDING` item that blocks implemented behavior. (3) Every required automated test in the accepted traceability ledger passes; zero unexpected failures/skips; schema migrations, integrity, foreign-key, immutability, recovery, and source-read-only checks pass; clean arm64 Debug and Release builds. (4) Identity tests cover `UniqueStrongMatch`, `Unknown`, `Ambiguous`, `Conflict`, and `ManualAssociation`, and the approved physical-device matrix has no false automatic association. (5) Drive Set create/rename/membership/delete tests prove many-to-many behavior and zero snapshot/Collection/evidence deletion on set deletion. (6) Save Comparison tests prove offline reopen, exact profile/result evidence, atomicity, idempotency, recovery, cleanup, cancellation/failure rollback, and bounded large-tree behavior; the existing transient default remains unchanged. | UX §§6–14; [PRD.md](PRD.md) §§5–7; accepted ADR-012/019/020/028 and proposed ADR-036–038; [TEST_PLAN.md](TEST_PLAN.md) §§1–7, 9 and 13; schema verification and task-scoped build/test receipts. The Wave A requirements-to-proof matrix now exists in [TEST_PLAN.md §13](TEST_PLAN.md#13-integrated-wave-a-requirements-to-proof-matrix--task057); the gate still requires final BRAIN ADR acceptance and executable production tests, which this documentation closeout does not claim. |
+| **Internal Acceptance Complete** | Feature Complete is already satisfied; an integrated internal app build launches on the supported macOS 15+ Apple Silicon environment; an Owner-approved internal acceptance session records a result and evidence for every required end-to-end workflow (capture and source unchanged, reconnect/ambiguity behavior, Auto Capture default OFF and explicit opt-in, offline browse/search, Drive Sets vs Collections, snapshot/live comparisons, Save Comparison and offline reopen, recovery/failure states); zero unresolved hard-gate failures; Owner explicitly accepts the internal application. Existing deferred manual acceptance is not silently lifted by this roadmap text; its availability and exact session must be explicitly authorized and recorded. Developer ID signing and notarization are not gates here. | [PRD.md](PRD.md) §§5–7 and 9; UX §§6–14; [TEST_PLAN.md](TEST_PLAN.md) §§6–8 and 13 plus the authorized Wave A acceptance session; Owner acceptance record and integrated-build receipt. |
 | **Deferred Public Distribution Readiness** | A separate future Owner decision authorizes public distribution; the release candidate then satisfies the accepted signing, notarization, Gatekeeper, packaging, license/notice, integrity, and release-publication gates for that distribution channel. This is not required for FSD2 Full Feature Complete or Internal Acceptance Complete. | ADR-006; [PRD.md](PRD.md) §4; the future Owner-approved release plan and release-specific validation evidence. |
 
-The target and test authorities do not yet contain a complete Wave A test
-matrix. The Feature Complete gate therefore requires both (a) final BRAIN
-acceptance of the ADRs and (b) an authorized traceability update that maps the
-negative cases and recovery requirements above to executable tests and the
-approved internal acceptance session. This documentation closeout does not
-claim those tests or acceptance have occurred.
+The Wave A requirements-to-proof matrix now exists in
+[TEST_PLAN.md §13](TEST_PLAN.md#13-integrated-wave-a-requirements-to-proof-matrix--task057).
+The Feature Complete gate still requires both (a) final BRAIN acceptance of the
+ADRs and (b) executable production tests for every matrix row plus the approved
+internal acceptance session. This documentation closeout does not claim those
+implementation tests or acceptance have occurred.
+
+### Wave A readiness and dependency closeout — 2026-10-18 (Task057)
+
+Cross-ADR synthesis of the BRAIN-accepted Tasks054–056 feasibility evidence.
+Accepted **feasibility** (synthetic only) is not implementation, hardware or
+acceptance proof. The full requirement/status/proof/dependency matrix is
+[TEST_PLAN.md §13](TEST_PLAN.md#13-integrated-wave-a-requirements-to-proof-matrix--task057).
+
+- **ADR-036** — Owner direction and a deterministic fail-closed resolver are
+  researched. The minimum implementable subset that needs **no** strong hardware
+  match is: local PhysicalDrive entity, typed identity evidence, explicit manual
+  association with revision-bound correction, and observation-only mount status
+  with Auto Capture default OFF. Real `UniqueStrongMatch` stays blocked because
+  the approved strong-profile set is empty and the H01–H14 device matrix is
+  untested. Hardware proof and any collection of physical identity values require
+  a separate safety-scoped authorization with Owner-approved test media.
+- **ADR-037** — Drive Set relational/many-to-many feasibility and safe set-only
+  deletion are researched. Implementation depends on ADR-036's local entity and
+  explicit-association model, not on a strong hardware match: explicit unverified
+  local records safely support manual organization. Final schema/version,
+  PhysicalDrive creation policy, Foundation normalization parity and real
+  migration/crash proof remain open.
+- **ADR-038** — Explicit Save with separate durable evidence is researched
+  (preferred candidate B, not accepted). The **binding prerequisite** is an
+  additive completion-time receipt that freezes the actual profile, side headers/
+  issues, orientation/summary and engine/warning contract atomically with
+  terminalization. Schema v9 has no such receipt (no receipt/saved tables;
+  profile/comparison rows remain mutable), so legacy comparisons are ineligible
+  for exact Save; no backfill, profile guess or rescan is permitted.
+
+**Recommended bounded implementation order** (each slice owns its implementation,
+tests and review; this roadmap authorizes none of them and sets no schema):
+
+1. PhysicalDrive local entity, identity-evidence and explicit manual-association
+   foundation (no strong match).
+2. PhysicalDrive resolver/observation contracts and safely scoped hardware proof
+   (separate media authorization).
+3. Drive Sets repository and additive migration, then Drive Sets UI.
+4. Completion-time comparison receipt foundation.
+5. Saved-evidence backing and offline reopening.
+6. Explicit Save Comparison UI.
+7. Remaining FSD2 Full UX, Auto Capture safeguards, integration/performance/manual
+   acceptance.
+
+ADR-038 workstreams (4–6) are independent of ADR-036/037 and may proceed in
+parallel at the schema-permitting boundary. Slices 1–3 all touch the same
+PhysicalDrive/Drive-Set schema and lifecycle, so they must not overlap; 5 and 6
+depend on 4. No production schema is chosen by this roadmap.
+
+The Feature Complete gate still requires (a) final BRAIN acceptance of the ADRs
+and (b) executable production tests for every matrix row; this documentation
+closeout claims neither. Internal Acceptance Complete still requires an
+Owner-approved integrated session. Developer ID signing and notarization are not
+gates for internal acceptance.
 
 ### Preserved scope decisions
 

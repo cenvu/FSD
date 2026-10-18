@@ -1157,3 +1157,37 @@ crash/disk/concurrency behavior remain `TECHNICAL_PROOF_PENDING`. ADR-038 remain
 No production Save, runtime migration or hardware behavior was tested. Traceability:
 [PRD.md](PRD.md) §§5.4, 5.5, 7; [UX_UI_SPEC.md](UX_UI_SPEC.md) §§13–14;
 [ARCHITECTURE.md](ARCHITECTURE.md) §§8/13; [TEST_PLAN.md](TEST_PLAN.md) §§1/5/8/12.
+
+## ADR-036/037/038 cross-ADR status and dependency closeout — Task057
+
+**Documentation synthesis only; 2026-10-18.** This records Wave A readiness and
+dependencies across the three candidates. It does not accept, promote or rewrite
+ADR-036/037/038, and it authorizes no implementation. All three remain
+**Proposed / Owner Direction Approved / Technical Proof Pending**. Accepted
+feasibility evidence is Tasks054–056, each BRAIN-accepted `PASS_WITH_ADVISORY`
+and `SYNTHETICALLY_TESTED` only — never production, hardware or acceptance proof.
+
+| Candidate | Owner direction (binding) | Proposed technical design (candidate, not accepted) | Accepted feasibility | Binding gate still open |
+|---|---|---|---|---|
+| ADR-036 | Multi-evidence fail-closed drive identity; Auto Capture default OFF; a manual association never becomes hardware verification | Typed evidence, resolver precedence, MountSession/observation revision, append-only events | Task054: 32/32 synthetic resolver cases; official Apple/SDK provenance | Real strong-match profile set is **empty**; H01–H14 hardware matrix all empirical NO; observer lifecycle/runtime pending |
+| ADR-037 | Drive Sets separate from Collections; many-to-many physical-drive membership; membership always explicit | `drive_sets` + `drive_set_memberships` over local PhysicalDrive IDs | Task055: 38/38 synthetic SQLite cases | Final schema/version, PhysicalDrive creation policy, Foundation normalization, real migration/crash proof pending |
+| ADR-038 | Explicit Save Comparison; unsaved stays transient; separate durable metadata-only evidence | Preferred candidate B: dedicated copied evidence graph | Task056: 47/47 synthetic cases; 16 rollback boundaries; 10k/100k-entry runs | Completion-time receipt absent in v9; no-receipt comparisons ineligible for exact Save |
+
+**Dependency direction.** ADR-037 membership keys reference ADR-036's local
+`PhysicalDrive` entity, so Drive Sets depend on the ADR-036 local-entity and
+explicit-association model. They do **not** depend on an approved strong hardware
+match: explicit unverified local records safely support manual organization.
+ADR-038 is independent of ADR-036/037 (different schema and lifecycle). The one
+isolated prerequisite any ADR-038 Save needs is a **completion-time receipt**
+freezing the actual profile definition, engine/normalization/warning contract,
+orientation/summary and side headers/issues atomically when a comparison
+terminalizes. Schema v9 has no such record — confirmed read-only: there is no
+receipt/saved-comparison/PhysicalDrive/Drive-Set table, and
+`comparison_profiles`/`comparisons` persist only ID/version/counts while those
+rows remain mutable — so legacy comparisons without a trustworthy receipt fail
+closed with no current-profile substitution, backfill or rescan.
+
+**Rule.** No ADR-036/037/038 status change is made or implied here. The full
+requirements-to-proof matrix and the recommended bounded implementation order are
+in [TEST_PLAN.md §13](TEST_PLAN.md#13-integrated-wave-a-requirements-to-proof-matrix--task057),
+[MVP_PLAN.md](MVP_PLAN.md) and [PRODUCT_STATE.md](PRODUCT_STATE.md).
