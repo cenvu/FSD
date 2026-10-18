@@ -815,3 +815,200 @@ without history loss; bounded indexed candidate/history queries. No such
 production or migration test ran in Task054. PRD §2 pre-decision Drive Set wording
 and §6.1's legacy raw-provider identity language remain read-only advisories;
 they cannot grant physical identity or expand supported provider scope.
+
+## 12. Drive Sets relational feasibility — Task055
+
+**2026-10-18; SYNTHETIC_PROTOTYPE only.** [ADR-037](DECISIONS.md#adr-037--drive-sets-vs-snapshot-collections-wave-a-candidate)
+remains Proposed / Owner Direction Approved / Technical Proof Pending. No
+production schema, migration, Swift/UI, source observation or hardware proof is
+implemented. ADR-036's approved real strong profile set remains empty. Task055
+reconciles only PRD §2's dated Drive Set direction; the Task054 §11 note above
+records the earlier read-only scope, not a continuing unresolved §2 direction.
+
+### Existing contract and official SQLite evidence
+
+Read-only baseline `1b903385d1093b52dec3661a238e09063ce7b9a2`:
+
+- `docs/database/schema.sql` / `CatalogMigrations.currentVersion` are v9.
+  `collections.id` and `snapshots.collection_id` implement zero-or-one
+  Collection, NULL Unsorted, normalized unique names and SET NULL on Collection
+  deletion. `source_collection_defaults` remains volume-only (ADR-019/020).
+  Existing `volumes.id` is not ADR-036's new PhysicalDrive ID.
+- `SnapshotCollectionRepository` uses ID-based writes, trim plus
+  `PathIdentity.caseFold`, transactions, parameter binding and LIMIT+1 pages.
+  Its current listing/count limitations do not authorize a rewrite here.
+  `SnapshotRecord` has a volume ID, not a physical-drive membership.
+- `CatalogDatabase.transaction` serializes `BEGIN IMMEDIATE`/COMMIT/ROLLBACK;
+  opening enables/asserts FK enforcement and rejects unsupported/newer versions.
+  `CatalogMigrations` supports materialized v4–v9, explicit steps and expected
+  tables, exact trigger/index definitions and columns. ADR-024/025 remain binding.
+- Existing volume deletion cascades to snapshots, while comparison source FKs
+  RESTRICT deletion and guards preserve capture facts/entries/terminal evidence.
+  Drive Set deletion must never enter that graph. No legacy relation is reused.
+
+| Evidence | Official source / relevant contract | Design consequence |
+|---|---|---|
+| Q1 | [SQLite foreign keys §§2–4.3](https://www.sqlite.org/foreignkeys.html): enforcement per connection, NULL child keys, parent uniqueness, child indexes, cascade/restrict actions | Enable/assert FK before transaction; non-null composite membership key; reverse index; cascade only from set to pairs |
+| Q2 | [Transactions §§2–3](https://www.sqlite.org/lang_transaction.html): one writer, BEGIN IMMEDIATE may fail busy; ABORT is not necessarily whole-transaction rollback | Existing serialization/process lock; explicitly roll back all mutations; bounded busy/error reporting, no blind retry |
+| Q3 | [Conflict resolution](https://www.sqlite.org/lang_conflict.html): REPLACE deletes conflicting rows; ABORT preserves prior statements | No REPLACE; targeted duplicate-pair handling and whole-operation rollback |
+| Q4 | [Collating sequences](https://www.sqlite.org/datatype3.html#collating_sequences): built-in NOCASE folds ASCII | Store versioned application normalization; do not claim universal Unicode equivalence from NOCASE |
+| Q5 | [Row values §3.1](https://www.sqlite.org/rowvalue.html): scrolling-window tuple comparisons; [query-plan documentation](https://www.sqlite.org/eqp.html): SEARCH/index evidence and unstable output format | Keyset paging; inspect properties, do not hardcode full EQP prose as a production contract |
+| Q6 | [PRAGMA integrity_check / foreign_key_check](https://www.sqlite.org/pragma.html#pragma_integrity_check): integrity check does not find FK violations | Require both checks, separately |
+| Q7 | [Python sqlite3 executescript](https://docs.python.org/3/library/sqlite3.html#sqlite3.Connection.executescript): transaction-control caveats | Prototype uses isolation_level=None, explicit BEGIN and individual execute for migration DDL, never executescript inside migration |
+
+Retrieved 2026-10-18. These document SQLite behavior, not macOS application
+integration or real-catalog migration proof. Measured interpreter/library:
+Python 3.15.0, SQLite 3.54.0, Unicode 17.0.0. Production SDK SQLite/runtime and
+Foundation normalization must be checked separately.
+
+### Proposed entities, keys and deletion graph
+
+Logical names and columns are candidates, not an approved final schema. Local
+IDs are opaque 128-bit random IDs encoded as 32 lowercase hex characters,
+catalog-scoped, generated once, collision-checked and never derived from source
+metadata. A primary-key collision is an explicit error/retry with a new ID for
+a new operation; retrying the same acknowledged operation keeps its ID.
+Cross-catalog import/merge is outside this contract. IDs are immutable; labels
+are mutable and never relationship keys.
+
+| Relation | Candidate columns / constraints | Deletion and indexes |
+|---|---|---|
+| `physical_drives` | ADR-036 local ID PK; user label; creation provenance, lifecycle/tombstone and separately recorded identity evidence/conflicts | Hard delete unsupported, including unreferenced rows; tombstone retains ID/history. No FK to legacy volumes that could cascade into captures |
+| `drive_sets` | ID TEXT NOT NULL PK; name NOT NULL; normalized_name NOT NULL UNIQUE; normalization_version; revision >=1; created_at, updated_at | Explicit set deletion only; primary/unique indexes support ID and normalized-name queries |
+| `drive_set_memberships` | set_id and physical_drive_id TEXT NOT NULL; composite PK; added_at; admission=`explicit_local_selection`; IDs immutable by API | Set FK DELETE CASCADE, UPDATE RESTRICT; drive FK DELETE/UPDATE RESTRICT. Reverse `(physical_drive_id,set_id)` index |
+
+Minimal relationship DDL exercised by the generated prototype:
+
+```sql
+CREATE TABLE drive_set_memberships (
+  set_id TEXT NOT NULL REFERENCES drive_sets(id)
+    ON DELETE CASCADE ON UPDATE RESTRICT,
+  physical_drive_id TEXT NOT NULL REFERENCES physical_drives(id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT,
+  added_at TEXT NOT NULL,
+  admission TEXT NOT NULL CHECK(admission='explicit_local_selection'),
+  PRIMARY KEY(set_id, physical_drive_id)
+);
+CREATE INDEX memberships_by_drive
+  ON drive_set_memberships(physical_drive_id, set_id);
+```
+
+Full executable DDL is preserved in the Task055 handoff/harness. It additionally
+rejects ID updates/hard drive deletion and insertion/update to tombstoned drives.
+The PhysicalDrive stub's `origin='manual_local_unverified'`, identity-state and
+availability columns are synthetic stand-ins, not a replacement for ADR-036's
+append-only evidence, resolution revisions, conflicts and manual events.
+There is deliberately no verified hardware flag manufactured by membership.
+
+Deleting a set has one outgoing cascade destination: membership. No table in
+the prototype references membership as a parent. The transitive CASCADE closure
+from `drive_sets` is exactly `{drive_sets, drive_set_memberships}` (DS37).
+PhysicalDrive/volume/session/legacy snapshot/entry/Collection/comparison/evidence
+rows cannot be deleted by that path. Existing legacy cascades remain untouched.
+Future optional membership annotations must belong only to this metadata, with
+their deletion graph reviewed again; identity evidence must not depend on a set.
+
+### Operations, normalization and unresolved members
+
+- **Create/rename:** validate local ID, trim whitespace, reject blank/overlong
+  names and recompute versioned NFC + locale-independent folded key. Recommended
+  uniqueness is per Drive Set namespace, independent of Collections. Proposed
+  bound is 256 Unicode scalar values after trim; Python len is only a surrogate
+  for a future explicit Swift unicodeScalars check, not String.count parity.
+  DB trim/length checks are defense in depth, not a Unicode normalizer. SQLite
+  cannot prove a supplied key matches its display name; all writes must pass
+  the future validated repository boundary.
+- **Alternatives:** duplicates with visible stable-ID disambiguation are feasible
+  but need a separate approved UX policy; binary-only equality misses canonical
+  equivalents; NOCASE misses non-ASCII; NFKC would additionally collapse
+  compatibility distinctions and is not proposed. Pin normalization semantics
+  and test macOS supported versions before acceptance. An upgrade must detect
+  newly colliding keys and abort unchanged for explicit resolution, never merge.
+- **Add/remove:** explicitly selected set and local drive IDs only; recheck
+  existence, active lifecycle and revisions under the write lock. Unknown,
+  Ambiguous and Conflict observations do not supply selectable resolved drives.
+  A user may organize an already selected offline manual/unverified local record
+  without asserting it equals any current mount. All memberships are explicit;
+  no name/path/BSD/UUID/Collection matching and no automatic admission, even
+  from a future strong match. Real drive creation is blocked until its separate
+  manual entity/provenance contract is approved; the harness seeds generated IDs.
+- **Availability/correction:** offline is retained; unknown observation is shown
+  outside membership. A member may have manual/unverified, conflict, revoked or
+  retired provenance alongside availability. Revocation invalidates the live
+  association, not the local entity or existing pairs. Never silently migrate
+  pairs to another drive. Explicit replacement remove+add is atomic after fresh
+  confirmation; captured history/receipts are never rewritten. Future association
+  events and retrospective annotations remain ADR-036's separate gated design.
+- **Transactions:** create/rename/pair changes/delete commit as one operation;
+  bulk chosen-ID changes commit all-or-nothing. Increment set revision on actual
+  change; stale revision returns conflict, not last-writer-wins. Remove and
+  delete are idempotent absent outcomes; duplicate raw inserts fail. A deliberate
+  pair retry may use targeted `ON CONFLICT(set_id,physical_drive_id) DO NOTHING`
+  after authorization/lifecycle checks, preserving original added_at/provenance.
+  Never mask FK/CHECK errors, use broad IGNORE or REPLACE. Create retry must
+  compare the original operation ID and intended metadata; prototype does not
+  implement a durable operation-receipt registry.
+- **Concurrency/recovery:** use existing catalog serialization and process lock;
+  no new multi-process coordination or network catalog. An already executing
+  add cannot race retirement inside a serialized transaction. BEGIN/COMMIT
+  busy/error rolls back and returns truthful failure; uncertain acknowledgement
+  requires reading the exact IDs/revision before retry. No association/capture
+  replay during startup. Future crash/disk-full tests remain pending.
+
+### Bounded reads and future migration sequence
+
+Clamp page size to 1–200 and request limit+1; return explicit hasMore/cursor.
+Set query: `(normalized_name,id) > (?,?) ORDER BY normalized_name,id LIMIT ?`.
+Member query: `set_id=? AND physical_drive_id>? ORDER BY physical_drive_id LIMIT ?`;
+reverse uses the reverse index. Join only the bounded page to drive labels and
+current status; do not materialize all members, fetch all captures or use N+1
+queries. Listing must invalidate cursors on rename/membership mutation or hold a
+bounded consistent read transaction; index order alone does not solve concurrent
+page changes. Per-page counts can be bounded; exact whole-library totals are not
+required. The prototype traverses 257 set rows at 17+1 and observes indexed seeks;
+it does not prove large-catalog latency/memory or production page invalidation.
+Atomic deletion may visit all pairs in a large set: latency/lock duration needs
+measurement, cancellation before commit and rollback, not an invented constant
+time claim or chunked partially visible deletion.
+
+Separately authorized implementation sequence:
+
+1. Review/approve local entity creation, provenance/manual correction, tombstone,
+   name normalization, limits, cursor and conflict policies. Keep ADR-036's real
+   profile set empty until its own proof; Drive Set membership needs no hardware
+   auto-resolution. Finalize actual tables only after that boundary review.
+2. Against then-current schema, choose an additive forward version (not reserved
+   here). Existing supported v4–v8 catalogs first run their accepted explicit
+   steps to v9; test both fresh-v9 and migrated-v9 states. v1–v3, missing/malformed
+   inventories and newer versions fail unchanged. Never replay cumulative
+   schema.sql on an existing catalog, nor hide unexpected tables with IF NOT EXISTS.
+3. With process ownership and FK enforcement asserted, perform prerequisite
+   PhysicalDrive tables and Drive Sets DDL/indexes/guards in explicit ordered
+   migration transactions; append each version row atomically. Validate expected
+   canonical definitions and required columns/FKs on every open. Keep all old
+   tables/triggers/indexes and existing v9 semantics. No legacy data rewrite or
+   physical-ID backfill from UUID, fallback/stringified file ID, label or path.
+   Unknown legacy captures remain absent identity receipts, never inferred joins.
+4. Verify catalog integrity AND foreign keys before enabling repositories;
+   validate new objects inside the migration transaction before commit. A partial
+   failure rolls back DDL and version, and retry starts from the original version.
+   On a version already committed, validate exact structure without replaying DDL.
+   Crash/reopen must yield all committed objects or the prior version, including
+   a crash after commit but before acknowledgement; older application builds reject
+   the newer catalog unchanged. No automatic downgrade/drop-table recovery.
+5. Add ID-bound repositories and explicit UI under separately authorized tasks;
+   validate full v9 data/immutability/evidence preservation, repeated operations,
+   stale actions, normalization parity/collisions and failure recovery. ADR-038's
+   saved artifact schema is still pending: run its actual evidence-preservation
+   integration tests when defined. The synthetic sentinel is not that proof.
+6. Run bounded scale, concurrency/busy, disk-full/interruption/process-crash,
+   migration-from-every-supported-version and integrated UI/accessibility tests;
+   independent schema/recovery review and BRAIN acceptance precede production use.
+
+The scratch harness uses individual DDL executions in one explicit transaction
+and a synthetic version-10 sentinel only. It loads repository v9 DDL into new
+memory, seeds generated legacy rows, then validates proposed relations. It does
+not execute Swift migration code or construct historical v4–v8 catalogs. Its
+memory-copy reopen test proves repeated validation of committed synthetic state;
+it is not process-crash, WAL/power-loss or filesystem durability proof.
+Requirements and all receipts: [TEST_PLAN §11](TEST_PLAN.md#11-adr-037-drive-sets-sqlite-feasibility--task055).

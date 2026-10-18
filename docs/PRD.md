@@ -19,7 +19,14 @@ Build a native, read-only macOS application that:
 See [UX_UI_SPEC.md](UX_UI_SPEC.md) for the canonical Owner Product/UX Direction and North Star.
 The target demo may include Phase 1.5 explicit classification, but the target demo direction does not itself authorize Phase 1.5.
 Core MVP safety and Metadata Match semantics remain unchanged.
-Drive Set direction is unresolved relative to current Collection semantics; do not silently rewrite Collection requirements into Drive Sets.
+Owner direction approved 2026-10-18: a Drive Set groups physical drives by stable
+local IDs, with proposed many-to-many membership, separately from snapshot
+Collections. A snapshot still belongs to zero or one Collection; `Unsorted`
+remains `collection_id = NULL`. No Collection is converted into a Drive Set or
+used to infer membership. ADR-037 remains Proposed / Owner Direction Approved /
+Technical Proof Pending; exact production schema, migration and PhysicalDrive
+creation/identity proof are not accepted by this direction or the Task055
+synthetic feasibility result. See [ADR-037](DECISIONS.md#adr-037--drive-sets-vs-snapshot-collections-wave-a-candidate).
 
 ## 3. Target users
 

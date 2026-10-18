@@ -796,3 +796,135 @@ candidate/history query memory. The exact storage/transaction/deletion design
 and staged future implementation are in architecture §11. No PhysicalDrive
 schema, migration, product test, observer or Auto Capture integration is accepted
 or authorized by this feasibility PASS.
+
+## 11. ADR-037 Drive Sets SQLite feasibility — Task055
+
+**SYNTHETIC_PROTOTYPE; 2026-10-18.** No production schema/migration/test, Swift,
+UI, source catalog or device access. [ADR-037](DECISIONS.md#adr-037--drive-sets-vs-snapshot-collections-wave-a-candidate)
+remains Proposed / Owner Direction Approved / Technical Proof Pending. See
+[architecture §12](ARCHITECTURE.md#12-drive-sets-relational-feasibility--task055)
+for official SQLite Q1–Q7 sources, candidate keys/DDL/deletion graph, normalization
+alternatives, concurrency and additive migration plan. ADR-019/020/036/038 and
+accepted history remain unchanged; real strong hardware profiles remain empty.
+
+### Executed inputs, expectations and actual results
+
+Command: `python3 .ai-scratch/task055/harness.py` from the repository root.
+Python standard-library sqlite3; every connection is `:memory:` and asserts
+`PRAGMA foreign_keys=ON` outside a transaction. Reads only repository schema
+text, creates generated v9 rows, and adds proposed DDL in memory. The immutable
+Task055 handoff embeds the full runnable source for recovery; generated
+`results.json` and initial failure receipt are in ignored `.ai-scratch/task055/`.
+No live catalog path is accepted by the harness.
+
+Measured: Python 3.15.0 / SQLite 3.54.0 / Unicode 17.0.0.
+**38 executed / 38 PASS / 0 FAIL**, exit 0 after a bounded harness correction:
+DS33 first selected the membership-table DDL instead of the reverse-index DDL
+while restoring a deliberately dropped index. Initial result 37/38, error
+`table drive_set_memberships already exists`; fixed selection by index name,
+then all 38 reran. This was test-harness logic, not a product/migration failure.
+
+Each case starts from its own generated v9 memory catalog: two legacy volume
+rows with the same synthetic UUID, two complete root snapshots (Collection 1
+and NULL Unsorted), entries, a terminal comparison/result and an explicitly
+synthetic saved-evidence sentinel. New PhysicalDrives are manually created
+unverified stubs. Local IDs are deterministic 32-hex fixtures; names include
+Alpha/ALPHA, composed/decomposed Café and Straße/STRASSE. A fixed synthetic time
+is used for new facts; the untouched v9 seed has its own SQL timestamps.
+
+After **every** case: compare the complete ordered row values of every legacy
+table (excluding the intentionally advanced schema_migrations version) against
+its pre-prototype SHA-256; require zero changes, `foreign_key_check=[]`,
+`integrity_check=ok` and exact new-object definitions. Setup also checks every
+preexisting SQL object definition remains present unchanged. This is semantic
+row preservation, not a physical SQLite database-file byte claim. The saved
+sentinel proves isolation only, not ADR-038's eventual saved-schema behavior.
+String actuals must equal the expected text; DS29 separately asserts full
+ordered result equality, uniqueness, page bounds and indexed seek properties.
+
+| Case | Generated action / explicit expected outcome | Actual |
+|---|---|---|
+| DS01 | empty set created | PASS — empty set created |
+| DS02 | two stable set IDs | PASS — two stable set IDs |
+| DS03 | many-to-many exact three pairs | PASS — many-to-many exact three pairs |
+| DS04 | duplicate PK rejected | PASS — duplicate PK rejected |
+| DS05 | missing set FK rejected | PASS — missing set FK rejected |
+| DS06 | missing drive FK rejected | PASS — missing drive FK rejected |
+| DS07 | rename preserves IDs and membership | PASS — rename preserves IDs and membership |
+| DS08 | normalized duplicate rejected | PASS — normalized duplicate rejected |
+| DS09 | normalized duplicate rejected | PASS — normalized duplicate rejected |
+| DS10 | normalized duplicate rejected | PASS — normalized duplicate rejected |
+| DS11 | allow-duplicate alternative permits four; NOCASE misses non-ASCII | PASS — allow-duplicate alternative permits four; NOCASE misses non-ASCII |
+| DS12 | membership removed only | PASS — membership removed only |
+| DS13 | offline membership retained | PASS — offline membership retained |
+| DS14 | Unknown observation admits nothing | PASS — Unknown observation admits nothing |
+| DS15 | Ambiguous observation admits nothing | PASS — Ambiguous observation admits nothing |
+| DS16 | Conflict observation admits nothing | PASS — Conflict observation admits nothing |
+| DS17 | UniqueStrongMatch observation admits nothing | PASS — UniqueStrongMatch observation admits nothing |
+| DS18 | manual local membership remains unverified | PASS — manual local membership remains unverified |
+| DS19 | contradiction flags local record; no retarget | PASS — contradiction flags local record; no retarget |
+| DS20 | only deleted set and its two pairs removed | PASS — only deleted set and its two pairs removed |
+| DS21 | drive hard delete prohibited | PASS — drive hard delete prohibited |
+| DS22 | tombstone retains pair; new admissions rejected | PASS — tombstone retains pair; new admissions rejected |
+| DS23 | whole failed mutation rolled back | PASS — whole failed mutation rolled back |
+| DS24 | partial DDL and version roll back; retry succeeds | PASS — partial DDL and version roll back; retry succeeds |
+| DS25 | legacy cloned UUIDs create zero drives; unknown and Unsorted preserved | PASS — legacy cloned UUIDs create zero drives; unknown and Unsorted preserved |
+| DS26 | committed memory-copy reopen and repeated migration unchanged | PASS — committed memory-copy reopen and repeated migration unchanged |
+| DS27 | newer version rejected unchanged | PASS — newer version rejected unchanged |
+| DS28 | stale revision rejected | PASS — stale revision rejected |
+| DS29 | 257 rows without duplicate/skip; indexed seek; 17+1 bound | PASS — 257 rows without duplicate/skip; 17+1 bound; SEARCH drive_sets USING INDEX sqlite_autoindex_drive_sets_2 (normalized_name>?) |
+| DS30 | both membership directions use covering indexed seek | PASS — both membership directions use covering indexed seek |
+| DS31 | repeat add/remove/delete is exact no-op after first | PASS — repeat add/remove/delete is exact no-op after first |
+| DS32 | existing capture/entry/terminal evidence guards reject mutation | PASS — existing capture/entry/terminal evidence guards reject mutation |
+| DS33 | same-version missing index fails; exact index restored in isolated test | PASS — same-version missing index fails; exact index restored in isolated test |
+| DS34 | blank and overlong names rejected | PASS — blank and overlong names rejected |
+| DS35 | rename collision rolls back label and revision | PASS — rename collision rolls back label and revision |
+| DS36 | NULL membership and stable ID rewrite rejected | PASS — NULL membership and stable ID rewrite rejected |
+| DS37 | set deletion cascade reaches memberships only | PASS — set deletion cascade reaches memberships only |
+| DS38 | matching labels/path/BSD/UUID/Collection imply no membership | PASS — matching labels/path/BSD/UUID/Collection imply no membership |
+
+DS14–17/38 test an explicit admission-policy gate; they do not implement or test
+an API observer/resolver. DS17 rejects automatic admission even for a supplied
+strong-result label: no real strong profile is approved, and set membership is
+an explicit action in any case. DS19 simulates contradictory state on a local
+stub; it does not persist ADR-036 manual-event revisions. DS26 uses SQLite
+memory backup into a new memory connection to simulate reopen of committed
+state; it does not kill a process or test disk/WAL durability. DS28 tests stale
+revision detection, not simultaneous writers. DS29 uses 257 sets and 17+1 paging,
+not a large-catalog performance acceptance. DS30 observes covering index seeks
+in both membership directions. DS37 traverses FK metadata: the only cascade
+reachable from Drive Set is its membership relation. No production or hardware
+PASS follows from these results.
+
+### Requirements and future production/migration gates
+
+| Requirement / authority | Synthetic evidence | Required future proof — NOT EXECUTED |
+|---|---|---|
+| UX §6 / ADR-037: empty/many-to-many local-ID sets | DS01–07, DS12, DS36 | Actual ID generation/collision handling, repositories, UI and explicit member selection |
+| Separate Collections, zero-or-one/NULL Unsorted; ADR-019/020 | Every-case legacy digest; DS20/25/32/37 | Fresh/migrated production catalogs preserve full entries, Collection/default and comparison facts; no inferred memberships |
+| ADR-036 dependency and manual provenance | DS13–19/22/38 | Approved manual record-creation/association persistence, revision revalidation, revoke/correct remove+add rollback; no hardware verification claim, offline/conflict/retired display |
+| Safe deletion and evidence retention | DS20–22/32/36/37, every-case FK/integrity | Actual final schema graph audit incl. future ADR-038 tables, tombstone/no-hard-delete, no history or capture loss |
+| Duplicate names / rename | DS07–11/34/35 | Owner/BRAIN name-policy approval; Foundation scalar-length/normalization parity; version collisions and input bounds; Collection namespace independent |
+| Atomic mutations / idempotency | DS23/28/31/35 | All repository paths, bulk remove+add, no-op revisions, create retry operation-ID verification, uncertain-commit reconciliation |
+| ADR-024 forward-only migration | DS24–27/33; all preexisting SQL definitions preserved | New schema + real Swift step, version selected then; fresh and every supported v4 variant→v9→future path; newer/malformed catalog rejection unchanged; no schema.sql replay |
+| Unknown legacy physical identity | DS25 and zero automatic admission | No legacy UUID/path/name/fallback/file-ID backfill, no historical ID/receipt fabrication; retrospective assertions remain separate |
+| Recovery and concurrency / ADR-025 | DS23/24/26/28 are bounded surrogates | Inject error after each DDL/version/commit boundary; process kill and reopen; busy/IO/disk-full/cancel; one-process lock; preserve original version or complete new state; no startup capture replay |
+| Bounded pages and transactions | DS29/30; Q1/Q5 index research | 1–200 clamp + limit+1, hasMore/cursor, invalidation/read consistency under rename and membership writes; bounded page joins/no N+1; large membership deletion latency/cancellation/rollback |
+| Existing immutable capture/evidence | DS32 with actual v9 guards; every-case digest | Production expected-object/column/FK verification every open, full source/read-only and last-complete safety regressions; actual saved-evidence retention after ADR-038 design |
+
+Remaining decisions: final PhysicalDrive/entity/association and evidence model;
+name policy/normalization version and upgrades; operation receipt strategy,
+cursor invalidation and large-set deletion bounds; final versioned schema and
+migration chain. All remain **TECHNICAL_PROOF_PENDING** pending separately
+reviewed authorization, implementation, production tests and BRAIN acceptance.
+No Xcode build or production XCTest ran in Task055. Physical-device inspection
+requires a separate safety-scoped authorization; Task055 provides none.
+
+Read-only alignment advisories: SNAPSHOT_COLLECTIONS §9 says schema version 3
+(the Collection wave) while cumulative schema is v9; its §§7/9.3 legacy source
+default/auto-capture language is not proof of physical-drive identity or permission
+to bypass ADR-036. MVP_PLAN's Wave A matrix absence wording predates Task054/055;
+the whole Wave A matrix still is not complete (ADR-038 and integrated acceptance
+pending). PRD §6.1/§8.1 and ARCHITECTURE §8 legacy language are outside this task's
+narrow reconciliation. None is silently rewritten here. PRODUCT_STATE,
+SNAPSHOT_COLLECTIONS and MVP_PLAN remain untouched.

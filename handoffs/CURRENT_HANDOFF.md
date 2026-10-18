@@ -1,358 +1,599 @@
-UPDATED_AT: 2026-10-18T19:58:30+07:00
+UPDATED_AT: 2026-10-18T20:45:52+07:00
 
-# Task054 Physical Drive Identity Technical Feasibility — Worker return
+# Task055 Drive Sets Relational Model and SQLite Feasibility — Worker return
 
 ## HOT
 
 HMD_SCHEMA=FSD_HANDOFF_MARKDOWN
 HMD_VERSION=1.0.0
 PROJECT=FSD
-WORKSTREAM_ID=FSD2_PHYSICAL_DRIVE_IDENTITY_FEASIBILITY
-HANDOFF_ID=handoffs/FSD_FSD2_PHYSICAL_DRIVE_IDENTITY_FEASIBILITY_054_D_20261018-195648.md
+WORKSTREAM_ID=FSD2_DRIVE_SETS_SCHEMA_FEASIBILITY
+HANDOFF_ID=handoffs/FSD_FSD2_DRIVE_SETS_SCHEMA_FEASIBILITY_055_D_20261018-204459.md
 REPO=/Users/cenvu/DEV/FSD
 BRANCH=main
-LOCAL_HEAD=65a133b901286549613315ddcb0a0e9c0763f18f
-REMOTE_HEAD=65a133b901286549613315ddcb0a0e9c0763f18f
-LAST_VERIFIED_AT=2026-10-18T19:56:48+07:00
-AUTHORITY_PTRS=AGENTS.md|docs/BRAIN_OPERATOR.md|docs/AGENT.md|STATE/PROJECT_STATE.md|STATE/TASK_LEDGER.tsv|STATE/EVENTS.jsonl|handoffs/CURRENT_HANDOFF.md|.agents/skills/fsd-task-execution/SKILL.md|.agents/skills/fsd-handoff-finalizer/SKILL.md|docs/DECISIONS.md|docs/ARCHITECTURE.md|docs/PRD.md|docs/UX_UI_SPEC.md|docs/PRODUCT_STATE.md|docs/TEST_PLAN.md|docs/database/schema.sql|FSD/Provider/FilesystemDetector.swift|FSD/Catalog/SnapshotWriter.swift|FSD/Catalog/SnapshotHistoryRepository.swift|FSD/Catalog/CatalogMigrations.swift|scripts/check_control_plane.py
+LOCAL_HEAD=1b903385d1093b52dec3661a238e09063ce7b9a2
+REMOTE_HEAD=1b903385d1093b52dec3661a238e09063ce7b9a2
+LAST_VERIFIED_AT=2026-10-18T20:44:59+07:00
+AUTHORITY_PTRS=AGENTS.md|docs/BRAIN_OPERATOR.md|docs/AGENT.md|STATE/PROJECT_STATE.md|STATE/TASK_LEDGER.tsv|STATE/EVENTS.jsonl|handoffs/CURRENT_HANDOFF.md|.agents/skills/fsd-task-execution/SKILL.md|.agents/skills/fsd-handoff-finalizer/SKILL.md|docs/DECISIONS.md|docs/SNAPSHOT_COLLECTIONS.md|docs/PRD.md|docs/UX_UI_SPEC.md|docs/ARCHITECTURE.md|docs/TEST_PLAN.md|docs/MVP_PLAN.md|docs/database/schema.sql|FSD/Catalog/CatalogDatabase.swift|FSD/Catalog/CatalogMigrations.swift|FSD/Catalog/SnapshotCollectionRepository.swift|FSD/Model/SnapshotModels.swift|scripts/check_control_plane.py
 CURRENT_PHASE=POST_V0_1_FSD2_FOUNDATION
-CURRENT_GATE=FSD2_ADR036_PHYSICAL_IDENTITY_FEASIBILITY_054
+CURRENT_GATE=FSD2_ADR037_DRIVE_SETS_SCHEMA_FEASIBILITY_055
 STATUS=WORKER_COMPLETE_PENDING_BRAIN
-BLOCKER=NONE_FOR_FEASIBILITY;HARDWARE_PROOF_AND_REAL_STRONG_PROFILE_PENDING;PRODUCTION_INTEGRATION_NOT_AUTHORIZED
-PROPOSED_NEXT=WAIT(BRAIN_REVIEW_TASK054_FEASIBILITY_AND_PROOF_BOUNDARY)
+BLOCKER=NONE_FOR_SYNTHETIC_FEASIBILITY;PRODUCTION_SCHEMA_MIGRATION_AND_IDENTITY_PROOF_PENDING
+PROPOSED_NEXT=WAIT(BRAIN_REVIEW_TASK055_RELATIONAL_FEASIBILITY_AND_PENDING_BOUNDARIES)
 NO_AUTO_NEXT=YES
 
 ## Task lock and re-anchor
 
 PROJECT=FSD
-TASK_ID=FSD2_PHYSICAL_DRIVE_IDENTITY_FEASIBILITY_054
+TASK_ID=FSD2_DRIVE_SETS_SCHEMA_FEASIBILITY_055
 ROLE=WORKER
 REPO=/Users/cenvu/DEV/FSD
 BRANCH=main
-BASE_HEAD=65a133b901286549613315ddcb0a0e9c0763f18f
-UPSTREAM_HEAD=65a133b901286549613315ddcb0a0e9c0763f18f
+BASE_HEAD=1b903385d1093b52dec3661a238e09063ce7b9a2
+UPSTREAM_HEAD=1b903385d1093b52dec3661a238e09063ce7b9a2
 ACCEPTED_STATE=STATE/PROJECT_STATE.md
-SCOPE=ONE_ADR036_RESEARCH_SYNTHETIC_FEASIBILITY_AND_FUTURE_DESIGN_TASK
-ALLOWED_PATHS=docs/DECISIONS.md_ADR036_ONLY|docs/ARCHITECTURE.md_IDENTITY_AND_RELATED_STATUS|docs/TEST_PLAN.md_IDENTITY_AND_RELATED_STATUS|.ai-scratch/task054/|one_new_historical_handoff|handoffs/CURRENT_HANDOFF.md|STATE/TASK_LEDGER.tsv_WORKER_FIELDS|STATE/EVENTS.jsonl_APPEND|Desktop_04_FSD_BRAIN.md_TRANSPORT
-FORBIDDEN_PATHS=PRODUCTION_SOURCE_XCODE_TESTS_FIXTURES_DEPENDENCIES|SCHEMA_MIGRATIONS|STATE/PROJECT_STATE.md|STATE/RULE_PROMOTION_LEDGER.tsv|PRIOR_HISTORY|PRD_MUTATION|ADR037_038_OR_ACCEPTED_ADR_SEMANTICS|SOURCE_MEDIA_DEVICES_OWNER_CATALOG_SYSTEM_SETTINGS|RELEASE_TAGS
-SUCCESS_CRITERIA=OFFICIAL_API_INVENTORY|DETERMINISTIC_FAIL_CLOSED_CONTRACT|REPRODUCIBLE_SYNTHETIC_NEGATIVES|HONEST_HARDWARE_MATRIX|FUTURE_SCHEMA_PLAN_ONLY|SCOPED_DOC_REVIEW_AND_FINALIZATION
-VALIDATIONS=SYNTHETIC_RESOLVER|FULL_SCOPED_DOC_DIFF_REVIEW|MARKDOWN_PATH_ANCHOR|GIT_DIFF_CHECK|PROTECTED_HASHES|CONTROL_PLANE_PRE_POST|DESKTOP_PARITY|GIT_PUBLICATION_SYNC
+SCOPE=ADR037_RELATIONAL_FEASIBILITY_ONLY
+ALLOWED_PATHS=docs/DECISIONS.md_ADR037_ONLY|docs/ARCHITECTURE.md|docs/TEST_PLAN.md|docs/PRD.md_SECTION2_ONLY|.ai-scratch/task055/|one_new_history|CURRENT|Worker_ledger_event|Desktop_transport
+FORBIDDEN_PATHS=ALL_OTHER_TRACKED_FILES|OWNER_MEDIA_CATALOG_DEVICES|SOURCE_ROOTS|RELEASE_TAGS
+SUCCESS_CRITERIA=DETERMINISTIC_RELATIONAL_CONTRACT_SQLITE_NEGATIVES_MIGRATION_PLAN_REVIEW_PUBLICATION
+VALIDATIONS=PYTHON_SQLITE_SYNTHETIC|DIFF|LINKS|HASHES|PRE_POST_CHECKER|DESKTOP_PARITY|CLEAN_SYNCED
 NEXT_BOUNDARY=RETURN_TO_BRAIN_ONLY
 
-The first non-destructive fetch found clean local `main` at ff4520f30890acc1bb10a344863b4fec88f532f5,
-two BRAIN-only commits behind origin/main. Their diff was inspected (State,
-ledger, events only); `git pull --ff-only origin main` safely fast-forwarded to
-the exact expected baseline above. No task mutation preceded reconciliation.
-Fresh fetch before this handoff reconfirmed baseline/upstream equality and 0/0.
-Origin is `https://github.com/cenvu/FSD.git`. Accepted State explicitly authorizes
-ACTION(Task054), preserving Task053 as last accepted. Worker result is
-**PASS_WITH_ADVISORY**, awaiting BRAIN classification; no technical ADR acceptance
-or subsequent-task authority is authored here.
+Initial clean main was 809ebaec1818e5093491bf0b2e1a8d7bf0d078ce. Non-destructive
+fetch found one BRAIN-only upstream commit changing accepted State, ledger and
+events. Its full diff was inspected, then git pull --ff-only origin main safely
+advanced to the exact expected base above. Fresh finalizer-entry fetch confirmed
+local/upstream equality and 0/0; only the four authorized docs were dirty.
+Origin: https://github.com/cenvu/FSD.git. No reset/clean/stash/rebase/force.
+Accepted State authorizes exactly Task055; Task054 is accepted feasibility-only
+PASS_WITH_ADVISORY at 809ebaec1818e5093491bf0b2e1a8d7bf0d078ce. Zero real strong
+hardware profiles are approved. This return is Worker-local PASS_WITH_ADVISORY;
+classification remains pending BRAIN and no accepted State is changed.
 
-## Verified feasibility delta
+## Verified relational delta — FACT unless labelled pending
 
-- **DECISIONS / ADR-036 only:** defines deterministic conflict/manual/ambiguity/
-  strong/unknown precedence, provenance/collision rules, revision-bound local
-  correction, immutable history and action gates. No approved real hardware
-  profile exists, so real `UniqueStrongMatch` and automatic association remain
-  unavailable. Manual association never creates hardware verification.
-- **ARCHITECTURE §11:** official inventory E1–E8 with exact Apple URLs and SDK
-  declarations, evidence dependency table, topology/threat model, source/schema-v9
-  findings and bounded future migration/integration plan. Disk Arbitration media
-  UUID and IOMedia UUID are one derived origin at the pinned Apple revision.
-  Serial subject may be bridge/reader; whole/leaf is not universal physical mapping.
-  The inspected contracts do not establish a universal collision-resistant
-  persistent physical identifier. SDK 26.2 inspection does not prove macOS 15
-  runtime or hardware behavior.
-- **TEST_PLAN §10:** explicit S01–S32 expected/actual matrix, all five proof labels
-  and H01–H14 future hardware matrix. Every empirical result is NO/pending.
-  Related stale P15 status is reconciled with accepted Task036/v9; historical
-  test counts and accepted semantics are retained, not rerun or reaccepted.
+- DECISIONS: only proposed ADR-037 refined. Stable catalog-local IDs, empty sets,
+  many-to-many pair PK, set-to-membership CASCADE only, drive RESTRICT/tombstone,
+  explicit/manual-unverified admission, conflict/revoke no-retarget, name policy
+  alternatives, transactions, revision/idempotency, bounded reads and migration
+  boundaries. ADR-019/020/036/038 and all accepted semantics remain unchanged.
+- ARCHITECTURE: append-only §12 inventories real schema-v9/Collection/migration
+  code and official SQLite/Python Q1–Q7 URLs, candidate entities/DDL/constraints,
+  complete deletion graph, Unicode alternatives and explicit future sequence.
+  Existing volume ID is not upgraded to physical identity. Final table shape,
+  PhysicalDrive creation policy and production migration remain pending.
+- TEST_PLAN: append-only §11 records all DS01–38 expected/actual outcomes and
+  requirements-to-future-production matrix, failure correction, evidence limits
+  and read-only cross-document advisories. No production PASS is claimed.
+- PRD: only §2 replaces pre-direction wording with dated 2026-10-18 Owner target;
+  preserves snapshot Collections, zero-or-one membership and NULL Unsorted.
+  Direction does not accept schema/identity or remove existing requirements.
 
-Current source facts: detector UUID → stringified file resource ID → mount-path
-fallback; `ensureVolume` uses `LIMIT 1` over nonunique UUID/fingerprint indexes;
-availability is only recorded-path existence. These cannot establish physical
-identity or close accepted F2. The duplicate-row code risk is **FACT from source**,
-not an observed Owner hardware incident. No production repair is in scope.
+PhysicalDrive is a local catalog record; a manual label/association does not
+verify hardware. Unknown/Ambiguous/Conflict observations never supply membership.
+Offline manual local-record selection is separate from resolving a live device.
+All membership remains explicit, including after any hypothetical strong match;
+mounts authorize no capture. No profile or Auto Capture enabled; default OFF.
 
-Future logical model separates stable local drive IDs, observed volume/partition/
-media and transport subjects, revision-scoped topology, MountSession, append-only
-provenance/evidence, resolution/collision/manual events and immutable admission
-receipts. Later annotations are explicitly retrospective. Legacy v9 captures
-remain unknown; no registry/UUID/path backfill. Transaction/FK/RESTRICT/tombstone,
-versioned migration, rollback/reopen and interruption/last-complete requirements
-are specified, not implemented. Existing ADR-023/024/028, terminal comparisons,
-Collections/Unsorted, source/root authority and read-only protections remain binding.
+Future migration is additive, explicit ADR-024 transactions with FK/expected
+object verification. Existing supported old catalogs first follow accepted steps
+to v9; legacy physical identity stays unknown, without UUID/path/name/file-ID
+backfill or history rewrite. Tombstones preserve membership/history. Set deletion
+has no edge into snapshots/entries/Collections/volumes/comparison evidence.
+The exact final schema/version, normalization parity, migration paths,
+association persistence, crash durability, contention and scale require separate
+review/authorization and production evidence. No version is reserved here.
 
-## Synthetic execution and bounded correction
+## Executed synthetic evidence and correction
 
-Final command: `python3 .ai-scratch/task054/resolver.py` (exit 0), also captured
-with stdout redirected to `.ai-scratch/task054/synthetic.stdout`.
-**32 executed / 32 PASS / 0 FAIL**. Each case compares exact expected outcome,
-target, candidate set and auto eligibility, asserts input nonmutation, reverses
-fact and catalog order and asserts identical output. Only S21 is auto eligible,
-under a hypothetical two-origin profile and all simulated capture gates. Real
-profile mode remains pending even with matching two strings (S19).
+Command: python3 .ai-scratch/task055/harness.py — final exit 0.
+38 executed / 38 PASS / 0 FAIL; SYNTHETIC_PROTOTYPE.
+Python 3.15.0 / SQLite 3.54.0 / Unicode 17.0.0.
+All SQLite connections :memory:; FK asserted ON; no catalog filename accepted.
+Source schema SHA256: 4b65d6c285ebaa353eec8439453199ce90f42cb33d670a6bb7d7410e28cdf815.
+Runnable harness SHA256: 0fd7d96f59506e14725a904d63fac39465cb1b810c0dbf0401167ca2c9177553.
 
-During scoped review, S29 was strengthened to supply explicit changed path/BSD
-values. That exposed a prototype bug: absent slot lookup and absent origin group
-both compared as None, accidentally qualifying session fields. The root cause was
-inspected; qualification now requires explicit membership in the hypothetical
-slot map before comparing the group. The final 32-case rerun passes. This is a
-scratch-only correction; there was no product change or repeated blind patch.
+Every case seeds generated schema-v9 rows (including cloned volume UUID,
+complete snapshots/entries, Collection/NULL, terminal comparison/result and
+synthetic saved sentinel), then verifies all legacy table row values unchanged,
+FK check empty, integrity_check ok and exact new-object definitions. Existing
+SQL objects remain unchanged after additive prototype setup. The sentinel is
+not ADR-038 implementation. DS29 traverses 257 sets at 17+1 without skips or
+duplicates; measured plan SEARCH drive_sets USING INDEX sqlite_autoindex_drive_sets_2
+(normalized_name>?). DS30 finds covering seeks in both membership directions.
+DS37 walks real FK metadata; cascade closure from set is only set plus pairs.
+The complete explicit expected/actual table is published in TEST_PLAN §11;
+source below contains each generated input, assertion and expected outcome.
 
-Generated inputs and full actual results are in ignored `inputs.json` and
-`results.json`; the runnable source below reconstructs both without hardware,
-live catalogs or source paths. The embedded source was independently recovered
-under ignored task scratch and rerun: 32/32 PASS with byte-identical generated
-inputs/results. The prototype deliberately does not implement
-untrusted API parsing, persisted collision quarantine, topology discovery,
-observation reducers, manual-event persistence or migration. Those remain explicit
-future production gates. Input immutability proves only that these synthetic
-objects were not modified; it is not an executed snapshot/database trigger test.
+Initial run: 37 PASS / 1 FAIL (DS33). Deliberate index removal correctly caused
+same-version verification failure; the restore selected DDL[5], the membership
+TABLE instead of the index. Actual error: table drive_set_memberships already
+exists. Inspected root cause; restored by the exact index statement name instead
+of positional assumption, reran all 38 successfully. Initial results retained
+in ignored initial-results.json. No product failure, schema repair or unknown
+catalog was involved. No repeated blind patch or three-failure trigger occurred.
 
-## Proof boundary, review and advisories
+Prototype boundaries: memory-copy reopen is not process crash/disk/WAL proof;
+stale revision is not concurrent contention; Python Unicode cases are not
+Foundation parity; manually seeded stubs and policy-gate tests are not ADR-036
+resolver/event persistence; no real Swift migration or historical v4–v8 catalogs
+were executed. Ordinary production create retry, bulk correction and cursor
+invalidation remain explicit future gates, not claimed tests.
 
-**DOCUMENTED:** exact Apple contracts/declarations and the pinned media-UUID
-source dependency. **SYNTHETICALLY_TESTED:** the deterministic 32 cases below.
-**EMPIRICALLY_VERIFIED:** none. **TECHNICAL_PROOF_PENDING:** real identity profile,
-reconnect/clone/reader/bridge/provider behavior, macOS-floor runtime, observer
-safety and future schema/product integration. **UNSUPPORTED_OR_UNKNOWN:** unproved
-multi-store/RAID/virtual/network/multi-LUN physical mapping and unvalidated provider
-paths. Finite future hardware trials cannot prove universal uniqueness or defeat
-intentional identifier forgery. No live probe/enumeration, media access, mount,
-unmount/eject, source payload or Owner catalog access occurred.
+## Execution review, requirements and limits
 
-ADR-036 stays **Proposed / Owner Direction Approved / Technical Proof Pending**.
-ADR-037/038 bytes/status and all accepted ADRs are unchanged. This Worker performs
-scoped document/code review, not independent product acceptance; BRAIN review is
-pending and future safety/schema implementation will require its applicable audit.
-Read-only PRD drift is advisory: §2 Drive Set pre-decision text, §6.1 legacy raw
-identity wording, and §8.1 provider-not-selected wording relative to accepted P15.
-Existing architecture §8's older transient-promotion wording remains outside this
-identity task; ADR-038 already governs the proposed separate durable-save direction.
-No unrelated document or product scope was broadened.
+Full four-document diff reviewed against current canonical authorities and
+actual relevant v9/Collection source. No independent review or BRAIN acceptance
+is claimed. Fresh git diff --check passed. validate.py passed 51 local Markdown
+path/anchor destinations; all 1509 protected tracked paths preserved (symlinks
+hashed as link text without dereference), including 107 prior historical
+handoffs, accepted State/rule ledger and production/schema/tests. ADR text
+outside 037 is byte-identical; PRD outside §2 is byte-identical; old ARCHITECTURE
+and TEST_PLAN text is unchanged. Accepted State SHA256:
+d47a568d07c2c983d49bce9db54f69f66783a34704d3fbcf0f8daee6cb69696c.
 
-Full three-document diff review checked claims against official evidence/current
-source, manual vs verified outcomes, correlated UUIDs, no first/MRU match,
-snapshot/accepted-history protection, matrix completeness, future transaction/
-deletion constraints and unchanged ADR037/038. Execution postflight passed:
-`git diff --check` exit 0; `python3 .ai-scratch/task054/validate.py` PASS;
-39 local Markdown destinations/anchors; 110 protected hashes preserved;
-accepted State SHA-256 `7b8dce618bae9932d27c244867b61fbb75b3d80fbcfbaeec671195afe5ad7004`. Only the three authorized substantive
-docs differ. Production source/schema/migrations/tests/Xcode/dependencies/PRD,
-RULE_PROMOTION_LEDGER and prior historical handoffs are untouched. No Xcode build
-or production XCTest is required or claimed. No Task055 or other work started.
+Baseline receipt construction first encountered an existing broken fixture
+symlink and Git's quoted Unicode filenames. No protected writes occurred;
+corrected by non-dereferenced symlink hashing and git ls-files -z. The successful
+baseline was captured before any tracked mutation. These were read-only
+inventory handling defects, not source-device inspection.
 
-## Requirement/evidence accounting
+| Requirement | Execution accounting / evidence |
+|---|---|
+| R01 authority/Git/bootstrap | EVIDENCED — exact ACTION, safe FF, task lock, baseline/fresh fetch |
+| R02 mandatory scoped authorities/source | EVIDENCED — HOT, kernel/Compact/skills, named ADR/product/Collection/schema/migration/model refs |
+| R03 official relational research | EVIDENCED — ARCHITECTURE Q1–Q7 exact official links |
+| R04 binding separate grouping/local IDs | EVIDENCED — ADR037; DS01–07/25/36 |
+| R05 keys/FKs/index/deletion | EVIDENCED — candidate DDL; DS04–06/20–22/30/36/37 |
+| R06 no weak/automatic hardware membership | EVIDENCED — DS14–18/38 gate; empty real profile set explicit |
+| R07 offline/correct/revoke/tombstone | EVIDENCED — DS13/19/22 surrogate and pending event persistence design |
+| R08 atomic/concurrency/idempotency | EVIDENCED — DS23/28/31/35; real contention/create receipt future gates |
+| R09 Unicode/duplicate alternatives | EVIDENCED — DS08–11/34/35; Foundation parity pending |
+| R10 bounded listing/order | EVIDENCED — DS29/30; limits/cursor mutation and scale gates explicit |
+| R11 ADR024 migration/recovery proposal | EVIDENCED — architecture sequence; DS24/26/27/33 bounded surrogates |
+| R12 legacy unknown/no backfill | EVIDENCED — DS25 and every-case old-row digest |
+| R13 at least20 enumerated executed tests | EVIDENCED — 38/38 expected/actual with complete reproducible source |
+| R14 snapshots/Collections/evidence retained | EVIDENCED — every-case digest/DS32/37; actual ADR038 proof pending |
+| R15 negative rollback/integrity | EVIDENCED — DS23/24/35, every-case FK/integrity |
+| R16 requirements and future proof matrix | EVIDENCED — TEST_PLAN §11; no runtime migration/hardware PASS |
+| R17 four-document scope/advisories | EVIDENCED — exact diff; PRD§2 only; restricted docs untouched |
+| R18 complete scoped semantic diff review | EVIDENCED — Worker self-review of all four diffs; no independent acceptance claim |
+| R19 whitespace/paths/anchors/history/State | EVIDENCED — diff-check/validate.py; hashes and byte-boundaries above |
+| R20 source/media/privacy/no next | EVIDENCED — memory-only code, exact scope, no device/catalog/source roots; return boundary |
+| R21 reproducible isolated proof | EVIDENCED — complete source embedded below and recovered into scratch/rerun before freeze |
+| R22 Xcode/production XCTest | NOT_APPLICABLE — documentation and ignored experiment only; user explicitly exempts |
 
-| # | Requirement | Outcome | Evidence |
-|---:|---|---|---|
-| 1 | Exact Task054 Worker scope and canonical ACTION | EVIDENCED | Owner prompt; accepted State ACTION; task lock. |
-| 2 | Non-destructive fetch and baseline reconciliation | EVIDENCED | Initial ff4520f was two BRAIN commits behind; fast-forward to expected 65a133b; fresh 0/0, clean baseline. |
-| 3 | Required authority and skills read | EVIDENCED | Kernel/Owner policy, Compact, HOT, State, both skills; relevant PRD/UX/Product State/ADR/dependencies/architecture/test/schema/source reviewed read-only. |
-| 4 | DA callbacks/descriptions and SDK declarations | EVIDENCED | Architecture E1/E2; installed SDK 26.2 headers; official guides and pinned Apple sources. |
-| 5 | Identifier object, availability, persistence and uniqueness limits | EVIDENCED | Architecture inventory E2–E8; optional fields; no universal physical/collision/reconnect guarantee. |
-| 6 | Provenance independence and topology limits | EVIDENCED | E4 directly derives DA media UUID from IOMedia UUID; reader/bridge/partition/whole-disk subjects separated. |
-| 7 | Threat and ambiguity model | EVIDENCED | Architecture threat table; accidental/forged IDs, cloned tokens, topology and stale observation risks. |
-| 8 | PhysicalDrive/Volume/Partition/MountSession/capture facts | EVIDENCED | ADR-036 concepts retained; architecture proposed subject graph and capture receipt. |
-| 9 | Five deterministic outcomes and candidates | EVIDENCED | ADR-036 ordered precedence; real profile set empty; synthetic slots explicitly hypothetical. |
-| 10 | Conflicts, duplicate IDs and no first/MRU winner | EVIDENCED | ADR conflict/ambiguity distinction; S07/08/18/25/26/27/30; persisted quarantine specified as future gate. |
-| 11 | Explicit manual association/correction and contradiction | EVIDENCED | Revision-bound local choice, append/supersede/revoke design; S14–17/S32; never hardware verification. |
-| 12 | History immutability and availability vs identity | EVIDENCED | Legacy unknown/no backfill; immutable source facts; independent availability/root/capture gates; S23 input-only simulation. |
-| 13 | Automatic action prohibitions and Auto Capture OFF | EVIDENCED | ADR policy; S07/S14/S19–25/S28/S31; only hypothetical S21 eligible; no production automation. |
-| 14 | Scratch-only generated deterministic prototype | EVIDENCED | Pure resolver below; no device, live catalog, source-root or OS storage API; ignored scratch only. |
-| 15 | All required synthetic scenarios executed | EVIDENCED | S01–S32 exact inputs/expected/actual in harness and JSON; final command exit 0; 32/32/0. |
-| 16 | Reproducibility and nonmutation/order independence | EVIDENCED | Complete harness embedded below, deterministic generated JSON; input immutability and reversal assertions per case. |
-| 17 | Synthetic vs empirical proof boundary | EVIDENCED | Every empirical cell NO; two-token profile hypothetical; no hardware verification or observer execution claim. |
-| 18 | Future hardware matrix and five proof labels | EVIDENCED | Test Plan H01–H14 covers required filesystems/devices/readers/bridges/LUNs/restarts/collisions; separate safety authorization required. |
-| 19 | Read-only v9 source/schema inspection and proposed model | EVIDENCED | Detector/writer/history/models/migrations/schema inspected; local subject/evidence/session/resolution/manual/receipt design only. |
-| 20 | Migration/transaction/FK/deletion/recovery design | EVIDENCED | Architecture staged plan; additive versioned migration, atomic writes, guards, RESTRICT/tombstones, no legacy backfill or auto recovery capture. |
-| 21 | Only authorized substantive docs; related status reconciliation | EVIDENCED | DECISIONS only ADR-036; ARCHITECTURE/TEST_PLAN targeted identity and P15 status; PRD/ADR037/038 unchanged. |
-| 22 | Full scoped document diff review and protected history | EVIDENCED | Self code/document review; 110 protected file hashes, ADR prefix before 036 and suffix from 037 byte-identical; product/schema/tests untouched. |
-| 23 | Whitespace, Markdown and fresh execution postflight | EVIDENCED | git diff --check exit 0; validate.py PASS with 39 local destinations/anchors; exact three substantive paths; no next task. |
-| 24 | Xcode build and production XCTest | NOT_APPLICABLE | Documentation and ignored pure synthetic harness only; exact task does not require them. |
+Future production/hardware proof is a documented feasibility boundary, not an
+unproven claim of implementation. Canonical finalization closure checks run
+AFTER this execution postflight: exact handoff/CURRENT/Operator parity,
+Worker-only ledger/event, checker prepublication, push/fetch, checker clean/synced
+postpublication. Their actual outcomes and publication SHA belong to Desktop's
+fresh receipt and tool outputs, not an invented future SHA/checker PASS in this
+immutable prepublication record. Completion waits for those physical checks.
 
 WORKER_EXECUTION_GUARD=FSD_WORKER_EXECUTION_V1
 WORKER_PREFLIGHT=PASS
-WORKER_REQUIREMENTS_TOTAL=24
-WORKER_REQUIREMENTS_EVIDENCED=23
+WORKER_REQUIREMENTS_TOTAL=22
+WORKER_REQUIREMENTS_EVIDENCED=21
 WORKER_REQUIREMENTS_NOT_APPLICABLE=1
 WORKER_REQUIREMENTS_UNPROVEN=0
 WORKER_POSTFLIGHT=PASS
 NEXT_TASK_STARTED=NO
 
-The accounting proves execution of this feasibility task, including documenting
-pending empirical work; it does not count pending hardware or implementation as
-verified. Finalizer closure follows this execution postflight: one immutable
-historical handoff, full CURRENT mirror, Worker ledger/event, preserved prior
-BRAIN fields, exact Desktop Operator/CURRENT transport, canonical prepublication
-checker, authorized commit/push/fetch and postpublication clean/synced checker.
-Those results/publication SHA are recorded after they occur in Desktop's fresh
-Git receipt; this prepublication immutable source does not claim future execution
-or self-reference its own future publication SHA. BRAIN alone classifies/accepts.
-Proposed State delta: consider accepting Task054 feasibility with hardware/profile
-advisory; retain F2 and ADR-036 technical proof pending. No active-next is set.
+## Read-only advisories and Worker proposal
 
-## Official source and SDK recovery digests
+ADR037 remains Proposed / Owner Direction Approved / Technical Proof Pending.
+Migration/creation policy, final production schema, Unicode parity,
+crash/concurrency/scale/integrated UI and actual hardware identity are pending.
+SNAPSHOT_COLLECTIONS §9's v3 wording is the Collection-wave version; cumulative
+schema is v9. Its legacy defaults/Auto Capture prose is not physical identity
+proof. MVP_PLAN matrix-absence prose predates Task054/055, but complete Wave A
+proof is still absent. PRD§6.1/§8.1 and ARCHITECTURE§8 legacy drift stays advisory.
+These restricted/out-of-scope sections are untouched. Existing Task041/047
+privacy residuals and manual E2E/VoiceOver deferrals remain unresolved.
 
-SDK root: `/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk`; version 26.2.
-Official pinned URLs are in architecture E1–E8. Apple modern Markdown pages for
-workspace/Foundation were fetched directly where web-rendered text was unavailable.
-The old kIOMediaUUIDKey web endpoint was unavailable; SDK and pinned Apple IOMedia.h
-supply its exact declaration instead. Registry-entry HTML/search and SDK verified
-the reboot limit; its `.md` URL returned 404 and is not treated as evidence.
+Proposed state delta only: BRAIN may assess this documentation/synthetic
+feasibility evidence as PASS_WITH_ADVISORY while leaving ADR037 and all production
+and hardware proof pending. No automatic further action or Task056 is started.
+Worker owns RAW/REPORT/proposal; BRAIN alone owns review/classification/accepted
+State/active next. One proposal exists in HOT; stop at return to BRAIN.
 
-- SDK `System/Library/Frameworks/DiskArbitration.framework/Headers/DADisk.h`: `9feb1b52a032899adaa80333f136bd63b530448ad22589e34eff8e5a521d6993`
-- SDK `System/Library/Frameworks/DiskArbitration.framework/Headers/DiskArbitration.h`: `2282e429b3669f53af7fc4f28058975b792e181fc0425c2bc49069ad776ab95d`
-- SDK `System/Library/Frameworks/DiskArbitration.framework/Headers/DASession.h`: `faf94ae4f95542de7fd78b282cd2057af34e6aaab0db0197f1aa67480637a905`
-- SDK `System/Library/Frameworks/Kernel.framework/Headers/IOKit/storage/IOMedia.h`: `f8d96b002ec37bdc32e8b715394b8324e399f73ede88ac5d2d9770780e7a3bab`
-- SDK `System/Library/Frameworks/Kernel.framework/Headers/IOKit/storage/IOStorageDeviceCharacteristics.h`: `eb054c1ac78d6d893b1c60221aeedad4edddec735836a76924aef722469b2be4`
-- SDK `System/Library/Frameworks/IOKit.framework/Headers/IOKitLib.h`: `553869588e8c0b162b232e294dea2579cfd739d83e772a0b8a79e2be91a5816e`
-- SDK `System/Library/Frameworks/AppKit.framework/Headers/NSWorkspace.h`: `be46224f91d11b7d0e25a0ed80dda5c1a9e52c404038a5a7ebfc25794befff30`
-- SDK `System/Library/Frameworks/Foundation.framework/Headers/NSURL.h`: `97981c4e8ad70b8fc8c33c22e73b448a9ce9ad0ddfb7304d85a67d0843365f6d`
-- Apple `DiskArbitration@a542bda934211dc3c301bfdcc7f21349c4164a85:DiskArbitration/DADisk.h`: `ffd421e9d3163f86ac07ddf569caa9e55072b69a981197fe8a8633edfec65aa4`
-- Apple `DiskArbitration@a542bda934211dc3c301bfdcc7f21349c4164a85:diskarbitrationd/DADisk.c`: `667bf7ee7c26b8879bbedc439d9e9dc94d70d5e7d2c2051db1e4d2ea051393ad`
-- Apple `IOStorageFamily@7edb88fbae296fb7c8ce2f64e115e116e566d51c:IOMedia.h`: `f8d96b002ec37bdc32e8b715394b8324e399f73ede88ac5d2d9770780e7a3bab`
-- Apple `IOStorageFamily@7edb88fbae296fb7c8ce2f64e115e116e566d51c:IOStorageDeviceCharacteristics.h`: `eb054c1ac78d6d893b1c60221aeedad4edddec735836a76924aef722469b2be4`
+## Reproducible harness — exact source
 
-## Complete isolated synthetic harness recovery
-
-Save this exact fenced source to ignored `.ai-scratch/task054/resolver.py` and run
-`python3 .ai-scratch/task054/resolver.py`. It writes only generated scratch JSON.
-Source SHA-256: `c759096419648ed5277b46882dc90dfdf2fdd9a9bd188ed55f390199c82665c1`.
+Save the following as .ai-scratch/task055/harness.py and run from repository root.
+It writes results.json beside itself and opens only :memory: connections.
 
 ```python
-"""Task054 pure synthetic model. No OS/device/catalog API; no approved real profile."""
-import copy
+"""Task055 SYNTHETIC_PROTOTYPE. Generated facts only; never opens a catalog.
+Reads repository schema DDL as text; all SQLite connections are :memory:.
+Run from repo root: python3 .ai-scratch/task055/harness.py
+"""
+import hashlib
 import json
 from pathlib import Path
+import sqlite3
+import sys
+import unicodedata
 
+ROOT = Path.cwd()
+OUT = Path(__file__).resolve().parent
+SCHEMA = (ROOT / 'docs/database/schema.sql').read_text()
+STAMP = '2000-01-01T00:00:00Z'
+TARGET = 10  # synthetic sentinel only; no production version reserved
+DDL = [
+    """CREATE TABLE physical_drives (
+      id TEXT NOT NULL PRIMARY KEY CHECK(length(id)=32 AND id NOT GLOB '*[^0-9a-f]*'),
+      label TEXT NOT NULL, origin TEXT NOT NULL CHECK(origin='manual_local_unverified'),
+      identity_state TEXT NOT NULL CHECK(identity_state IN ('unknown','manual_unverified','conflict')),
+      availability TEXT NOT NULL CHECK(availability IN ('offline','online','unknown')),
+      tombstoned_at TEXT)""",
+    """CREATE TRIGGER physical_drives_no_delete BEFORE DELETE ON physical_drives
+       BEGIN SELECT RAISE(ABORT,'PhysicalDrive tombstone required'); END""",
+    """CREATE TRIGGER physical_drives_id_immutable BEFORE UPDATE OF id ON physical_drives
+       WHEN NEW.id IS NOT OLD.id BEGIN SELECT RAISE(ABORT,'Immutable local ID'); END""",
+    """CREATE TABLE drive_sets (
+       id TEXT NOT NULL PRIMARY KEY CHECK(length(id)=32 AND id NOT GLOB '*[^0-9a-f]*'),
+       name TEXT NOT NULL CHECK(length(trim(name)) BETWEEN 1 AND 256),
+       normalized_name TEXT NOT NULL UNIQUE CHECK(length(normalized_name)>0),
+       normalization_version TEXT NOT NULL CHECK(normalization_version='synthetic-nfc-casefold-v1'),
+       revision INTEGER NOT NULL DEFAULT 1 CHECK(revision>=1),
+       created_at TEXT NOT NULL, updated_at TEXT NOT NULL)""",
+    """CREATE TRIGGER drive_sets_id_immutable BEFORE UPDATE OF id ON drive_sets
+       WHEN NEW.id IS NOT OLD.id BEGIN SELECT RAISE(ABORT,'Immutable local ID'); END""",
+    """CREATE TABLE drive_set_memberships (
+       set_id TEXT NOT NULL REFERENCES drive_sets(id) ON DELETE CASCADE ON UPDATE RESTRICT,
+       physical_drive_id TEXT NOT NULL REFERENCES physical_drives(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+       added_at TEXT NOT NULL, admission TEXT NOT NULL CHECK(admission='explicit_local_selection'),
+       PRIMARY KEY(set_id,physical_drive_id))""",
+    "CREATE INDEX memberships_by_drive ON drive_set_memberships(physical_drive_id,set_id)",
+    """CREATE TRIGGER memberships_active_insert BEFORE INSERT ON drive_set_memberships
+       WHEN (SELECT tombstoned_at FROM physical_drives WHERE id=NEW.physical_drive_id) IS NOT NULL
+       BEGIN SELECT RAISE(ABORT,'Tombstoned drive'); END""",
+    """CREATE TRIGGER memberships_active_update BEFORE UPDATE ON drive_set_memberships
+       WHEN (SELECT tombstoned_at FROM physical_drives WHERE id=NEW.physical_drive_id) IS NOT NULL
+       BEGIN SELECT RAISE(ABORT,'Tombstoned drive'); END""",
+]
 
-def fact(key, value, group=None, scope="device", api="generated", subject="S"):
-    return dict(key=key, value=value, group=group, scope=scope, api=api, subject=subject)
+def uid(n): return f'{n:032x}'
 
+def connect():
+    c = sqlite3.connect(':memory:', isolation_level=None)
+    c.execute('PRAGMA foreign_keys=ON')
+    assert c.execute('PRAGMA foreign_keys').fetchone() == (1,)
+    return c
 
-def identity(f):
-    return f["scope"], f["key"]
+def rows(c, sql, args=()): return c.execute(sql, args).fetchall()
 
+def tx(c, fn):
+    c.execute('BEGIN IMMEDIATE')
+    try:
+        value = fn()
+        c.execute('COMMIT')
+        return value
+    except BaseException:
+        if c.in_transaction: c.execute('ROLLBACK')
+        raise
 
-def tokens(facts):
-    # Names, paths, BSD nodes and reader identity never select a physical drive.
-    return {(identity(f), f["value"]) for f in facts
-            if f["value"] and f["scope"] in ("device", "volume", "partition")}
+def legacy(c):
+    c.executescript(SCHEMA)  # fresh generated memory only; outside transaction
+    c.execute("INSERT INTO volumes(id,display_name,persistent_uuid,first_seen_at,last_seen_at,created_at,updated_at) VALUES(1,'SYNTHETIC','cloned',?,?,?,?)", (STAMP,)*4)
+    c.execute("INSERT INTO volumes(id,display_name,persistent_uuid,first_seen_at,last_seen_at,created_at,updated_at) VALUES(2,'SYNTHETIC','cloned',?,?,?,?)", (STAMP,)*4)
+    c.execute("INSERT INTO collections(id,name,normalized_name,created_at,updated_at) VALUES(1,'Synthetic','synthetic',?,?)", (STAMP,)*2)
+    for i, collection in [(1,1),(2,None)]:
+        c.execute("""INSERT INTO snapshots(id,volume_id,session_number,scan_root_name,status,scanner_version,schema_version,normalization_version,snapshot_kind,source_case_sensitivity,display_name,capture_policy_json,started_at,created_at,updated_at,collection_id)
+          VALUES(?,?,?,'SYNTHETIC','scanning','synthetic',9,'fsd-normalizer-v1_app-1.0_os-1','user','unknown','Synthetic','{}',?,?,?,?)""", (i,i,1,STAMP,STAMP,STAMP,collection))
+        c.execute("""INSERT INTO entries(id,snapshot_id,parent_id,relative_path,case_preserving_path,case_folded_path,name,case_preserving_name,case_folded_name,item_type,sort_key,created_at)
+           VALUES(?,?,NULL,'','','','SYNTHETIC','SYNTHETIC','synthetic','directory','0',?)""", (i,i,STAMP))
+        c.execute("UPDATE snapshots SET status='complete' WHERE id=?", (i,))
+    c.execute("INSERT INTO comparisons(id,left_snapshot_id,right_snapshot_id,profile_id,status,started_at,created_at) VALUES(1,1,2,1,'running',?,?)", (STAMP,)*2)
+    c.execute("INSERT INTO comparison_results(id,comparison_id,result_path,display_name,result_type,left_entry_id,right_entry_id,created_at) VALUES(1,1,'','SYNTHETIC','matched',1,2,?)", (STAMP,))
+    c.execute("UPDATE comparisons SET status='complete',matched_count=1 WHERE id=1")
+    # ADR038 saved artifact shape is unresolved: sentinel only, not its proposed schema.
+    c.execute('CREATE TABLE synthetic_saved_evidence(id INTEGER PRIMARY KEY, comparison_id INTEGER REFERENCES comparisons(id) ON DELETE RESTRICT, payload TEXT NOT NULL)')
+    c.execute("INSERT INTO synthetic_saved_evidence VALUES(1,1,'generated sentinel')")
 
+def migration(c, fail=False):
+    v = rows(c,'SELECT MAX(version) FROM schema_migrations')[0][0]
+    if v not in (9,TARGET): raise ValueError('unsupported version')
+    if v == TARGET:
+        verify(c)
+        return
+    def body():
+        for i, sql in enumerate(DDL):
+            c.execute(sql)  # not executescript: no implicit commit before script
+            if fail and i==3: raise RuntimeError('injected partial DDL failure')
+        c.execute('INSERT INTO schema_migrations VALUES(?,?)',(TARGET,STAMP))
+        verify(c)
+    tx(c,body)
 
-def resolve(observation, catalog, policy="pending", manual=None, opt_in=False,
-            available=True, root_proven=False, authorized=False, idle=True):
-    facts = observation["facts"]
-    obs = tokens(facts)
-    candidates = sorted(d for d, fs in catalog.items() if obs & tokens(fs))
-    result, target = "Unknown", None
-    # Conflicting aliases for the same subject/key fail closed.
-    by_key = {}
-    for f in facts:
-        if f["scope"] in ("device", "volume", "partition") and f["value"]:
-            by_key.setdefault((f["subject"], identity(f)), set()).add(f["value"])
-    contradiction = any(len(v) > 1 for v in by_key.values())
-    manual_target = manual["target"] if manual else None
-    relevant = set(candidates) | ({manual_target} if manual_target in catalog else set())
-    # Only explicitly hypothetical profile slots are qualified stable comparators.
-    slots = {("device", "token_a"): "A", ("device", "token_b"): "B"}
-    def qualified(fs):
-        if policy != "hypothetical":
-            return {}
-        return {identity(f): f["value"] for f in fs
-                if f["value"] and identity(f) in slots and slots[identity(f)] == f["group"]}
-    qobs = qualified(facts)
-    for d in relevant:
-        prior = qualified(catalog[d])
-        contradiction |= any(qobs[k] != prior[k] for k in qobs.keys() & prior.keys())
-    if manual and (manual["revision"] != observation["revision"] or manual_target not in catalog):
-        contradiction = True
-    if contradiction:
-        result = "Conflict"
-    elif manual:
-        result, target = "ManualAssociation", manual_target
-    elif len(candidates) > 1:
-        result = "Ambiguous"
-    elif len(candidates) == 1:
-        d = candidates[0]
-        prior = qualified(catalog[d])
-        if len(qobs) == 2 and all(prior.get(k) == v for k, v in qobs.items()):
-            result, target = "UniqueStrongMatch", d
-    auto = (result == "UniqueStrongMatch" and opt_in and available and
-            root_proven and authorized and idle)
-    return dict(result=result, target=target, candidates=candidates, auto=bool(auto))
+def verify(c):
+    for sql in DDL:
+        kind = 'trigger' if 'CREATE TRIGGER' in sql else 'index' if 'CREATE INDEX' in sql else 'table'
+        name = sql.split()[2]
+        actual = rows(c,'SELECT sql FROM sqlite_master WHERE type=? AND name=?',(kind,name))
+        assert len(actual)==1 and ' '.join(actual[0][0].split())==' '.join(sql.split()), name
+    assert not rows(c,'PRAGMA foreign_key_check')
+    assert rows(c,'PRAGMA integrity_check')==[('ok',)]
 
+def digest(c, tables):
+    data={t: rows(c,'SELECT * FROM "'+t+'" ORDER BY rowid') for t in tables}
+    return hashlib.sha256(json.dumps(data,sort_keys=True).encode()).hexdigest()
 
-def fixtures():
-    a, b = fact("token_a", "a1", "A"), fact("token_b", "b1", "B")
-    a2, b2 = fact("token_a", "a2", "A"), fact("token_b", "b2", "B")
-    u = fact("uuid", "U", "filesystem", "volume")
-    name = fact("name", "CAM", scope="presentation")
-    path = fact("path", "/synthetic/CAM", scope="session")
-    bsd = fact("bsd", "disk99s1", scope="session")
-    reader = fact("serial", "reader1", scope="reader")
-    rows = []
-    def add(label, fs, cat, expected, target=None, candidates=(), auto=False, **kw):
-        rows.append(dict(id=f"S{len(rows)+1:02}", label=label,
-                         observation=dict(revision="r1", facts=fs), catalog=cat,
-                         options=kw, expected=dict(result=expected, target=target,
-                                                   candidates=list(candidates), auto=auto)))
-    add("same name different devices", [name,a2], {"D1":[name,a],"D2":[name,a2]}, "Unknown", candidates=["D2"])
-    add("mount path reused", [path,a2], {"D1":[path,a]}, "Unknown")
-    add("BSD node reused", [bsd,a2], {"D1":[bsd,a]}, "Unknown")
-    add("BSD changes", [a,b,fact("bsd","disk88",scope="session")], {"D1":[a,b,bsd]}, "Unknown", candidates=["D1"])
-    add("missing UUID", [], {"D1":[u]}, "Unknown")
-    add("single unverified UUID", [u], {"D1":[u]}, "Unknown", candidates=["D1"])
-    add("cloned UUID two records", [u], {"D1":[u],"D2":[u]}, "Ambiguous", candidates=["D1","D2"], opt_in=True)
-    add("split qualified evidence", [a,b2], {"D1":[a,b],"D2":[a2,b2]}, "Conflict", candidates=["D1","D2"], policy="hypothetical")
-    add("partition one of device", [a,b,fact("uuid","P1",scope="partition")], {"D1":[a,b]}, "Unknown", candidates=["D1"])
-    add("partition two of device", [a,b,fact("uuid","P2",scope="partition")], {"D1":[a,b]}, "Unknown", candidates=["D1"])
-    add("same reader different cards", [reader,u], {"D1":[reader,u],"D2":[reader,u]}, "Ambiguous", candidates=["D1","D2"])
-    add("reader serial only", [reader], {"D1":[reader],"D2":[reader]}, "Unknown")
-    add("reconnect changed path pending", [a,b,fact("path","/synthetic/NEW",scope="session")], {"D1":[a,b,path]}, "Unknown", candidates=["D1"])
-    add("current revision manual", [u], {"D1":[u]}, "ManualAssociation", "D1", ["D1"], manual=dict(target="D1",revision="r1"), opt_in=True)
-    add("manual later contradiction", [a,b2], {"D1":[a,b]}, "Conflict", candidates=["D1"], policy="hypothetical",manual=dict(target="D1",revision="r1"))
-    add("stale manual revision", [u], {"D1":[u]}, "Conflict", candidates=["D1"],manual=dict(target="D1",revision="old"))
-    add("manual correction to another local record", [u], {"D1":[u],"D2":[u]}, "ManualAssociation", "D2", ["D1","D2"],manual=dict(target="D2",revision="r1"))
-    add("aliases share origin no corroboration", [fact("uuid","U","media","partition","DA"),fact("uuid","U","media","partition","IOKit")], {"D1":[fact("uuid","U","media","partition")]}, "Unknown", candidates=["D1"],policy="hypothetical")
-    add("two device fields real profile pending", [a,b], {"D1":[a,b]}, "Unknown", candidates=["D1"],opt_in=True,available=True,root_proven=True,authorized=True)
-    add("hypothetical strong default OFF", [a,b], {"D1":[a,b]}, "UniqueStrongMatch","D1",["D1"],policy="hypothetical",root_proven=True,authorized=True)
-    add("hypothetical strong opt in all gates", [a,b], {"D1":[a,b]}, "UniqueStrongMatch","D1",["D1"],True,policy="hypothetical",opt_in=True,root_proven=True,authorized=True)
-    add("hypothetical strong no root authority", [a,b], {"D1":[a,b]}, "UniqueStrongMatch","D1",["D1"],policy="hypothetical",opt_in=True,authorized=True)
-    add("hypothetical strong unavailable", [a,b], {"D1":[a,b]}, "UniqueStrongMatch","D1",["D1"],policy="hypothetical",opt_in=True,available=False,root_proven=True,authorized=True)
-    add("hypothetical strong no capture authorization", [a,b], {"D1":[a,b]}, "UniqueStrongMatch","D1",["D1"],policy="hypothetical",opt_in=True,root_proven=True)
-    add("hypothetical strong duplicate device tokens", [a,b], {"D1":[a,b],"D2":[a,b]}, "Ambiguous",candidates=["D1","D2"],policy="hypothetical",opt_in=True)
-    add("contradictory aliases same subject", [u,fact("uuid","V","filesystem","volume")], {"D1":[u]}, "Conflict",candidates=["D1"])
-    add("unknown lineage not qualified", [fact("token_a","a1"),b], {"D1":[a,b]}, "Unknown",candidates=["D1"],policy="hypothetical")
-    add("unknown no association even opted in", [], {"D1":[a,b]}, "Unknown",opt_in=True,root_proven=True,authorized=True)
-    add("hypothetical reconnect changed BSD path", [a,b,fact("path","/synthetic/NEW",scope="session"),fact("bsd","disk88s2",scope="session")], {"D1":[a,b,path,bsd]}, "UniqueStrongMatch","D1",["D1"],policy="hypothetical")
-    add("hypothetical qualified mismatch", [a,b2], {"D1":[a,b]}, "Conflict",candidates=["D1"],policy="hypothetical")
-    add("hypothetical strong busy", [a,b], {"D1":[a,b]}, "UniqueStrongMatch","D1",["D1"],policy="hypothetical",opt_in=True,root_proven=True,authorized=True,idle=False)
-    add("manual missing target", [], {"D1":[a,b]}, "Conflict",manual=dict(target="absent",revision="r1"))
-    return rows
+def base():
+    c=connect(); legacy(c)
+    tables=[r[0] for r in rows(c,"SELECT name FROM sqlite_master WHERE type='table' AND name!='schema_migrations' ORDER BY name")]
+    before=digest(c,tables)
+    objects=rows(c,"SELECT type,name,sql FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' ORDER BY type,name")
+    migration(c)
+    assert digest(c,tables)==before
+    for obj in objects: assert obj in rows(c,"SELECT type,name,sql FROM sqlite_master ORDER BY type,name")
+    return c,tables,before
 
+def norm(name):
+    text=name.strip()
+    if not text or len(text)>256: raise ValueError('invalid name')
+    return text,unicodedata.normalize('NFC',text).casefold()
 
-if __name__ == "__main__":
-    home = Path(__file__).resolve().parent
-    rows = fixtures()
-    (home / "inputs.json").write_text(json.dumps(rows, indent=2)+"\n")
-    results = []
-    for row in rows:
-        before = copy.deepcopy(row)
-        actual = resolve(row["observation"], row["catalog"], **row["options"])
-        assert actual == row["expected"], (row["id"], row["expected"], actual)
-        assert before == row, "input mutated"
-        reversed_obs = dict(row["observation"], facts=list(reversed(row["observation"]["facts"])))
-        reversed_cat = {k:list(reversed(v)) for k,v in reversed(list(row["catalog"].items()))}
-        assert actual == resolve(reversed_obs, reversed_cat, **row["options"]), "order dependent"
-        if actual["result"] != "UniqueStrongMatch":
-            assert not actual["auto"]
-        results.append(dict(id=row["id"],label=row["label"],expected=row["expected"],actual=actual,status="PASS"))
-    (home / "results.json").write_text(json.dumps(results,indent=2)+"\n")
-    for r in results:
-        print(r["id"],r["label"],"expected="+r["expected"]["result"],"actual="+r["actual"]["result"],"auto="+str(r["actual"]["auto"]),r["status"])
-    print(f"TOTAL={len(results)} PASS={len(results)} FAIL=0; input immutability and order reversal checked per case; HARDWARE_PROOF=PENDING")
+def create(c,n,name):
+    text,key=norm(name)
+    tx(c,lambda:c.execute('INSERT INTO drive_sets(id,name,normalized_name,normalization_version,created_at,updated_at) VALUES(?,?,?,\'synthetic-nfc-casefold-v1\',?,?)',(uid(n),text,key,STAMP,STAMP)))
+
+def drive(c,n):
+    c.execute("INSERT INTO physical_drives VALUES(?,?,'manual_local_unverified','manual_unverified','offline',NULL)",(uid(n),'SYNTHETIC'))
+
+def add(c,s,d,explicit=True,observed='ManualAssociation'):
+    if not explicit or observed not in ('ManualAssociation','LocalRecordSelection'):
+        raise ValueError('observation never admits membership')
+    def body():
+        if rows(c,'SELECT tombstoned_at FROM physical_drives WHERE id=?',(uid(d),)) != [(None,)]:
+            raise ValueError('missing or tombstoned')
+        # Targeted conflict handler, never REPLACE or broad OR IGNORE.
+        changed=c.execute("INSERT INTO drive_set_memberships VALUES(?,?,?,'explicit_local_selection') ON CONFLICT(set_id,physical_drive_id) DO NOTHING",(uid(s),uid(d),STAMP)).rowcount
+        if changed:c.execute('UPDATE drive_sets SET revision=revision+1 WHERE id=?',(uid(s),))
+        return changed
+    return tx(c,body)
+
+def rename(c,s,name,revision):
+    text,key=norm(name)
+    def body():
+        changed=c.execute('UPDATE drive_sets SET name=?,normalized_name=?,revision=revision+1,updated_at=? WHERE id=? AND revision=?',(text,key,STAMP,uid(s),revision)).rowcount
+        if changed!=1:raise ValueError('stale or missing')
+    tx(c,body)
+
+def reject(fn, error, contains=''):
+    try:fn()
+    except error as e:
+        assert contains in str(e),str(e)
+        return
+    raise AssertionError('expected rejection did not occur')
+
+RESULTS=[]
+def case(number,expected,fn):
+    c,tables,before=base()
+    try:
+        actual=fn(c)
+        if isinstance(actual,str): assert actual==expected,(actual,expected)
+        verify(c)
+        assert digest(c,tables)==before,'legacy facts changed'
+        RESULTS.append({'id':f'DS{number:02}','label':'SYNTHETIC_PROTOTYPE','expected':expected,'actual':actual,'result':'PASS','legacy_digest_unchanged':True,'fk_check':[],'integrity_check':'ok'})
+    except Exception as e:
+        RESULTS.append({'id':f'DS{number:02}','expected':expected,'result':'FAIL','error':repr(e)})
+    finally:c.close()
+
+def prepared(c):
+    create(c,1,'Alpha');create(c,2,'Beta');drive(c,1);drive(c,2)
+
+def simple(c,sql,args=()): return rows(c,sql,args)
+
+def empty(c):
+    create(c,1,'Empty');assert rows(c,'SELECT COUNT(*) FROM drive_set_memberships')==[(0,)];return 'empty set created'
+case(1,'empty set created',empty)
+def multiple(c):
+    prepared(c);assert len(rows(c,'SELECT id FROM drive_sets'))==2;return 'two stable set IDs'
+case(2,'two stable set IDs',multiple)
+def many(c):
+    prepared(c)
+    for s,d in [(1,1),(1,2),(2,1)]:add(c,s,d)
+    assert rows(c,'SELECT set_id,physical_drive_id FROM drive_set_memberships ORDER BY 1,2')==[(uid(1),uid(1)),(uid(1),uid(2)),(uid(2),uid(1))]
+    return 'many-to-many exact three pairs'
+case(3,'many-to-many exact three pairs',many)
+def duplicate(c):
+    prepared(c);add(c,1,1)
+    reject(lambda:c.execute("INSERT INTO drive_set_memberships VALUES(?,?,?,'explicit_local_selection')",(uid(1),uid(1),STAMP)),sqlite3.IntegrityError,'UNIQUE')
+    return 'duplicate PK rejected'
+case(4,'duplicate PK rejected',duplicate)
+for number,which in [(5,'set'),(6,'drive')]:
+    def missing(c,which=which):
+        prepared(c)
+        reject(lambda:c.execute("INSERT INTO drive_set_memberships VALUES(?,?,?,'explicit_local_selection')",(uid(99 if which=='set' else 1),uid(99 if which=='drive' else 1),STAMP)),sqlite3.IntegrityError,'FOREIGN KEY')
+        return 'missing '+which+' FK rejected'
+    case(number,'missing '+which+' FK rejected',missing)
+def renamed(c):
+    prepared(c);add(c,1,1);rename(c,1,'Renamed',2)
+    assert rows(c,'SELECT id,name,revision FROM drive_sets WHERE id=?',(uid(1),))==[(uid(1),'Renamed',3)]
+    assert rows(c,'SELECT set_id FROM drive_set_memberships')==[(uid(1),)]
+    return 'rename preserves IDs and membership'
+case(7,'rename preserves IDs and membership',renamed)
+for number,name in [(8,'ALPHA'),(9,'Cafe\u0301'),(10,'STRASSE')]:
+    def names(c,number=number,name=name):
+        create(c,1,{8:'Alpha',9:'Café',10:'Straße'}[number])
+        reject(lambda:create(c,2,name),sqlite3.IntegrityError,'UNIQUE')
+        return 'normalized duplicate rejected'
+    case(number,'normalized duplicate rejected',names)
+def alternatives(c):
+    c.execute('CREATE TABLE alternative_names(id INTEGER PRIMARY KEY,name TEXT COLLATE NOCASE)')
+    c.executemany('INSERT INTO alternative_names VALUES(?,?)',[(1,'é'),(2,'É'),(3,'same'),(4,'same')])
+    assert rows(c,"SELECT 'é'='É' COLLATE NOCASE")==[(0,)]
+    assert len(rows(c,'SELECT * FROM alternative_names'))==4
+    return 'allow-duplicate alternative permits four; NOCASE misses non-ASCII'
+case(11,'allow-duplicate alternative permits four; NOCASE misses non-ASCII',alternatives)
+def remove(c):
+    prepared(c);add(c,1,1);assert c.execute('DELETE FROM drive_set_memberships WHERE set_id=? AND physical_drive_id=?',(uid(1),uid(1))).rowcount==1
+    assert len(rows(c,'SELECT * FROM physical_drives'))==2
+    return 'membership removed only'
+case(12,'membership removed only',remove)
+def offline(c):
+    prepared(c);add(c,1,1);c.execute("UPDATE physical_drives SET availability='online' WHERE id=?",(uid(1),));c.execute("UPDATE physical_drives SET availability='offline' WHERE id=?",(uid(1),))
+    assert len(rows(c,'SELECT * FROM drive_set_memberships'))==1
+    return 'offline membership retained'
+case(13,'offline membership retained',offline)
+for number,state in [(14,'Unknown'),(15,'Ambiguous'),(16,'Conflict'),(17,'UniqueStrongMatch')]:
+    def unresolved(c,state=state):
+        prepared(c);reject(lambda:add(c,1,1,False,state),ValueError)
+        assert rows(c,'SELECT COUNT(*) FROM drive_set_memberships')==[(0,)]
+        return state+' observation admits nothing'
+    case(number,state+' observation admits nothing',unresolved)
+def manual(c):
+    prepared(c);add(c,1,1)
+    assert rows(c,'SELECT origin,identity_state FROM physical_drives WHERE id=?',(uid(1),))==[('manual_local_unverified','manual_unverified')]
+    return 'manual local membership remains unverified'
+case(18,'manual local membership remains unverified',manual)
+def revoke(c):
+    prepared(c);add(c,1,1);c.execute("UPDATE physical_drives SET identity_state='conflict' WHERE id=?",(uid(1),))
+    assert rows(c,'SELECT physical_drive_id FROM drive_set_memberships')==[(uid(1),)]
+    assert rows(c,'SELECT identity_state FROM physical_drives WHERE id=?',(uid(1),))==[('conflict',)]
+    return 'contradiction flags local record; no retarget'
+case(19,'contradiction flags local record; no retarget',revoke)
+def delete_set(c):
+    many(c);c.execute('DELETE FROM drive_sets WHERE id=?',(uid(1),))
+    assert rows(c,'SELECT set_id,physical_drive_id FROM drive_set_memberships')==[(uid(2),uid(1))]
+    assert len(rows(c,'SELECT * FROM physical_drives'))==2
+    return 'only deleted set and its two pairs removed'
+case(20,'only deleted set and its two pairs removed',delete_set)
+def delete_drive(c):
+    prepared(c);add(c,1,1)
+    reject(lambda:c.execute('DELETE FROM physical_drives WHERE id=?',(uid(1),)),sqlite3.IntegrityError,'tombstone')
+    return 'drive hard delete prohibited'
+case(21,'drive hard delete prohibited',delete_drive)
+def tombstone(c):
+    prepared(c);add(c,1,1);c.execute('UPDATE physical_drives SET tombstoned_at=? WHERE id=?',(STAMP,uid(1)))
+    reject(lambda:add(c,2,1),ValueError)
+    assert len(rows(c,'SELECT * FROM drive_set_memberships'))==1
+    reject(lambda:c.execute("INSERT INTO drive_set_memberships VALUES(?,?,?,'explicit_local_selection')",(uid(2),uid(1),STAMP)),sqlite3.IntegrityError,'Tombstoned')
+    return 'tombstone retains pair; new admissions rejected'
+case(22,'tombstone retains pair; new admissions rejected',tombstone)
+def rollback(c):
+    prepared(c)
+    def body():
+        c.execute("UPDATE drive_sets SET name='Temporary' WHERE id=?",(uid(1),))
+        c.execute("INSERT INTO drive_set_memberships VALUES(?,?,?,'explicit_local_selection')",(uid(1),uid(99),STAMP))
+    reject(lambda:tx(c,body),sqlite3.IntegrityError,'FOREIGN KEY')
+    assert rows(c,'SELECT name FROM drive_sets WHERE id=?',(uid(1),))==[('Alpha',)]
+    return 'whole failed mutation rolled back'
+case(23,'whole failed mutation rolled back',rollback)
+def failed_migration(c):
+    other=connect();legacy(other)
+    before=rows(other,'SELECT type,name,sql FROM sqlite_master ORDER BY type,name')
+    reject(lambda:migration(other,True),RuntimeError,'injected')
+    assert rows(other,'SELECT MAX(version) FROM schema_migrations')==[(9,)]
+    assert rows(other,'SELECT type,name,sql FROM sqlite_master ORDER BY type,name')==before
+    migration(other);verify(other);other.close()
+    return 'partial DDL and version roll back; retry succeeds'
+case(24,'partial DDL and version roll back; retry succeeds',failed_migration)
+def legacy_unknown(c):
+    assert rows(c,'SELECT COUNT(*) FROM physical_drives')==[(0,)]
+    assert rows(c,'SELECT volume_identifier_at_capture,device_identifier FROM snapshots ORDER BY id')==[(None,None),(None,None)]
+    assert rows(c,'SELECT collection_id FROM snapshots ORDER BY id')==[(1,),(None,)]
+    return 'legacy cloned UUIDs create zero drives; unknown and Unsorted preserved'
+case(25,'legacy cloned UUIDs create zero drives; unknown and Unsorted preserved',legacy_unknown)
+def reopen(c):
+    prepared(c);add(c,1,1)
+    other=connect();c.backup(other);before=list(other.iterdump());migration(other);migration(other)
+    assert list(other.iterdump())==before;verify(other);other.close()
+    return 'committed memory-copy reopen and repeated migration unchanged'
+case(26,'committed memory-copy reopen and repeated migration unchanged',reopen)
+def newer(c):
+    other=connect();legacy(other);other.execute('INSERT INTO schema_migrations VALUES(999,?)',(STAMP,))
+    before=list(other.iterdump());reject(lambda:migration(other),ValueError)
+    assert list(other.iterdump())==before;other.close()
+    return 'newer version rejected unchanged'
+case(27,'newer version rejected unchanged',newer)
+def stale(c):
+    prepared(c);rename(c,1,'New',1);reject(lambda:rename(c,1,'Stale',1),ValueError)
+    assert rows(c,'SELECT name FROM drive_sets WHERE id=?',(uid(1),))==[('New',)]
+    return 'stale revision rejected'
+case(28,'stale revision rejected',stale)
+def pages(c):
+    for n in range(1,258):create(c,n,'Name '+str(n%5)+' '+str(n))
+    cursor=('', '');seen=[];plans=[]
+    while True:
+        sql='SELECT normalized_name,id FROM drive_sets WHERE (normalized_name,id)>(?,?) ORDER BY normalized_name,id LIMIT ?'
+        page=rows(c,sql,(*cursor,18));plans=rows(c,'EXPLAIN QUERY PLAN '+sql,(*cursor,18))
+        assert len(page)<=18
+        if not page:break
+        seen.extend(page[:17]);cursor=page[:17][-1]
+    assert seen==rows(c,'SELECT normalized_name,id FROM drive_sets ORDER BY normalized_name,id')
+    assert len(seen)==len(set(seen))==257
+    detail=' | '.join(str(x[3]) for x in plans)
+    assert 'SEARCH' in detail and 'INDEX' in detail and 'TEMP B-TREE' not in detail,detail
+    return {'pages':'257 rows without duplicate/skip; 17+1 bound','plan':detail}
+case(29,'257 rows without duplicate/skip; indexed seek; 17+1 bound',pages)
+def membership_plan(c):
+    prepared(c);add(c,1,1);add(c,1,2);add(c,2,1)
+    for sql,args in [('SELECT physical_drive_id FROM drive_set_memberships WHERE set_id=? AND physical_drive_id>? ORDER BY physical_drive_id LIMIT 3',(uid(1),'')),('SELECT set_id FROM drive_set_memberships WHERE physical_drive_id=? AND set_id>? ORDER BY set_id LIMIT 3',(uid(1),''))]:
+        detail=' | '.join(r[3] for r in rows(c,'EXPLAIN QUERY PLAN '+sql,args))
+        assert 'SEARCH' in detail and 'COVERING INDEX' in detail and 'TEMP B-TREE' not in detail,detail
+    return 'both membership directions use covering indexed seek'
+case(30,'both membership directions use covering indexed seek',membership_plan)
+def idempotent(c):
+    prepared(c);assert add(c,1,1)==1;assert add(c,1,1)==0
+    assert rows(c,'SELECT revision FROM drive_sets WHERE id=?',(uid(1),))==[(2,)]
+    for _ in range(2):c.execute('DELETE FROM drive_set_memberships WHERE set_id=? AND physical_drive_id=?',(uid(1),uid(1)))
+    for _ in range(2):c.execute('DELETE FROM drive_sets WHERE id=?',(uid(1),))
+    return 'repeat add/remove/delete is exact no-op after first'
+case(31,'repeat add/remove/delete is exact no-op after first',idempotent)
+def immutable(c):
+    reject(lambda:c.execute("UPDATE snapshots SET mount_path_at_capture='/synthetic' WHERE id=1"),sqlite3.IntegrityError)
+    reject(lambda:c.execute("UPDATE entries SET name='changed' WHERE id=1"),sqlite3.IntegrityError)
+    reject(lambda:c.execute("DELETE FROM comparison_results WHERE id=1"),sqlite3.IntegrityError)
+    return 'existing capture/entry/terminal evidence guards reject mutation'
+case(32,'existing capture/entry/terminal evidence guards reject mutation',immutable)
+def drift(c):
+    c.execute('DROP INDEX memberships_by_drive');reject(lambda:migration(c),AssertionError)
+    c.execute(next(sql for sql in DDL if sql.startswith('CREATE INDEX memberships_by_drive')))
+    return 'same-version missing index fails; exact index restored in isolated test'
+case(33,'same-version missing index fails; exact index restored in isolated test',drift)
+def blanks(c):
+    for name in ['', ' \t\n', 'x'*257]:reject(lambda:create(c,1,name),ValueError)
+    return 'blank and overlong names rejected'
+case(34,'blank and overlong names rejected',blanks)
+def rename_collision(c):
+    prepared(c);reject(lambda:rename(c,1,'BETA',1),sqlite3.IntegrityError,'UNIQUE')
+    assert rows(c,'SELECT name,revision FROM drive_sets WHERE id=?',(uid(1),))==[('Alpha',1)]
+    return 'rename collision rolls back label and revision'
+case(35,'rename collision rolls back label and revision',rename_collision)
+def nulls(c):
+    prepared(c)
+    reject(lambda:c.execute("INSERT INTO drive_set_memberships VALUES(NULL,?,?,'explicit_local_selection')",(uid(1),STAMP)),sqlite3.IntegrityError,'NOT NULL')
+    reject(lambda:c.execute('UPDATE physical_drives SET id=? WHERE id=?',(uid(99),uid(1))),sqlite3.IntegrityError,'Immutable')
+    reject(lambda:c.execute('UPDATE drive_sets SET id=? WHERE id=?',(uid(99),uid(1))),sqlite3.IntegrityError,'Immutable')
+    return 'NULL membership and stable ID rewrite rejected'
+case(36,'NULL membership and stable ID rewrite rejected',nulls)
+def cascade_graph(c):
+    names=[r[0] for r in rows(c,"SELECT name FROM sqlite_master WHERE type='table'")]
+    edges=[]
+    for child in names:
+        for fk in rows(c,'PRAGMA foreign_key_list("'+child+'")'):
+            if fk[6]=='CASCADE':edges.append((fk[2],child))
+    reachable={'drive_sets'}
+    while True:
+        nxt=reachable|{b for a,b in edges if a in reachable}
+        if nxt==reachable:break
+        reachable=nxt
+    assert reachable=={'drive_sets','drive_set_memberships'},reachable
+    return 'set deletion cascade reaches memberships only'
+case(37,'set deletion cascade reaches memberships only',cascade_graph)
+def no_inference(c):
+    prepared(c)
+    generated={'label':'Alpha','mount_path':'/synthetic/reused','bsd':'disk99','uuid':'cloned','collection_id':1}
+    reject(lambda:add(c,1,1,False,'Unknown'),ValueError)
+    assert generated['collection_id']==1 and rows(c,'SELECT COUNT(*) FROM drive_set_memberships')==[(0,)]
+    return 'matching labels/path/BSD/UUID/Collection imply no membership'
+case(38,'matching labels/path/BSD/UUID/Collection imply no membership',no_inference)
+
+receipt={'label':'SYNTHETIC_PROTOTYPE','python':sys.version.split()[0],'sqlite':sqlite3.sqlite_version,'unicode':unicodedata.unidata_version,'connections':':memory: only','schema_sha256':hashlib.sha256(SCHEMA.encode()).hexdigest(),'executed':len(RESULTS),'passed':sum(x['result']=='PASS' for x in RESULTS),'failed':sum(x['result']=='FAIL' for x in RESULTS),'cases':RESULTS,'limits':['No production migration or Swift/XCTest execution','Memory-copy reopen is not process-crash, disk durability or power-loss proof','PhysicalDrive is a minimal manually created unverified stub, not ADR036 identity implementation','Saved evidence is a sentinel, not ADR038 schema or runtime proof','No hardware/source/catalog access; no concurrency contention measurement']}
+OUT.joinpath('results.json').write_text(json.dumps(receipt,indent=2,ensure_ascii=False)+'\n')
+for result in RESULTS:print(result['id'],result['result'],result.get('actual',result.get('error')))
+print(json.dumps({k:v for k,v in receipt.items() if k!='cases'},indent=2))
+raise SystemExit(1 if receipt['failed'] else 0)
 ```

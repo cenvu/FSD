@@ -819,7 +819,8 @@ them verified. Traceability: [PRD.md](PRD.md) §§5.1, 6.1, 7; [UX_UI_SPEC.md](U
 **Status:** Proposed — Owner direction approved 2026-10-18; technical proof
 pending; not BRAIN-accepted.
 
-**Scope:** A separate user-managed grouping of confirmed PhysicalDrive IDs.
+**Scope:** A separate user-managed grouping of explicitly selected local
+PhysicalDrive IDs; local confirmation does not certify hardware identity.
 This proposal authorizes no product or schema implementation.
 
 ### Context and proposed semantics
@@ -835,7 +836,7 @@ into a Drive Set, and no existing membership is inferred.
 
 Proposed model: a Drive Set has its own stable local ID and user-facing name.
 Membership is a separate many-to-many relation between Drive Set IDs and
-confirmed local PhysicalDrive IDs. A PhysicalDrive may appear in zero or more
+explicitly selected local PhysicalDrive IDs. A PhysicalDrive may appear in zero or more
 Drive Sets, and a Drive Set may contain zero or more PhysicalDrives. The IDs
 refer to catalog entities; names, mount paths, BSD nodes, and current
 availability are not membership keys.
@@ -850,8 +851,78 @@ unresolved and cannot change set membership automatically.
 Deleting a Drive Set deletes the set and its membership rows only. It must not
 delete or mutate PhysicalDrives, Volumes/Partitions, MountSessions, snapshots,
 entries, Collections, terminal comparisons, or saved-comparison evidence.
-PhysicalDrive deletion and duplicate Drive Set name policy are outside this
-direction and must be resolved before an implementation needs them.
+The Task055 candidate below proposes bounded deletion/name policies for later
+review; they are not accepted production schema or implementation decisions.
+
+### Task055 relational candidate — SYNTHETIC_PROTOTYPE, 2026-10-18
+
+The Owner-approved target is unchanged. Recommended local relations:
+
+- `drive_sets`: opaque catalog-local ID, name, normalized name, normalization
+  version, optimistic revision and creation/update timestamps. IDs never derive
+  from labels or hardware facts and never change during rename.
+- `drive_set_memberships`: non-null `(set_id, physical_drive_id)` composite
+  primary key, added time and explicit-local-selection provenance. Set FK uses
+  `ON DELETE CASCADE`; drive FK uses `ON DELETE RESTRICT`; both use
+  `ON UPDATE RESTRICT`. Reverse index `(physical_drive_id, set_id)` complements
+  the primary-key index. No snapshot, Collection, volume or comparison FK is
+  introduced by these relations.
+- `PhysicalDrive` remains ADR-036's separately gated local entity. Prefer
+  tombstone-only retirement, prohibit hard deletion, preserve existing
+  memberships visibly as retired and reject new membership to a retired ID.
+  No cascade may reach captures, entries or retained comparison evidence.
+
+**Identity boundary:** ADR-036 has zero approved real strong profiles. There is
+no automatic observation-to-drive creation or observation-to-set admission.
+An unknown/ambiguous/conflicting observation cannot become a member. A future
+explicit create-local-record/manual-association flow may create a stable local
+entity marked **manual/unverified**, then require a separate explicit membership
+selection by ID. Selecting an existing local record while offline is an
+organization operation; it does not resolve any current observation. The precise
+creation/association UI and persistence contract remain TECHNICAL_PROOF_PENDING.
+The prototype supplies generated unverified stubs only. Membership itself is
+always explicit, even if a future strong hardware match exists; a mount event
+never supplies membership or capture authorization. Auto Capture remains OFF.
+
+**Correction/revocation:** retain the original local ID and membership, display
+unverified/conflicting/revoked provenance and stop presenting a current mount as
+that drive. Never transfer memberships to a replacement target automatically.
+An explicit correction can remove an old pair and add a separately selected
+new ID in one transaction after revalidation; it cannot merge histories or
+rewrite immutable capture facts. Offline, retired, unresolved and conflicting
+are different display dimensions; an unresolved observation is not a fabricated
+PhysicalDrive member. Manual association never becomes empirical verification.
+
+**Name-policy recommendation, pending review:** reject blank and normalized
+duplicate names within Drive Sets, independently of Collection names; trim,
+NFC and locale-independent case fold with a pinned normalization version. Keep
+the display name and stable ID separate. An alternative allowing duplicates
+needs visible ID disambiguation; SQLite `NOCASE` alone is insufficient for full
+Unicode equivalence. The Python surrogate tests selected normalization cases,
+not Foundation/Swift parity. Proposed length limits/version upgrade collision
+handling must be reviewed before production. No Collection naming rule changes.
+
+**Atomicity and bounds:** create/rename/add/remove/delete use the existing
+serialized catalog transaction boundary, revalidate IDs/lifecycle/revision,
+commit before reporting success and roll back the whole operation on failure.
+Never use `REPLACE`. Strict SQL duplicate insert fails; explicit retry of the
+same pair may return AlreadyPresent without changing provenance/revision.
+Remove/delete may return AlreadyAbsent. Create retries reuse their original
+local ID and verify the intended record; matching names alone never mean success.
+Optimistic revisions reject stale mutations. List by indexed normalized name
+then ID, membership by ID, with clamped pages and a continuation/truncation flag;
+invalidate cursors on mutation or read a bounded consistent listing transaction.
+No all-library membership count or unbounded source scan is required.
+
+**Migration boundary:** additive future version chosen against then-current
+schema, explicit ADR-024 transaction and full expected-object verification.
+Keep schema-v9 data, Collections/Unsorted and all immutability/comparison guards;
+create no historical PhysicalDrive IDs and perform no UUID/path/name/file-ID
+backfill. No production version is reserved by the synthetic version sentinel.
+See [architecture §12](ARCHITECTURE.md#12-drive-sets-relational-feasibility--task055)
+for keys/DDL, provenance, deletion graph, migration/recovery and implementation
+sequence, and [test plan §11](TEST_PLAN.md#11-adr-037-drive-sets-sqlite-feasibility--task055)
+for all executed cases and outstanding production gates.
 
 ### Alternatives considered
 
@@ -882,14 +953,16 @@ membership is offered. Before implementation can be accepted, tests must prove:
 - no existing Collection membership is inferred from a matching name, mount
   path, or source label.
 
-Technical proof remains pending for PhysicalDrive identity availability,
-stable local IDs, relation constraints, migration compatibility, and bounded
-listing behavior. These exact schema and migration mechanics are not decided
-here. Traceability: [PRD.md](PRD.md) §5.6; [UX_UI_SPEC.md](UX_UI_SPEC.md) §6;
+Task055 executed 38/38 generated SQLite cases, including FK/cascade/rollback,
+legacy-data preservation and indexed bounded queries. This establishes only
+the proposed rules in SYNTHETIC_PROTOTYPE. PhysicalDrive creation policy,
+final production schema, Foundation normalization, actual catalog migration,
+crash recovery/concurrency and hardware identity remain TECHNICAL_PROOF_PENDING.
+ADR-037 remains **Proposed / Owner Direction Approved / Technical Proof Pending**.
+Traceability: [PRD.md](PRD.md) §§2/5.6; [UX_UI_SPEC.md](UX_UI_SPEC.md) §6;
 [SNAPSHOT_COLLECTIONS.md](SNAPSHOT_COLLECTIONS.md) §§2–4, 8–9; [TEST_PLAN.md](TEST_PLAN.md)
-§7. The current PRD §2 contains pre-decision wording that calls the Drive Set
-direction unresolved. The 2026-10-18 Owner decision resolves target direction
-only; it does not amend PRD requirements or accept an implementation schema.
+§7 and §11. PRD §2 now records the dated direction without replacing any
+Collection requirement or accepting an implementation schema.
 
 ## ADR-038 — Durable Live Comparison via Explicit Save (Option B candidate)
 
