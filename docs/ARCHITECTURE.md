@@ -59,16 +59,18 @@ Responsibilities:
 
 ### VolumeService
 
-Responsibilities:
+Target responsibilities (not an implemented identity/mount service; ADR-036
+remains Proposed / Technical Proof Pending):
 
 - observe mount and unmount events;
-- resolve persistent identity;
+- resolve identity only under ADR-036's evidence gates; current real strong-match
+  profiles are empty (see §11);
 - collect filesystem and capacity metadata;
 - run `FilesystemDetector` (`FILESYSTEM_PROVIDER_ARCHITECTURE.md` §5) and select a provider per the deterministic fallback rule when a filesystem does not mount natively;
 - queue eligible automatic captures;
 - avoid duplicate simultaneous scans.
 
-Suggested APIs:
+Suggested APIs, not current runtime interfaces:
 
 ```swift
 protocol VolumeMonitoring {
@@ -316,7 +318,7 @@ To support live folder/volume comparison seamlessly within the snapshot-backed d
 ## 9. Nullable enrichment boundary — `LocalFileClassificationProvider` (implemented Phase 1.5 runtime)
 
 This section is the binding derived-enrichment boundary.
-`FSD/Classification/LocalFileClassificationProvider.swift` owns the Data-only protocol and disabled provider; `ClassificationRuntimeService` owns explicit single-flight orchestration; `FSD/Catalog/EntryClassificationRepository.swift` owns append-only persistence. filetype v1.1.3 is the BRAIN-accepted production provider; ADR-035 integration is implemented by task033A (`556872844b90640cc2a64e40d99594a78cef61af`) and independently audited by task034 (accepted `PASS_WITH_ADVISORY` at publication `9d1a8ea237c6c2941895b1c3640118371d2e2d4d`). Task035 verifies the physical runtime and synchronizes status; final independent implementation audit and Phase 1.5 BRAIN acceptance remain pending.
+`FSD/Classification/LocalFileClassificationProvider.swift` owns the Data-only protocol and disabled provider; `ClassificationRuntimeService` owns explicit single-flight orchestration; `FSD/Catalog/EntryClassificationRepository.swift` owns append-only persistence. filetype v1.1.3 is the BRAIN-accepted production provider; ADR-035 integration is implemented by task033A (`556872844b90640cc2a64e40d99594a78cef61af`) and independently audited by task034 (accepted `PASS_WITH_ADVISORY` at publication `9d1a8ea237c6c2941895b1c3640118371d2e2d4d`). Task035 verified the runtime; Task036 subsequently completed the independent final audit and BRAIN accepted Phase 1.5 with advisory (see [STATE/PROJECT_STATE.md](../STATE/PROJECT_STATE.md)). This is historical acceptance evidence, not a Task054 rerun; manual and FSD2 Full internal acceptance remain separate.
 
 ### Boundary rule
 
@@ -360,7 +362,7 @@ service and remain payload-free.
 - classification never mutates immutable snapshot metadata (`entries`, `snapshots` aggregate fields) and never alters a historical Metadata Match or diff conclusion, past or future;
 - classification failure never changes a snapshot's `complete`/`interrupted`/`failed` status.
 
-## 9a. Local Classifier Runtime (verified implementation; final acceptance pending)
+## 9a. Local Classifier Runtime (Task036 final BRAIN technical acceptance with advisory)
 
 This section preserves the resolved design and records the verified runtime status. Task035 current verification: clean Debug/Release arm64 builds passed; full Debug 494 executed / 491 passed / 0 failed / 3 existing external-probe skips; focused classification/isolation/schema 242 executed / 242 passed / 0 failed / 0 skipped; supplemental schema-safety 18 executed / 18 passed / 0 failed / 0 skipped. Exact commands, durations and per-suite counts: [FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md](../handoffs/FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md).
 
@@ -370,7 +372,7 @@ CURRENT_PROVIDER_STRATEGY=PROVIDER_NEUTRAL_LOCAL_CLASSIFIER
 MAGIKA_PROVIDER_SELECTION=CURRENTLY_NONE
 MAGIKA_STATUS=BLOCKED_CANDIDATE (blocked, non-exclusive; not rejected, not approved)
 
-The packaging decision below remains accepted and provider-independent: the classifier runs as a locally bundled helper process inside `FSD.app`, arm64, macOS 15+ compatible, offline and self-contained. filetype v1.1.3 is the BRAIN-accepted production provider; ADR-035 integration is implemented by task033A (`556872844b90640cc2a64e40d99594a78cef61af`) and independently audited by task034 (accepted `PASS_WITH_ADVISORY` at publication `9d1a8ea237c6c2941895b1c3640118371d2e2d4d`). Task035 verifies the physical runtime and synchronizes status; final independent implementation audit and Phase 1.5 BRAIN acceptance remain pending.
+The packaging decision below remains accepted and provider-independent: the classifier runs as a locally bundled helper process inside `FSD.app`, arm64, macOS 15+ compatible, offline and self-contained. filetype v1.1.3 is the BRAIN-accepted production provider; ADR-035 integration is implemented by task033A (`556872844b90640cc2a64e40d99594a78cef61af`) and independently audited by task034 (accepted `PASS_WITH_ADVISORY` at publication `9d1a8ea237c6c2941895b1c3640118371d2e2d4d`). Task035 verified the runtime; Task036 subsequently completed the independent final audit and BRAIN accepted Phase 1.5 with advisory (see [STATE/PROJECT_STATE.md](../STATE/PROJECT_STATE.md)). This is historical acceptance evidence, not a Task054 rerun; manual and FSD2 Full internal acceptance remain separate.
 
 ### Accepted production provider (ADR-035)
 
@@ -601,3 +603,215 @@ future SearchScope abstraction must preserve bounded/indexed execution.
 
 For dashboard:
 aggregates must be database-backed and bounded.
+
+## 11. Physical drive identity feasibility — Task054
+
+**Proposal only, 2026-10-18.** ADR-036 is Proposed / Owner Direction Approved /
+Technical Proof Pending. This section records feasibility, not an implemented
+service, approved migration or empirical hardware result. No live enumeration,
+Owner source/media/catalog access, mount/eject operation or device probe ran.
+The maximum evidence-supported design contract is observation plus explicit
+local association. **No real hardware profile qualifies for `UniqueStrongMatch`.**
+
+### Official evidence inventory
+
+Evidence was checked against installed macOS SDK **26.2** declarations; this
+inspection does not prove runtime behavior on the macOS 15 deployment floor.
+`SDK` below denotes the path returned by `xcrun --show-sdk-path`, with headers
+under `System/Library/Frameworks/`. Hashes and downloaded official sources remain
+in ignored `.ai-scratch/task054/{sdk-receipt,official-source-receipt}.json`.
+Only public documentation and SDK/source text were read; no described API was
+executed. Exact official reference URLs:
+
+- **E1 — callbacks:** [Apple Disk Arbitration notification guide](https://developer.apple.com/library/archive/documentation/DriversKernelHardware/Conceptual/DiskArbitrationProgGuide/ArbitrationBasics/ArbitrationBasics.html).
+  `DiskArbitration.framework/Headers/DiskArbitration.h` declares
+  `DARegisterDiskAppearedCallback`, `DARegisterDiskDisappearedCallback`, and
+  `DARegisterDiskDescriptionChangedCallback` (changed keys arrive in `CFArrayRef`).
+  `DASession.h` declares scheduling/unscheduling through a dispatch queue or run loop.
+- **E2 — disk objects and optional keys:** [Apple disk/volume guide](https://developer.apple.com/library/archive/documentation/DriversKernelHardware/Conceptual/DiskArbitrationProgGuide/ManipulatingDisks/ManipulatingDisks.html)
+  and [pinned Apple DADisk.h](https://github.com/apple-oss-distributions/DiskArbitration/blob/a542bda934211dc3c301bfdcc7f21349c4164a85/DiskArbitration/DADisk.h).
+  SDK `DADisk.h` declares nullable `CFDictionaryRef DADiskCopyDescription(DADiskRef)`,
+  `io_service_t DADiskCopyIOMedia(DADiskRef)` and nullable
+  `DADiskRef DADiskCopyWholeDisk(DADiskRef)`. The callback description is current
+  as of that event; outside callbacks the function requests the latest description.
+  Retain/release rules require `CFRelease` / `IOObjectRelease` as appropriate.
+- **E3 — media properties:** [pinned Apple IOMedia.h](https://github.com/apple-oss-distributions/IOStorageFamily/blob/7edb88fbae296fb7c8ce2f64e115e116e566d51c/IOMedia.h).
+  SDK `Kernel.framework/Headers/IOKit/storage/IOMedia.h` declares
+  `kIOMediaUUIDKey` (`OSString`, persistent media UUID **if available**),
+  `kIOMediaWholeKey`, `kIOMediaLeafKey`, `kIOMediaRemovableKey`, and size/base keys.
+- **E4 — identifier derivation:** [pinned Apple daemon DADisk.c](https://github.com/apple-oss-distributions/DiskArbitration/blob/a542bda934211dc3c301bfdcc7f21349c4164a85/diskarbitrationd/DADisk.c#L512-L524).
+  This revision converts `kIOMediaUUIDKey` to `kDADiskDescriptionMediaUUIDKey`.
+  Its [device GUID block](https://github.com/apple-oss-distributions/DiskArbitration/blob/a542bda934211dc3c301bfdcc7f21349c4164a85/diskarbitrationd/DADisk.c#L696-L718)
+  searches ancestor `GUID` and converts it to device GUID data. These are observed
+  source derivations, not a promise about every installed daemon release.
+- **E5 — registry scope:** [Apple I/O Registry guide](https://developer.apple.com/library/archive/documentation/DeviceDrivers/Conceptual/IOKitFundamentals/TheRegistry/TheRegistry.html)
+  and [`IORegistryEntryGetRegistryEntryID`](https://developer.apple.com/documentation/iokit/1514719-ioregistryentrygetregistryentryi).
+  SDK `IOKit.framework/Headers/IOKitLib.h` documents entry IDs as shared across
+  tasks, valid only until reboot. The registry models live provider/client
+  relationships; even tree topology has multi-parent exceptions such as RAID.
+- **E6 — serial subject:** [pinned Apple IOStorageDeviceCharacteristics.h](https://github.com/apple-oss-distributions/IOStorageFamily/blob/7edb88fbae296fb7c8ce2f64e115e116e566d51c/IOStorageDeviceCharacteristics.h#L149-L175).
+  SDK kernel storage header declares `kIOPropertyProductSerialNumberKey` in
+  `Device Characteristics`. Its `Requirement: Mandatory` is a driver-property
+  contract; it does not guarantee that an arbitrary DADisk description, USB
+  bridge or card exposes the underlying medium's unique serial to an app.
+- **E7 — workspace notifications:** [didMountNotification](https://developer.apple.com/documentation/appkit/nsworkspace/didmountnotification)
+  and [didUnmountNotification](https://developer.apple.com/documentation/appkit/nsworkspace/didunmountnotification),
+  also retrieved from Apple's same URLs with `.md` suffix. SDK
+  `AppKit.framework/Headers/NSWorkspace.h` declares `NSWorkspaceVolumeURLKey`
+  (mount URL) and `NSWorkspaceVolumeLocalizedNameKey` (display name). Register
+  through the workspace notification center; forced disappearance is documented
+  for unmount notification. Neither notification is a physical identity proof.
+- **E8 — existing Foundation facts:** [`volumeUUIDStringKey`](https://developer.apple.com/documentation/foundation/urlresourcekey/volumeuuidstringkey),
+  [`volumeIdentifierKey`](https://developer.apple.com/documentation/foundation/urlresourcekey/volumeidentifierkey),
+  [`fileResourceIdentifierKey`](https://developer.apple.com/documentation/foundation/urlresourcekey/fileresourceidentifierkey).
+  SDK `Foundation.framework/Headers/NSURL.h` documents a persistent volume UUID
+  or nil; volume/file resource identifiers are not persistent across restarts.
+
+| Candidate / declaration | Object and availability | Documented persistence, uniqueness and reconnect limits | Independence / allowed use |
+|---|---|---|---|
+| `kDADiskDescriptionVolumeUUIDKey` (`CFUUID`); Foundation volume UUID string | Filesystem volume; optional E2/E8 | E8 documents persistent volume UUID when available; no inspected contract guarantees physical uniqueness, clone resistance or universal reconnect behavior | Conservatively one filesystem lineage across APIs; volume candidate only |
+| `kDADiskDescriptionMediaUUIDKey` (`CFUUID`); `kIOMediaUUIDKey` (`OSString`) | Particular IOMedia, potentially partition; optional E2/E3 | E3 calls it persistent if available; not a universal physical-device ID or collision guarantee | E4 proves direct derivation at pinned revision: one lineage, never two corroborators |
+| Partition UUID, base/size/content (`kIOMediaBaseKey`, `kIOMediaSizeKey`, DA media content) | Partition/media extent, not physical drive; optional | Layout describes that observation; repartitioning, copies and synthesized storage remain unproven | Partition UUID is not necessarily distinct from media UUID; unknown derivation means not independent. Offset/length/type support topology only |
+| `kDADiskDescriptionDeviceGUIDKey` (`CFData`) | Reported device/ancestor; optional E2/E4 | No inspected guarantee of availability, spoof resistance or reconnect stability for every USB/reader stack | Ancestor `GUID` alias is same lineage. Subject must be proven; not interchangeable with filesystem UUID |
+| `kIOPropertyProductSerialNumberKey` | Driver's storage-device subject; E6 requirement as above, app availability unguaranteed | No inspected guarantee of unique/nonblank/uncloned serial or cross-enclosure/card stability | Distinguish medium, bridge and reader subjects; a serial echoed through two properties is one lineage |
+| `IORegistryEntryGetRegistryEntryID`; registry/device/media/bus paths, device unit | Live registry object/topology; calls may fail | Entry ID has reboot limit E5; no persistent physical reconnect guarantee for paths/units | Session correlation only; ancestry fields are correlated topology, not independent IDs |
+| `DADiskGetBSDName`; media BSD name/unit/major/minor | Current disk/partition node; optional | No permanent identity promise E2 | Session routing only; never parse node spelling into trusted physical ancestry |
+| Volume name/path; NSWorkspace URL/name | Presentation and mount session; may be absent/unmounted | No identity persistence/uniqueness promise E2/E7 | Zero identity strength, even in combination |
+| Vendor/model/revision, capacity, protocol, internal/removable, whole/leaf flags | Class characteristics and current topology; optional E2/E3 | No unique physical identity guarantee; `Removable` describes removal from mechanism, not simply external USB | Plausibility/topology only; repeating these does not create strength |
+| Foundation volume/file resource identifier, `stat` device/inode | Volume or filesystem object in current OS namespace; optional/errorable | E8 explicitly excludes restart persistence; existing dev+ino root proof is point-in-time source authority | Not a physical-drive identifier or second UUID proof |
+| FSD local PhysicalDrive ID / user physical label | Local catalog assertion, generated or user supplied | Stable local reference only; no hardware guarantee | Never counted as hardware corroboration |
+
+Each fact requires typed namespace, subject/object level, API and property,
+origin/dependency group, raw value and validated canonical value, observation
+revision/time, provider/OS/SDK provenance, quality and profile version. Use exact
+UUID parsing only for UUID-typed values; serial/GUID encodings need explicit
+profile rules. Do not trim/case-fold arbitrary serials into equivalence. Unknown
+origin, unsupported type, blank value, read error and missing key stay distinct.
+Two unknown origins cannot be treated as independent by default. Confidence is
+categorical with reasons, not a probability or count of matching strings.
+
+### Observation lifecycle and ambiguity model
+
+E1 supports notification-driven observation; a disk/partition appearance need not
+mean a mounted accessible volume. A changed volume-path key can signal mount
+state; description changes can also change names. Apple warns callback ordering
+can vary across media types. **Design inference:** use a serialized reducer,
+session/generation IDs and revision-bound decisions; tolerate duplicate/late
+callbacks, startup appearances, description updates and disappear-before-mount.
+On detach or uncertain event gaps, invalidate availability and pending admission.
+Restart creates new sessions and closes old open sessions as interrupted/unknown,
+never as proof of a clean unmount. No callback ordering is accepted as tested.
+
+NSWorkspace can feed UI availability hints; it does not supply the IOMedia
+ancestry or prove identity for unmounted/unsupported media. Disk Arbitration is
+the proposed observation source; bounded per-event IOMedia ancestry traversal
+is a separate future adapter. Do not enumerate all devices to guess a match.
+Use explicit parent/whole-disk relations, not BSD-name trimming. `Whole` and
+`Leaf` do not guarantee one physical storage device. APFS synthesized containers,
+multiple stores, RAID, disk images, virtual/network paths and multi-LUN stacks
+need a proven mapping or remain `UNSUPPORTED_OR_UNKNOWN` for physical matching.
+
+| Threat / ambiguity | Fail-closed requirement |
+|---|---|
+| Accidental name/path/BSD reuse | Never candidates from these; preserve new session facts |
+| Cloned filesystem/partition IDs, repeated serials, forged device facts | Keep all candidates/collision records; no first/MRU winner. Even two forged fields cannot establish universal authenticated hardware identity |
+| Card swap in same reader; drive swap behind bridge; identical readers | Transport identity cannot identify inserted storage; new unresolved media/session |
+| Several partitions/volumes on one stack | Record observed relationships separately; never merge volume UUIDs into one partition or manufacture independent device evidence |
+| Mixed-time properties, detach/reconnect during confirmation/capture | Revision/generation recheck; stale decision fails closed before capture admission |
+| Missing/contradictory facts or unavailable provider | Unknown for insufficiency; Conflict for contradictory linked evidence; no silent fallback |
+| Incorrect manual choice or later contrary facts | Versioned manual event/revocation, visible conflict, no history rewrite or hardware verification claim |
+| Privacy or unbounded registry logs | Local bounded property allowlist, bounded ancestry and typed error; no payload/raw-device reads or full registry/serial dumps to external services |
+
+The resolver precedence and action eligibility are defined by [ADR-036](DECISIONS.md#adr-036--physical-drive-identity-and-mount-policy-wave-a-candidate).
+Collision evidence cannot be discarded because one record is offline. A valid
+manual override of a duplicated UUID is visibly manual and never auto eligible.
+A validated identity also cannot prove bytes unchanged, capture completeness,
+source root authorization or availability. Existing root authority and snapshot
+recovery rules remain mandatory. Observation must not mount/unmount/eject/rename,
+claim disks, register approval/peek interventions, read payloads or initiate capture.
+
+### Current source and schema-v9 boundary
+
+Read-only inspection found:
+
+- `FSD/Provider/FilesystemDetector.swift`: `volumeUUIDString` → stringified
+  `fileResourceIdentifier` → `native-root:<mountPath>`. This legacy descriptor
+  combines different identity scopes without persistent-device provenance.
+- `FSD/Catalog/SnapshotWriter.swift`, `ensureVolume`: `persistent_uuid` or
+  `fallback_fingerprint` lookup with `LIMIT 1`; schema-v9 indexes are nonunique.
+  A duplicate can therefore choose one legacy volume row. This is an observed
+  code path, not a reproduced hardware incident or permission to repair it here.
+- The writer copies source facts into snapshots; `CaptureTimeSourceFacts` and
+  `SnapshotHistoryRepository` read those optional immutable facts without
+  backfill. `SourceAvailabilityProbe` only tests recorded path existence: it
+  cannot close accepted F2 source identity/root-proof risk.
+- `docs/database/schema.sql` and `CatalogMigrations.swift` are v9. Snapshots already
+  have nullable device/partition/offset/length fields, and the capture-facts
+  trigger protects them. Native capture does not currently populate those
+  device/partition fields. `volumes` has serial/vendor/model and default-OFF
+  auto-capture columns; their presence does not implement a resolver or watcher.
+  `snapshots.volume_id` cascades on volume deletion; comparison references use
+  RESTRICT. Those existing semantics must not be reused for deleting PhysicalDrive.
+
+### Future data model and bounded implementation plan — no implementation
+
+This is a logical proposal; table names/version numbers/DDL require separate
+approval. A future migration version must be chosen against then-current schema,
+not reserved here. Do not retrofit hardware meaning into `volumes.id`.
+
+| Proposed local relation | Required contents / ownership |
+|---|---|
+| PhysicalDrive | Stable local ID, manual label, lifecycle/tombstone; origin manual or approved-profile resolution; no unique constraint on hardware tokens |
+| Observed storage objects and topology edges | Distinct volume, partition, media, device, bridge/reader, virtual/unknown subjects; revision-scoped parent edges support one-to-many and unresolved/multi-store topology, not a forced single parent |
+| MountSession / observation revision | Local session/boot generation, source/provider, appeared/mounted/unavailable times, path/BSD hints, availability and incomplete/error state; no persistent hardware inference |
+| IdentityEvidence | Append-only typed value, subject, API/property, dependency group, timestamps/revision, profile/validation state and reason; nonunique bounded lookup indexes; sensitive facts remain local |
+| Resolution / conflict | Append-only candidate IDs/evidence refs, outcome, reason, resolver/profile version and revision; collision quarantine persists independently of current mounts |
+| ManualAssociation events | Explicit target, observed volume/partition/session/revision, actor/time/reason and superseded/revoked event; no automatic reusable UUID rule |
+| Capture identity receipt / later annotation | New captures record contemporaneous evidence/outcome once in the capture admission transaction; separate later local annotations can refer to old SnapshotIDs but must be labelled retrospective manual assertions, never capture-time facts |
+
+Legacy v9 volumes/snapshots remain intact with **unknown physical identity**.
+Do not backfill old snapshots from mutable volume registries, current hardware,
+mount paths, stringified file IDs, or shared UUIDs. Existing exports/comparisons,
+Collection defaults and `Unsorted` semantics retain their contracts. Per-drive
+queries must distinguish confirmed capture-time receipts from later manual
+annotations, display provenance and avoid silently merging snapshot histories.
+
+A separately authorized implementation should proceed in these bounded stages:
+
+1. Pure typed facts/resolver with real profile set empty, permanent adversarial
+   tests and explicit errors. Add the observation reducer behind an OFF gate;
+   demonstrate bounded metadata-only adapters and cancellation without capture.
+2. Additive migration and manual-association storage/UI with synthetic catalogs.
+   Register migration transaction and version together (ADR-024); verify expected
+   schema/columns/indexes/triggers on every open. Keep v9 capture/entry/terminal
+   comparison guards and existing FK semantics. No source or historical backfill.
+3. Commit an observation revision, evidence, resolution/collision and manual
+   event atomically; failed transaction leaves no active relationship. Foreign
+   keys enforce valid subjects/targets/evidence; referenced evidence/events/drives
+   use RESTRICT or tombstones. Deleting a local drive must never cascade into
+   legacy volumes, snapshots, entries, Collections or comparison evidence.
+   Deletion/privacy retention policy needs separate explicit design approval.
+4. Design new-capture admission so the receipt and snapshot facts commit together
+   after fresh generation/root/availability checks; lifecycle cancellation or
+   crash leaves incomplete work and preserves the last complete snapshot.
+   On recovery, replay no capture automatically; stale manual decisions need
+   confirmation and unresolved migrations roll back without version advancement.
+5. Run the separately authorized designated-media matrix in [TEST_PLAN.md §10](TEST_PLAN.md#10-adr-036-identity-feasibility-and-proof-gates--task054).
+   Pin tested OS/provider/reader/enclosure/firmware conditions and origin evidence.
+   Approve only a bounded supported profile; absent two independent appropriate
+   device origins, keep automatic strong matching disabled indefinitely. Repeated
+   successful reconnects establish evidence for that profile, not universal uniqueness.
+6. Production integration, source-root/observer safety audit and BRAIN acceptance
+   must precede enabling even opt-in automation. Auto Capture remains OFF by
+   default/reset; physical proof, schema implementation and this later work are
+   not authorized by Task054. Drive Sets and durable comparison save remain
+   ADR-037/038 proposals with unchanged status.
+
+Required future migration tests: v9/new/older catalog paths; nonunique legacy
+UUID/fingerprint rows; missing facts; FK/integrity checks; idempotent reopen;
+failed-migration rollback; crash between observation/resolution/capture writes;
+manual correction/revocation with immutable prior snapshots; drive tombstone
+without history loss; bounded indexed candidate/history queries. No such
+production or migration test ran in Task054. PRD §2 pre-decision Drive Set wording
+and §6.1's legacy raw-provider identity language remain read-only advisories;
+they cannot grant physical identity or expand supported provider scope.

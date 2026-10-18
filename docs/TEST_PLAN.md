@@ -1,18 +1,20 @@
 # Test Plan
 
-## Current acceptance gates (authority reconciliation 2026-10-03)
+## Current acceptance gates (authority reconciliation 2026-10-18)
 
-M1–M5 technical core is closed with known limitations. The M5 schema-v8/disposal
-re-audit is **CLOSED — APPROVE WITH CONDITIONS**
-(`handoffs/FSD_M5_SCHEMA_V8_DISPOSAL_REAUDIT_A_20260805-223211.md`); the
-nullable enrichment boundary audit is **CLOSED — APPROVE WITH CONDITIONS**
-(`handoffs/FSD_P15_MAGIKA_NULLABLE_ENRICHMENT_AUDIT_R_20260807-142313.md`).
-Manual acceptance remains **NOT PERFORMED — DEFERRED BY OWNER**; overall
-MVP approval is **NOT CLAIMED**. Runtime design is complete
-(`handoffs/FSD_P15_MAGIKA_RUNTIME_DESIGN_A_20260807-155630.md`); runtime
-implementation is not started/inactive. Schema remains v8 and a separately
-authorized schema change is required before runtime. Existing execution counts
-below are historical evidence; this reconciliation did not rerun product tests.
+M1–M5 technical core and the schema-v8/disposal/nullable preparation audits remain
+closed with their recorded conditions. Phase 1.5 runtime has final BRAIN technical
+acceptance with advisory after Task036; schema is **v9**, not v8. Historical
+Task035 full Debug evidence is 494 executed / 491 passed / 0 failed / 3 known
+external-environment skips; the final Task036 focused audit is 260/260. See
+[STATE/PROJECT_STATE.md](../STATE/PROJECT_STATE.md) and
+[Task036 audit](../handoffs/FSD_P15_RUNTIME_FINAL_AUDIT_R_20261007-094654.md).
+These product tests were not rerun by Task054. Manual UI, VoiceOver,
+physical-media and full FSD2 internal acceptance remain separate/pending;
+Developer ID/notarization are not current internal-acceptance gates.
+ADR-036–038 remain Proposed / Owner Direction Approved / Technical Proof Pending.
+Task054 adds only the §10 research/synthetic evidence and future physical gates;
+no observer, identity integration, production/schema tests or later task ran.
 
 ## 1. Critical tests
 
@@ -497,6 +499,10 @@ Anything an automated test can prove is not repeated by hand: schema constraints
 
 ## Phase 1.5 nullable classification preparation
 
+The following is historical preparation-stage evidence. Its inactive-runtime
+statements describe that milestone; current Task036 technical acceptance and
+schema-v9 runtime status are recorded above and in §9. Counts remain unchanged.
+
 Automated Debug and focused Release coverage verifies the schema-v8
 entry-classification seam, typed round-trip, deterministic duplicate and
 missing-entry rejection, bounded latest-page retrieval, selected-entry browser
@@ -529,7 +535,7 @@ It independently reproduced the full Debug suite (293 executed, 290 passed,
 and the Auditor's 59-test selection are distinct historical runs, not counts
 to merge. Deferred manual acceptance and inactive runtime remain unchanged.
 
-## 9. Local classifier runtime test plan (verified task035; independent final audit pending)
+## 9. Local classifier runtime test plan (Task036 final BRAIN technical acceptance with advisory)
 
 The binding classifier requirements below cover the **seven typed
 outcomes** locked by ADR-034 (2026-10-06, Accepted): `classified`, `failed`,
@@ -539,7 +545,7 @@ row. `ROW_WRITING_OUTCOMES=4` and `NO_ROW_TYPED_OUTCOMES=3`. Historical complete
 test receipts earlier in this plan describe earlier milestones and are not
 rewritten. **`ADR-034 IMPLEMENTATION=ACCEPTED_TASK031`**: the ADR-034 noMatch implementation requirements in the dedicated subsection below were implemented and accepted by task031 at `de8484e203b8b6e259dac90349d44069fc5a6ed0`; accepted earlier Slice02–06/task031 test receipts remain historical evidence; ADR-035 integration was implemented by task033A and independently audited by task034; BRAIN accepted filetype v1.1.3 as production provider in the supplied task035 decision. The requirements below remain unchanged.
 
-**Current task035 evidence (AUTOMATED VERIFIED):** Task035 current verification: clean Debug/Release arm64 builds passed; full Debug 494 executed / 491 passed / 0 failed / 3 existing external-probe skips; focused classification/isolation/schema 242 executed / 242 passed / 0 failed / 0 skipped; supplemental schema-safety 18 executed / 18 passed / 0 failed / 0 skipped. Exact commands, durations and per-suite counts: [FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md](../handoffs/FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md). filetype v1.1.3 is the BRAIN-accepted production provider; ADR-035 integration is implemented by task033A (`556872844b90640cc2a64e40d99594a78cef61af`) and independently audited by task034 (accepted `PASS_WITH_ADVISORY` at publication `9d1a8ea237c6c2941895b1c3640118371d2e2d4d`). Task035 verifies the physical runtime and synchronizes status; final independent implementation audit and Phase 1.5 BRAIN acceptance remain pending.
+**Current task035 evidence (AUTOMATED VERIFIED):** Task035 current verification: clean Debug/Release arm64 builds passed; full Debug 494 executed / 491 passed / 0 failed / 3 existing external-probe skips; focused classification/isolation/schema 242 executed / 242 passed / 0 failed / 0 skipped; supplemental schema-safety 18 executed / 18 passed / 0 failed / 0 skipped. Exact commands, durations and per-suite counts: [FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md](../handoffs/FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md). filetype v1.1.3 is the BRAIN-accepted production provider; ADR-035 integration is implemented by task033A (`556872844b90640cc2a64e40d99594a78cef61af`) and independently audited by task034 (accepted `PASS_WITH_ADVISORY` at publication `9d1a8ea237c6c2941895b1c3640118371d2e2d4d`). Task035 verified the runtime; Task036 subsequently completed the independent final audit and BRAIN accepted Phase 1.5 with advisory (accepted State and Task036 audit above). These counts remain historical evidence; Task054 did not rerun them.
 
 The focused run includes the eight classification suites, ComparisonSemanticsTests, JSONExportTests and SchemaMigrationTests/CatalogDatabaseTests; the supplemental schema-safety run explicitly selects ExpectedStateInventoryTests and TerminalCollisionEvidenceTests declared in SchemaSafetyCorrectionTests.swift. The ineffective file-named selector in the first focused command selected zero tests; it is not counted as coverage. All mandatory real-helper cases reran against the accepted committed helper; missing helper is failure, not skip. Full-suite skips are only FSDProbeSeedTests/testSeedIsolatedProbeCatalog (`FSD_PROBE_CATALOG` absent), FilesystemMatrixTests/testCaptureExternallyPreparedMountedFilesystem (`FSD_MATRIX_SOURCE` absent) and testReopenCapturedSnapshotWithTheSourceDetached (`FSD_MATRIX_OFFLINE_CATALOG` absent); none hides classifier coverage. The current full run also repeats the previously disclosed test-sampler QoS diagnostic at M5PeakSampler.stop; the related test passes and no repair is claimed.
 
@@ -645,3 +651,148 @@ Verify that a provider cannot escape FSD's bounded-byte authority using a fake/h
 1. Attempt to reopen or otherwise access the original source path. The provider only ever receives the bounded `Data` buffer FSD already read, never a `URL`/path/handle.
 2. Attempt to request or receive additional bytes beyond what FSD already handed it. There is no callback or second read path available to it.
 3. Attempt to bypass FSD's hard byte ceiling. Even if the fake provider's `classify` implementation tries to claim it read more, FSD's own persisted result only ever reflects what FSD itself bounded and read, never anything the provider asserts about additional bytes.
+
+## 10. ADR-036 identity feasibility and proof gates — Task054
+
+**Task054 boundary:** public API/SDK research, pure generated-fact resolver in
+ignored `.ai-scratch/task054/`, and documentation only. No live device enumeration,
+Owner media/catalog/filesystem-root reads, mount/unmount/eject, observer execution,
+Xcode build or production XCTest. ADR-036 remains Proposed / Owner Direction
+Approved / Technical Proof Pending. See [architecture §11](ARCHITECTURE.md#11-physical-drive-identity-feasibility--task054)
+for E1–E8 official URLs, exact declarations, provenance dependencies, schema-v9
+source findings and future migration plan; [ADR-036](DECISIONS.md#adr-036--physical-drive-identity-and-mount-policy-wave-a-candidate)
+for deterministic outcome precedence and actions.
+
+Proof labels are independent dimensions: `DOCUMENTED` means the cited API contract
+exists, `SYNTHETICALLY_TESTED` means generated rules executed,
+`EMPIRICALLY_VERIFIED` requires designated real-media evidence (none in Task054),
+`TECHNICAL_PROOF_PENDING` means a future required gate, and
+`UNSUPPORTED_OR_UNKNOWN` means no supported identity claim. Documentation and
+synthetic PASS never become empirical verification.
+
+### Synthetic inputs, expected results and receipt
+
+Reproduce locally with `python3 .ai-scratch/task054/resolver.py`. Standard library
+only; `inputs.json` includes every explicit observation, catalog, options and
+expected full result; `results.json` records each actual result. The historical
+Task054 handoff embeds the complete runnable harness for recovery because ignored
+scratch is not published. Run the recovered file under the same ignored directory.
+No filesystem-source strings in the fixtures are dereferenced.
+
+Notation: `a/b` are generated device tokens with explicit separate origins A/B;
+`u` is generated volume UUID U. Names, paths, BSD nodes and reader serials are
+nonidentity facts. **Pending** is the real profile set (empty); **hypothetical**
+is an explicitly synthetic two-device-origin profile, with no mapping to real
+Apple keys and no accepted hardware threshold. Candidate IDs D1/D2 are local
+synthetic records. All cases check exact outcome, target, candidate set and Auto
+Capture eligibility, input immutability and reversed fact/candidate order.
+
+Command executed successfully: **32 cases / 32 PASS / 0 FAIL**. Per-case expected
+and actual outcomes follow; only S21 has `auto=True`, under the hypothetical
+profile with opt-in, availability, root proof, separate capture authorization and
+idle state. Every other case has `auto=False`.
+
+| Case | Generated scenario | Expected | Actual | Profile / target |
+|---|---|---|---|---|
+| S01 | same name different devices | `Unknown` | `Unknown` PASS | pending / none |
+| S02 | mount path reused | `Unknown` | `Unknown` PASS | pending / none |
+| S03 | BSD node reused | `Unknown` | `Unknown` PASS | pending / none |
+| S04 | BSD changes | `Unknown` | `Unknown` PASS | pending / none |
+| S05 | missing UUID | `Unknown` | `Unknown` PASS | pending / none |
+| S06 | single unverified UUID | `Unknown` | `Unknown` PASS | pending / none |
+| S07 | cloned UUID two records | `Ambiguous` | `Ambiguous` PASS | pending / none |
+| S08 | split qualified evidence | `Conflict` | `Conflict` PASS | hypothetical / none |
+| S09 | partition one of device | `Unknown` | `Unknown` PASS | pending / none |
+| S10 | partition two of device | `Unknown` | `Unknown` PASS | pending / none |
+| S11 | same reader different cards | `Ambiguous` | `Ambiguous` PASS | pending / none |
+| S12 | reader serial only | `Unknown` | `Unknown` PASS | pending / none |
+| S13 | reconnect changed path pending | `Unknown` | `Unknown` PASS | pending / none |
+| S14 | current revision manual | `ManualAssociation` | `ManualAssociation` PASS | pending / D1 |
+| S15 | manual later contradiction | `Conflict` | `Conflict` PASS | hypothetical / none |
+| S16 | stale manual revision | `Conflict` | `Conflict` PASS | pending / none |
+| S17 | manual correction to another local record | `ManualAssociation` | `ManualAssociation` PASS | pending / D2 |
+| S18 | aliases share origin no corroboration | `Unknown` | `Unknown` PASS | hypothetical / none |
+| S19 | two device fields real profile pending | `Unknown` | `Unknown` PASS | pending / none |
+| S20 | hypothetical strong default OFF | `UniqueStrongMatch` | `UniqueStrongMatch` PASS | hypothetical / D1 |
+| S21 | hypothetical strong opt in all gates | `UniqueStrongMatch` | `UniqueStrongMatch` PASS | hypothetical / D1 |
+| S22 | hypothetical strong no root authority | `UniqueStrongMatch` | `UniqueStrongMatch` PASS | hypothetical / D1 |
+| S23 | hypothetical strong unavailable | `UniqueStrongMatch` | `UniqueStrongMatch` PASS | hypothetical / D1 |
+| S24 | hypothetical strong no capture authorization | `UniqueStrongMatch` | `UniqueStrongMatch` PASS | hypothetical / D1 |
+| S25 | hypothetical strong duplicate device tokens | `Ambiguous` | `Ambiguous` PASS | hypothetical / none |
+| S26 | contradictory aliases same subject | `Conflict` | `Conflict` PASS | pending / none |
+| S27 | unknown lineage not qualified | `Unknown` | `Unknown` PASS | hypothetical / none |
+| S28 | unknown no association even opted in | `Unknown` | `Unknown` PASS | pending / none |
+| S29 | hypothetical reconnect changed BSD path | `UniqueStrongMatch` | `UniqueStrongMatch` PASS | hypothetical / D1 |
+| S30 | hypothetical qualified mismatch | `Conflict` | `Conflict` PASS | hypothetical / none |
+| S31 | hypothetical strong busy | `UniqueStrongMatch` | `UniqueStrongMatch` PASS | hypothetical / D1 |
+| S32 | manual missing target | `Conflict` | `Conflict` PASS | pending / none |
+
+S09/S10 preserve distinct partition UUIDs under one generated device; they do not
+prove topology discovery. S14/S17 exercise explicit local choice/correction;
+S15's later contradiction is qualified only under the hypothetical profile.
+S18 proves same-origin aliases cannot supply independent corroboration. S19
+keeps real-profile strong matching disabled despite matching two strings.
+The prototype does not implement persisted collision quarantine, parsing of
+untrusted API types, topology discovery, observation lifecycle or manual-event
+storage. Those are specified future gates, not synthetic execution claims.
+Synthetic tests do not prove API callback ordering, no-write syscall behavior,
+SDK/runtime compatibility, actual UUID/serial availability, schema migration,
+UI confirmation or hardware uniqueness. Case output is `SYNTHETICALLY_TESTED`;
+physical identity and automatic-action integration are `TECHNICAL_PROOF_PENDING`.
+
+### Future designated-media validation matrix
+
+**Not authorized/executed here.** Every row requires a separate explicit,
+safety-scoped authorization identifying disposable/designated test media,
+allowed metadata-only observation and any permitted manual remount/restart.
+No source write, marker, payload read, clone/reformat operation or destructive
+preparation is implied. Prepare cloned/missing-ID fixtures only under separate
+explicit authority. Use pseudonymous media labels and local bounded evidence.
+
+| ID | Coverage / future observation | DOCUMENTED basis | SYNTHETICALLY_TESTED | EMPIRICALLY_VERIFIED | Remaining disposition |
+|---|---|---|---|---|---|
+| H01 | APFS removable SSD/HDD; multiple volumes/container/stores and physical backing | E1–E5 expose objects/keys, not guaranteed APFS-to-device mapping | S09–10 generic partitions only | NO | TECHNICAL_PROOF_PENDING; multi-store mapping UNSUPPORTED_OR_UNKNOWN |
+| H02 | HFS+ removable volumes; mounted/unmounted UUID exposure | E2/E3/E8 optional/persistent properties | S05–07 | NO | TECHNICAL_PROOF_PENDING |
+| H03 | exFAT and FAT32 cards/drives; absent/repeated identifiers | E2/E3 optional keys; no per-format strong-ID guarantee | S05–07/S18 | NO | TECHNICAL_PROOF_PENDING; do not infer FAT variant from `msdos` |
+| H04 | NTFS through each explicitly supported/read-only provider and other supported provider paths | E2/E8 do not certify provider support or identity | S05/S19 generic missing/provisional | NO | UNSUPPORTED_OR_UNKNOWN for unvalidated providers; stock-macOS NTFS support remains unproven |
+| H05 | USB SSD and HDD, same/different ports/hubs/cables | E2 device/bus path; E6 driver serial property | S01–04/S13/S29 | NO | TECHNICAL_PROOF_PENDING; reconnect/port stability unproven |
+| H06 | SD and CFexpress cards, swap in one reader; same card in different readers | E1 explicitly warns to vary devices/card readers; E6 does not prove medium serial exposure | S11–12/S18 | NO | TECHNICAL_PROOF_PENDING; reader vs card subject unresolved |
+| H07 | Several partitions on one physical test drive; volume vs partition UUID and offsets | E2 associated whole disk; E3 whole/leaf/base/size | S09–10 | NO | TECHNICAL_PROOF_PENDING; preserve distinct volume records |
+| H08 | Same disk through different USB bridges/enclosures; two identical bridges | E4 ancestor GUID derivation/E6 serial subject; no cross-enclosure promise | S11–12/S18/S27 | NO | TECHNICAL_PROOF_PENDING; no inferred bridge pass-through |
+| H09 | Multi-LUN bridge/reader, simultaneous media, virtual/RAID/disk image/network exceptions | E5 topology can have multiple parents; no one-device mapping guarantee | S08/S25 generic collision only | NO | UNSUPPORTED_OR_UNKNOWN until bounded topology profile proved |
+| H10 | Preprepared cloned UUIDs, duplicated serials and absent keys; offline collision candidates retained | E2/E3 availability limits; collision handling is FSD policy | S05–08/S25–27 | NO | TECHNICAL_PROOF_PENDING; never accept single database hit as uniqueness proof |
+| H11 | Remount, disconnect/reconnect, changed name/path/BSD, OS restart and observer restart | E1 ordering warning; E5/E8 restart limits; E7 mount hints | S01–04/S13/S16/S29 | NO | TECHNICAL_PROOF_PENDING; per-OS generation/recovery tests required |
+| H12 | Two devices with same name, path reuse and node reuse, both online and sequentially offline | E2/E7 fields describe current presentation/node | S01–04/S07/S25 | NO | TECHNICAL_PROOF_PENDING; false association count must be zero |
+| H13 | Manual choice/correction; contradictory later observation, detach during confirmation/admission | E1 events; local decision/revision gates are FSD design | S14–17/S26/S32 | NO | TECHNICAL_PROOF_PENDING for UI, persistence and recovery |
+| H14 | Auto Capture OFF/reset, opt-in, mount-only, ambiguous/unknown/conflict/manual and all admission gates | E1/E7 events grant no FSD capture authority | S07/S14/S19–25/S28/S31 | NO | TECHNICAL_PROOF_PENDING for production observer/capture isolation |
+
+For each approved row, record OS/build, provider/version, filesystem, designated
+media/reader/enclosure/firmware labels, exact typed key presence/types/origins,
+whole/partition relationship, sequence/revision and resolver/profile version.
+Compare multiple reconnects, changed ports/readers and restart; test two similar
+subjects concurrently and sequentially, including offline stored candidates.
+Report missing values/errors and contradictory changes. Sample counts and
+retained local evidence must be explicit; a finite run cannot prove universal
+uniqueness or resistance to intentionally forged IDs. No empirical columns may
+be filled from documentation or inference. The operator must separately approve
+the safe test procedure/media before any observation runs.
+
+### Future implementation, migration and safety gates
+
+Traceability: PRD §§5.1/6.1/7 → UX §§8–9 → ADR-036 → architecture §11 →
+S01–S32 / H01–H14. PRD remains read-only; its §2 Drive Set and §6.1 raw-provider
+wording are advisories, not accepted physical-identity evidence. ADR-037/038
+statuses and their implementation gates remain unchanged.
+
+Future production gates, **not executed**: observation-only API allowlist and
+no payload/mount/eject/claim/approval action; bounded ancestry and event reducer;
+duplicate/late/startup/shutdown callbacks; stale revision rejection; typed
+UUID/serial normalization and shared-origin collapse; default-OFF/reset and
+revoked opt-in; root authority recheck on admission; cancellation/interruption
+and last-complete preservation (CT-001/002/003); schema-v9 additive migration,
+FK/integrity, crash/rollback/reopen and tombstone tests; immutable capture facts
+and retrospective annotation separation; no legacy UUID/path backfill; bounded
+candidate/history query memory. The exact storage/transaction/deletion design
+and staged future implementation are in architecture §11. No PhysicalDrive
+schema, migration, product test, observer or Auto Capture integration is accepted
+or authorized by this feasibility PASS.

@@ -691,7 +691,7 @@ as distinct; otherwise it remains unassociated until user action.
 | `UniqueStrongMatch` | Exactly one existing PhysicalDrive satisfies the validated independent-evidence policy, with no conflict. | Reconnect the observed Volume/MountSession to that local ID. Auto Capture is eligible only if separately enabled and all capture policy checks pass. |
 | `Unknown` | Available evidence is absent or below threshold. | Keep the Volume/MountSession unassociated. Do not merge history or start Auto Capture. |
 | `Ambiguous` | Two or more PhysicalDrive candidates satisfy or plausibly satisfy the policy. | Preserve the candidate set for explicit user choice. Do not choose the first, closest, or most recently mounted candidate. Do not start Auto Capture. |
-| `Conflict` | Independent high-quality facts disagree, or an identifier collision prevents a unique result. | Fail closed, retain the conflicting facts, require review, and do not merge histories or start Auto Capture. |
+| `Conflict` | Qualified facts disagree, same-subject aliases contradict, a collision has incomplete candidate coverage, or a manual decision is stale. A duplicated token with multiple plausible candidates alone is `Ambiguous`. | Fail closed, retain the conflicting facts, require review, and do not merge histories or start Auto Capture. |
 | `ManualAssociation` | The user explicitly associates an observed Volume/Partition with a selected local PhysicalDrive. | Store an auditable local association. Preserve capture-time facts and prior evidence; do not silently merge or rewrite snapshots. A later contradictory observation returns to `Conflict`. |
 
 Manual associations may support later reconnects, but they do not upgrade an
@@ -706,6 +706,74 @@ must not read file payloads. Auto Capture is OFF by default. It may start work
 only after explicit opt-in and only for an eligible, uniquely resolved source;
 unknown, ambiguous, or conflict outcomes cannot trigger capture. A mount event
 does not itself authorize capture.
+
+### Task054 feasibility refinement — proposed, technical proof pending
+
+**Evidence-supported limit (2026-10-18):** observation and explicit local manual
+association are feasible design targets. The inspected contracts establish no
+universal physical-device identity. The approved real-hardware profile set is
+empty: `UniqueStrongMatch` is unreachable for real observations until a separately
+authorized hardware study and BRAIN technical acceptance approve a bounded profile.
+Two API fields or two UUIDs are not automatically two independent proofs.
+The official API inventory, provenance dependencies, current-source findings and
+future schema design are in [ARCHITECTURE.md §11](ARCHITECTURE.md#11-physical-drive-identity-feasibility--task054).
+
+Resolution is deterministic, with this precedence:
+
+1. Validate observation revision, subject scope, typed values and provenance.
+   Missing facts remain absent; malformed/contradictory facts are retained and
+   block automatic actions. Compare values only within their typed namespace.
+2. Build the union of candidates sharing a nonempty device, media/partition or
+   volume identity token. Name, path, BSD node, capacity/model and reader identity
+   contribute no physical-drive candidates. An index hit is a hypothesis only.
+3. `Conflict` wins when same-subject aliases disagree, a qualified stable
+   comparator disagrees with an otherwise linked candidate/manual target, or a
+   manual decision references a stale observation or nonexistent target. Conflicting
+   qualified facts pointing at different candidates cannot be resolved by scoring.
+4. An explicit manual decision for the current observation revision may select
+   one local ID after the conflict check, including from a duplicated-UUID candidate
+   set. Return `ManualAssociation`; never convert it to hardware verification.
+5. Without that decision, multiple plausible candidates return `Ambiguous`.
+   A known collision with incomplete candidate coverage is quarantined as
+   `Conflict`; a unique database hit cannot erase a recorded collision.
+6. Exactly one candidate returns `UniqueStrongMatch` only under an approved,
+   applicable profile with independently originated device-scoped corroboration,
+   validated topology and zero conflict/collision/staleness. No weights or numeric
+   confidence can substitute for those gates. All other cases return `Unknown`,
+   including an unseen device; do not automatically create a PhysicalDrive.
+
+Manual decisions bind the selected observed volume/partition, session and
+observation revision. They are not reusable match rules keyed by UUID, name or
+reader. Reconnect requires fresh resolution or fresh confirmation. Correcting
+an association appends a superseding/revocation event; previous events and capture
+facts remain inspectable. A later contradiction blocks the relationship and
+requires explicit review; missing evidence alone does not prove a contradiction.
+
+PhysicalDrive and Volume/Partition must not be collapsed. A card reader/enclosure
+is a transport subject, not the inserted card. Whole-disk/partition relationships
+describe the observed storage stack; they do not guarantee one physical spindle
+or flash device. APFS, synthesized/multi-store media, RAID, disk images, network
+and multi-LUN topologies remain unresolved unless a bounded profile proves the
+mapping. Shared topology within one observation can group partitions without
+proving persistent identity across reconnects.
+
+Availability is orthogonal: path presence is not identity, identity is not root
+authorization, and a detached verified identity is unavailable for capture.
+`Unknown`, `Ambiguous`, `Conflict` and `ManualAssociation` prohibit automatic
+association and Auto Capture. Manual capture remains a separate explicit action
+using the existing source/root safety boundary; it records truthful unresolved
+facts. A future Auto Capture requires `UniqueStrongMatch`, explicit opt-in,
+current source/root authorization, fresh generation/availability and no active
+capture. Recheck before admission; an event alone grants none of these.
+
+Task054's 32 synthetic cases passed the proposed rules, including an explicitly
+hypothetical two-origin profile used only to exercise otherwise unreachable
+strong-match and Auto Capture branches. This proves deterministic rule behavior,
+not hardware identity or an implemented observer. The full case/proof matrix is
+in [TEST_PLAN.md §10](TEST_PLAN.md#10-adr-036-identity-feasibility-and-proof-gates--task054).
+Hardware validation, observer lifecycle safety, migration and production tests
+remain future gates. ADR-036 remains **Proposed / Owner Direction Approved /
+Technical Proof Pending**; ADR-037/038 and accepted ADR semantics are unchanged.
 
 ### Alternatives considered
 
