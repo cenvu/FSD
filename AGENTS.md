@@ -85,6 +85,10 @@ existing evidence replace this extra round?” Remove a redundant round.
   repetitive permission rounds, redundant Worker handoffs or duplicate audits.
   Keep one historical handoff per task and publish only after required evidence
   and review pass.
-- Current Owner routing for Antigravity CLI/IDE is OPUS 4.6 only; SONNET is
-  excluded. Use a cheaper preparation Worker before an OPUS round only when
-  OPUS is actually warranted by task risk or unresolved reasoning complexity.
+- Owner routing pool is mutable and the current authorized harness/model list
+  is in `docs/BRAIN_OPERATOR.md#routing`. The Owner's 2026-10-19 replacement
+  pool supersedes the older Antigravity OPUS-only restriction: Gemini 3.8 Flash
+  and Opus 4.6 Thinking are both listed for Antigravity CLI/IDEL; SONNET is not
+  in the approved pool. Before spending scarce GPT 6 Astra or Opus 4.6 quota,
+  audit the unresolved task risk and prepare an evidence packet using an
+  economical lane where safe. Do not add a redundant mandatory Worker round.

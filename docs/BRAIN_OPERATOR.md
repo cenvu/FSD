@@ -137,15 +137,41 @@ FREE_FIRST_WHEN_SAFE=YES
 Stable task prompts contain no HARNESS, MODEL or EFFORT IDs. The Owner-supplied
 CURRENT pool below is mutable operational inventory held only in this Operator;
 it may change without changing product/task semantics. Stale pool entries must
-not be used once Owner supersedes them. Current Owner routing for Antigravity
-CLI/IDE is OPUS 4.6 only; SONNET is excluded. Do not make an OPUS round a
-prerequisite for routine work. Prepare with a cheaper Worker before OPUS only
-when OPUS is actually warranted by task risk or unresolved reasoning complexity.
+not be used once Owner supersedes them. The 2026-10-19 pool supersedes the
+previous Antigravity OPUS-only restriction; no unlisted model (including
+SONNET) is implied to be authorized. Pool membership is Owner-supplied, not
+an independently verified account entitlement or performance benchmark.
 
-CURRENT_OPERATIONAL_INVENTORY (Owner-supplied; mutable; not architectural constants):
-CODEX_CLI=GPT 6.1 SOL|GPT 6 LUNA
-AGY_CLI=OPUS 4.6 ONLY;SONNET EXCLUDED (CLI/IDE)
-OPENCODE=Space Bunny Free|Muse Spark 1.3 Contributor FREE|MiMo-V2.6-Flash FREE
+CURRENT_OPERATIONAL_INVENTORY (Owner-supplied 2026-10-19; mutable):
+CODEX_CLI=GPT 6 Luna Max|GPT 6.1 SOL High|GPT 6 Astra High
+AGY_CLI=Gemini 3.8 Flash|Opus 4.6 Thinking
+OPENCODE=Space Bunny FREE|DeepSeek Flash V4.1 FREE
+AGY_IDEL=Gemini 3.8 Flash|Opus 4.6 Thinking
+CLAUDE_CLI=DeepSeek Flash V4.1 PAYG
+
+SCARCE_QUOTA_AUDIT_AND_PREPARE (GPT 6 Astra High or Opus 4.6 Thinking):
+Before invoking either, identify the specific unresolved high-risk question,
+why current tests/code review and a lower-cost lane cannot resolve it, and
+what evidence would settle the decision. Prepare a compact, reproducible packet
+with exact source/diff, failing tests, constraints, options, success criteria,
+privacy scope and STOP gates. Prefer a bounded FREE or standard-capability
+preparation pass where safe; reuse already available evidence rather than
+mandating a second Worker. If the uncertainty is already resolved, do not
+invoke the scarce model. If justified, select exactly one primary and one
+fallback, disclose quota cost and Owner override, and keep independent review
+separate for material safety decisions. No model benchmark or speculative
+ranking. An audit/prepare pass is operational routing hygiene, not a new
+product task, implementation authorization or extra approval gate.
+
+HISTORICAL_ROUTING_EVIDENCE (dated audit; STATE/TASK_LEDGER.tsv):
+The 67 ledger entries as of Task059 Worker return include 14 CODEX_CLI executor
+labels and 2 OPENCODE_DEEPSEEK_V4_1_FLASH_FREE labels; older entries generally
+record roles rather than model identities. Accepted Task051 and Task057 used
+the FREE OpenCode lane for bounded organizer/document readiness work; Task058
+and Task059 used CODEX_CLI for schema-v10/local identity and fail-closed resolver
+implementation with Xcode/synthetic test receipts. These observations support
+risk-based routing and test-backed review, not a model speed, quality or cost
+comparison. Do not infer specific CODEX model/effort from an executor label.
 
 BRAIN Owner-facing routing states exactly ONE PRIMARY and ONE FALLBACK, each as
 HARNESS plus MODEL plus EFFORT. A harness without explicit effort control uses
