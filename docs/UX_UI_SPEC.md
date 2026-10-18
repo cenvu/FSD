@@ -1,10 +1,18 @@
 OWNER_PRODUCT_UX_DIRECTION=YES
-IMPLEMENTATION_PROOF=TASK047_MAIN_HOME_TASK049_OFFLINE_SNAPSHOT_EXPLORE_ONLY
-IMPLEMENTATION_AUTHORIZATION=OWNER_APPROVED_TASK047_MAIN_HOME_AND_TASK049_ONE_STAGE1_SLICE
+IMPLEMENTATION_PROOF=TASK047_MAIN_HOME|TASK048_MAIN_POLISH|TASK049_OFFLINE_EXPLORE|TASK050_EXPLORE_POLISH|TASK051_COLLECTIONS_ORGANIZER|TASK052_LABEL_NOTE_EDITOR|PHASE_1_5_RUNTIME_ACCEPTED
+IMPLEMENTATION_AUTHORIZATION=HISTORICAL_TASKS_ONLY;NO_PRODUCT_IMPLEMENTATION_AUTHORIZED_BY_THIS_DOCUMENT
+WAVE_A_ADR_STATUS=PROPOSED;OWNER_DIRECTION_APPROVED;TECHNICAL_PROOF_PENDING;BRAIN_REVIEW_PENDING
 
 # UX and UI Specification
 
 This document defines the canonical Owner Product/UX Direction for FSD.
+
+The accepted implementation baseline and open implementation gaps are recorded
+in [PRODUCT_STATE.md](PRODUCT_STATE.md). Tasks 047–052 are accepted bounded
+product slices, not FSD2 Full acceptance. The Owner approved the Wave A target
+direction on 2026-10-18; ADR-036–038 in [DECISIONS.md](DECISIONS.md) remain
+proposed pending technical proof and BRAIN review. This document does not
+authorize implementation.
 
 It clearly distinguishes:
 - TARGET UX
@@ -123,16 +131,19 @@ The implemented Main/Home contract is:
   The Home content uses a vertical scroll surface to retain the source heading,
   primary action and sidebar at supported window widths.
 
-The Main/Home screen does **not** implement the rest of Direction A. Task049
-later authorizes only the one bounded Offline Snapshot Explore slice below.
-Other Stage1 work remains postponed, including mount detection/Connected Now,
-Auto Capture, dashboard aggregates, paged per-source history, broader search
-scopes, and compare ancestor/reveal navigation. Stage2 remains postponed: the
-physical-drive identity and mount/remount policy, its evidence/ambiguity
-contract and identity-aware availability service remain unresolved and require
-their separate authorization. Until then, no physical-drive identity or
-connection is asserted from a recorded display name or mount path. Existing
-Collection semantics remain unchanged; Drive Sets remain behind their ADR.
+The Main/Home screen does **not** implement the rest of Direction A. Tasks049
+and 050 subsequently delivered the bounded Offline Snapshot Explore workspace
+and its polish; Tasks051 and 052 added the Snapshot Collections organizer and
+snapshot label/note editor. These accepted slices still do not complete
+Direction A or FSD2 Full. Mount detection/Connected Now, Auto Capture,
+dashboard aggregates, paged per-drive history, broader search scopes, and
+compare ancestor/reveal navigation remain gaps. Physical-drive identity and
+mount/remount behavior have Owner-approved target direction but still lack a
+validated evidence/ambiguity contract and identity-aware availability service.
+Until that proof is accepted, no physical-drive identity or connection is
+asserted from a recorded display name or mount path. Collection semantics stay
+unchanged; Drive Sets have a separate proposed ADR-037, not an accepted
+implementation.
 
 ### 5.2 Owner-authorized Offline Snapshot Explore slice — Task049
 
@@ -197,12 +208,15 @@ The implemented contract is:
   SQLite text, internal table names and paths are never shown, and a read
   failure is never presented as an empty Collections list.
 
-Deferred and **not** implemented in this slice: renaming or deleting a
-Collection; editing a snapshot's display name or user note; the capture-time
-organization sheet; a remembered default Collection and `source_collection_defaults`
-writes; Auto Capture; Drive Sets; physical source identity and mount detection;
-library-wide search; content preview and auto-classification; and any schema,
-migration or comparison-engine change.
+At Task051 closeout, the following were deferred. Task052 subsequently added
+snapshot display-name and user-note editing; that does not change Collection
+semantics. Still not implemented: renaming or deleting a Collection; the
+capture-time organization sheet; a remembered default Collection and
+`source_collection_defaults` writes; mount detection and Auto Capture; Drive
+Sets; physical source identity; library-wide search; content preview and
+automatic classification; and any schema, migration, or comparison-engine
+change. The current FSD2 Full target and Wave A ADR status are summarized in
+§§6–14 and [PRODUCT_STATE.md](PRODUCT_STATE.md).
 
 ### 5.4 Owner-authorized snapshot label and note editor — Task052
 
@@ -229,14 +243,16 @@ schema changes and wider Collections redesign remain outside this slice.
 
 A Drive Set is a user-created group of PHYSICAL DRIVES.
 
-DRIVE_SET_VS_COLLECTION=ADR_REQUIRED
+WAVE_A_STATUS=OWNER_DIRECTION_APPROVED;ADR_037_PROPOSED;TECHNICAL_PROOF_PENDING
 
-Until that ADR exists:
-- Collection remains current accepted implementation semantics.
-- Drive Set remains Owner target direction.
-- no mass rename;
-- no schema inference;
-- no claim existing Collections already implement Drive Sets.
+Drive Sets group stable local PhysicalDrive IDs and are separate from logical
+snapshot Collections. The proposed membership is many-to-many. Existing
+Collection semantics remain binding: a snapshot belongs to zero or one
+Collection, `Unsorted` remains `collection_id = NULL`, and Collections are not
+renamed or reinterpreted as Drive Sets. No existing membership is inferred.
+Create, rename, delete, membership changes, offline presentation, and ambiguous
+identity behavior are specified as a candidate in ADR-037; exact storage and
+migration mechanics remain pending proof.
 
 ## 7. HOME / DASHBOARD CONTRACT
 
@@ -254,11 +270,18 @@ All metrics database-backed and bounded.
 Target:
 - mount detection;
 - explicit capture by default;
-- optional Auto Capture setting;
+- Auto Capture setting, OFF by default;
 - inline progress;
 - rest of app remains usable;
 - manual completion opens snapshot;
 - auto completion does not steal focus.
+
+The mount observer is observation-only: it does not mount, unmount, eject, or
+read file payloads. A mount event alone cannot start capture work. A separate
+capture policy may start work only after explicit Auto Capture opt-in and a
+uniquely resolved, policy-eligible source; unknown, ambiguous, or conflicting
+identity evidence fails closed. See proposed ADR-036; its evidence threshold
+and hardware behavior remain `TECHNICAL_PROOF_PENDING`.
 
 Naming target:
 <Drive Label> · <Capture Date/Time>
@@ -271,22 +294,21 @@ Immutable capture facts remain unchanged.
 Target:
 - strong automatic identity only with strong evidence;
 - ambiguity surfaced for confirmation;
-- never identify from display name/mount path alone;
+- never identify from display name, mount path, BSD node, or one unverified UUID;
 - latest snapshot;
 - paged history per physical drive;
 - immutable capture facts;
 - mutable organization metadata separate.
 
-PHYSICAL_DRIVE_IDENTITY_AND_MOUNT_POLICY=ADR_REQUIRED
+WAVE_A_STATUS=OWNER_DIRECTION_APPROVED;ADR_036_PROPOSED;TECHNICAL_PROOF_PENDING
 
-This ADR candidate includes:
-- identity evidence tiers;
-- stable vs ambiguous identity;
-- remount reconciliation;
-- eligible mounted drive;
-- mount event handling;
-- Auto Capture policy;
-- confirmation behavior.
+The target distinguishes `PhysicalDrive`, `Volume/Partition`, `MountSession`,
+and immutable capture-time source facts. Only a unique match that satisfies a
+validated multi-evidence policy may reconnect automatically. Ambiguous,
+unknown, and conflicting evidence stays unassociated until an explicit user
+decision. Manual associations are local and do not rewrite capture facts or
+silently merge histories. The complete candidate contract and negative-test
+gates are in ADR-036; exact evidence classes and thresholds remain pending.
 
 ## 10. OFFLINE BROWSER
 
@@ -346,6 +368,12 @@ Preserve existing P15 boundaries:
 - no automatic whole-library classification;
 - no snapshot/diff truth dependency.
 
+**Current status:** Phase 1.5 runtime is BRAIN-accepted and technically closed
+in the accepted State projection. The runtime remains explicit selected-entry
+work; historical documents that say its final audit or acceptance is pending
+are stale. This does not claim manual VoiceOver, physical-media, or full FSD2
+Full internal acceptance.
+
 No-match presentation (ADR-034, Accepted 2026-10-06):
 - when an explicit classification completes with `noMatch`, the persistent
   inspector classification stays neutral/absent — "Not classified.";
@@ -357,8 +385,8 @@ No-match presentation (ADR-034, Accepted 2026-10-06):
   does not survive as historical classification truth;
 - stale-result suppression on selection/snapshot/browser change is unchanged;
 - no automatic classification, no new workflow and no bulk action is added;
-- implementation is pending and is owned by the runtime implementation task,
-  not by this specification.
+- the no-match semantics remain binding under ADR-034. Their implementation
+  is part of the BRAIN-accepted Phase 1.5 runtime, not a pending implementation.
 
 ## 13. COMPARE
 
@@ -380,19 +408,27 @@ Target:
 
 ## 14. COMPARISON PERSISTENCE
 
-CURRENT:
-snapshot/snapshot comparison persists;
-live-side comparison is workspace-scoped and transient evidence is disposed.
+CURRENT IMPLEMENTATION:
+snapshot/snapshot comparison persists; live-side comparison uses transient
+snapshots and comparison state that is disposed when the workspace closes or
+abandoned transients are cleaned during recovery. This remains the default
+behavior until the explicit save action is implemented.
 
-OWNER_TARGET:
-easy durable comparison reopening, preferably automatic.
+OWNER DIRECTION APPROVED (2026-10-18):
+the user explicitly chooses **Save Comparison** to retain a live comparison.
+Saved comparisons reopen offline from durable, metadata-only backing evidence.
+No live comparison is saved automatically, and an unsaved comparison keeps the
+current transient lifecycle.
 
-DURABLE_LIVE_COMPARISON_SEMANTICS=ADR_REQUIRED
+WAVE_A_STATUS=ADR_038_PROPOSED;TECHNICAL_PROOF_PENDING;BRAIN_REVIEW_PENDING
 
-Explicit options:
-A. demo only promises durable snapshot/snapshot comparisons;
-B. promote live inputs into durable snapshots;
-C. introduce another durable comparison/evidence lifecycle.
+The saved artifact must use separate durable backing evidence for transient
+live inputs. It must not update a completed transient snapshot into a user
+snapshot: schema v9 protects `snapshot_kind` as an immutable capture fact.
+Reference integrity, all-or-nothing save, recovery, cleanup, idempotency,
+failure behavior, and bounded large-tree handling are candidate requirements in
+ADR-038. Exact copying/cloning, reference remapping, schema, and migration
+mechanics remain `TECHNICAL_PROOF_PENDING`; ADR-012 and ADR-028 remain binding.
 
 ## 15. LIBRARY / BACKUP / MULTI-MACHINE
 
@@ -461,6 +497,11 @@ These contracts are architecture constraints, NOT instructions to implement all 
 
 ## 17. CURRENT BACKEND ALIGNMENT
 
+STATUS BASIS: accepted Task047–052 work and final Phase 1.5 runtime acceptance
+are recorded in [PRODUCT_STATE.md](PRODUCT_STATE.md) and
+`STATE/PROJECT_STATE.md`. This is a current implementation summary; it does
+not promote a target or a proposed ADR to Accepted.
+
 SUPPORTED:
 - absolute read-only / metadata-only capture foundation;
 - immutable completed snapshot lifecycle;
@@ -477,41 +518,46 @@ SUPPORTED:
 - bounded comparison paging;
 - deterministic next/previous cross-page;
 - classification append-only storage/latest/history/presentation foundation.
+- explicit selected-entry classification runtime and accepted filetype provider;
+- Main/Home, offline Explore, Snapshot Collections organizer, and snapshot
+  label/note editor slices from Tasks047–052.
 
 PARTIAL:
-- explicit offline browser state exists but target visual treatment needs redesign;
-- capture inline progress exists but no connected-drive UX or auto-open completion;
-- capture/display name fields exist but target naming/edit UX is incomplete;
-- identity has UUID/fallback foundations but not complete strong/ambiguous service;
+- capture inline progress exists but there is no mounted-drive observer or
+  Auto Capture flow;
+- snapshot Collections create/list/move and label/note controls exist, but the
+  full capture-organization/default-Collection semantics are incomplete;
+- identity has UUID/fallback foundations but no validated strong/ambiguous
+  PhysicalDrive resolver;
 - recent captures/comparisons have repository data but no dashboard facade;
 - search supports bounded one-snapshot metadata queries but not scope abstraction;
-- classification UI can display stored result but real runtime absent;
 - compare navigation can locate filtered results but lacks ancestor/hierarchy projection.
 
 GAPS:
-- real local classifier runtime;
-- schema v9 provider_identifier;
-- Data-only classification request;
-- mount detection/watcher;
-- optional Auto Capture;
-- strong physical volume identity service;
-- paged per-drive history/latest facade;
+- observation-only mount detection;
+- opt-in Auto Capture, default OFF;
+- multi-evidence PhysicalDrive identity resolution and manual association;
+- per-PhysicalDrive history and paged service;
+- Drive Sets with physical-drive membership;
 - bounded dashboard aggregates;
 - This Drive / This Library search;
 - classification search/filter;
 - comparison hierarchy/ancestor projection;
+- explicit Save Comparison and separate durable backing evidence for live inputs;
 - category click → tree reveal chain;
-- Drive Set implementation;
-- durable live-comparison retention;
 - multi-Library/backup/cloud;
 - manual rendered-window/VoiceOver/focus acceptance.
 
 ## 18. OPEN ADR CANDIDATES
 
-ADR_REQUIRED:
-1. PHYSICAL_DRIVE_IDENTITY_AND_MOUNT_POLICY
-2. DRIVE_SET_SEMANTICS_VS_EXISTING_COLLECTIONS
-3. DURABLE_LIVE_COMPARISON_SEMANTICS
+| Candidate | Owner direction | Current status |
+|---|---|---|
+| ADR-036 Physical Drive Identity and Mount Policy | Multi-evidence, fail-closed identity; Auto Capture OFF by default | Proposed; technical proof pending; BRAIN review pending |
+| ADR-037 Drive Sets vs Snapshot Collections | Separate physical-drive grouping; proposed many-to-many membership | Proposed; technical proof pending; BRAIN review pending |
+| ADR-038 Durable Live Comparison | Explicit Save Comparison with separate durable captured backing evidence | Proposed; technical proof pending; BRAIN review pending |
+
+These candidates do not authorize product, schema, migration, watcher, or
+automatic-capture implementation.
 
 ## 19. BACKEND / UX DEPENDENCY MAP
 
@@ -524,19 +570,16 @@ OWNER UX DIRECTION
 │  └─ Compare / Metadata Match
 │
 └─ TRACK B: BACKEND
-   ├─ P15 runtime sequence
-   │  ├─ Slice 01 schema v9/provider provenance
-   │  ├─ Slice 02 Data-only bounded source authority
-   │  ├─ Slice 03 helper host seam
-   │  ├─ Slice 04 runtime orchestration
-   │  ├─ Slice 05 explicit selected-entry UI only
-   │  ├─ Slice 06 regression matrix
-   │  ├─ Slice 07 external classifier verification
-   │  ├─ real helper integration + audit
-   │  └─ Slice 08 whole-runtime verification
+   ├─ P15 runtime sequence — BRAIN-accepted and technically closed
+   │  └─ Explicit selected-entry classification remains metadata enrichment,
+   │     not capture or comparison truth
+   ├─ Wave A proposed ADRs — no implementation authorized by this spec
+   │  ├─ ADR-036 identity/mount policy → observation-only mount status/history
+   │  ├─ ADR-037 Drive Sets → stable PhysicalDrive IDs, separate from Collections
+   │  └─ ADR-038 Save Comparison → separate durable evidence and offline reopen
    │
-   ├─ ADR: physical drive identity + mount policy
-   │  └─ mounted-source observer / Connected Now / Auto Capture / This Drive search
+   ├─ ADR-036 proof gate: physical-drive identity + observation-only mount policy
+   │  └─ Connected Now / per-drive history / eligible opt-in Auto Capture / This Drive search
    │
    ├─ compare navigation backend
    │  └─ hierarchy + ancestor-chain + Reveal exact result
@@ -570,6 +613,10 @@ Already strong foundations:
 
 ## 21. NON-GOALS FOR FIRST DEMO
 
+These are first-demo deferrals, not removals from FSD2 Full or the historical
+PRD/MVP requirement set. Scope dispositions remain explicit in
+[MVP_PLAN.md](MVP_PLAN.md).
+
 Do not delay first coherent demo for:
 HTML report
 embedded ext reader
@@ -583,5 +630,6 @@ bulk classification
 NAS/network
 decorative analytics.
 
-THIS_DOCUMENT_RECORDS_THE_OWNER_APPROVED_TASK047_MAIN_HOME_IMPLEMENTATION_ONLY.
-IT_DOES_NOT_AUTHORIZE_STAGE1_STAGE2_OR_OTHER_FUTURE_IMPLEMENTATION.
+THIS_DOCUMENT_RECORDS_OWNER_PRODUCT_DIRECTION_AND_ACCEPTED_TASK047_052_SLICES.
+FSD2_FULL_TARGET=SECTIONS_6_TO_14;WAVE_A_ADRS=PROPOSED_ONLY.
+IT_DOES_NOT_AUTHORIZE_PRODUCT_IMPLEMENTATION_OR_CHANGE_ACCEPTED_ADR_SEMANTICS.

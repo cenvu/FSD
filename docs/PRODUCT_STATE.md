@@ -8,18 +8,39 @@ Neither this baseline nor historical product evidence authorizes product work.
 
 ## Owner UX alignment — implementation support/gaps
 
-**Supported foundations:** Read-only metadata capture; immutable snapshots; interrupted capture; SQLite history/browse; lazy trees; selected-entry detail; snapshot/snapshot comparison persistence; bounded comparison paging; classification append-only storage.
+**Accepted implementation:** Tasks047–052 provide Main/Home, offline Explore,
+the Snapshot Collections organizer, and snapshot label/note editing. Phase 1.5
+runtime also has final BRAIN technical acceptance. These are bounded accepted
+slices; they do not mean FSD2 Full or full internal application acceptance is
+complete. See [STATE/PROJECT_STATE.md](../STATE/PROJECT_STATE.md) and
+[UX_UI_SPEC.md](UX_UI_SPEC.md).
 
-**Partial foundations:** Offline state requires visual redesign; capture lacks connected-drive UX; identity lacks strong/ambiguous service; missing dashboard facade for recent data; search lacks scope abstraction; explicit selected-entry classification runtime is implemented (final acceptance pending); compare navigation lacks ancestor projection.
+**Supported foundations:** Read-only metadata capture; immutable snapshots and
+interrupted-capture recovery; SQLite history and offline browse; lazy trees;
+selected-entry detail and explicit classification; snapshot/snapshot
+comparison persistence; bounded comparison paging; append-only classification
+storage; Collection create/list/move; snapshot display-name and note editing.
 
-**Exact gaps:** Mount detection; optional Auto Capture; strong volume identity service; paged per-drive history; bounded dashboard aggregates; This Drive/Library search; classification search; compare hierarchy projection; exact reveal chain; Drive Set implementation; durable live-comparison retention; multi-Library/cloud; rendered-window/VoiceOver acceptance.
+**Partial foundations:** capture has no connected-drive UX; physical-drive
+identity lacks a validated strong/ambiguous resolver; current Collection
+controls do not cover the full capture-organization/default flow; the dashboard
+has no bounded aggregate facade; search lacks drive/library scope; comparison
+navigation lacks ancestor projection; live-comparison retention remains
+transient unless a future explicit save is implemented.
 
-**ADR needed:**
-1. PHYSICAL_DRIVE_IDENTITY_AND_MOUNT_POLICY
-2. DRIVE_SET_SEMANTICS_VS_EXISTING_COLLECTIONS
-3. DURABLE_LIVE_COMPARISON_SEMANTICS
+**Exact gaps:** observation-only mount detection; opt-in Auto Capture (default
+OFF); multi-evidence PhysicalDrive identity and manual association; paged
+per-drive history; Drive Sets; bounded dashboard aggregates; This Drive/Library
+search; classification search; compare hierarchy/ancestor reveal; explicit
+Save Comparison with separate durable captured evidence; full capture
+organization/default controls; and consolidated rendered-window, accessibility,
+and manual internal acceptance.
 
-See canonical target details in [UX_UI_SPEC.md](UX_UI_SPEC.md).
+The Owner approved Wave A architecture direction on 2026-10-18. ADR-036–038 are
+proposed, not BRAIN-accepted; the identity evidence threshold, Drive Set schema,
+and durable comparison backing/migration mechanics remain
+`TECHNICAL_PROOF_PENDING`. See [DECISIONS.md](DECISIONS.md) and
+[UX_UI_SPEC.md](UX_UI_SPEC.md). This status record authorizes no implementation.
 
 ## Implemented capabilities
 
@@ -52,6 +73,10 @@ See canonical target details in [UX_UI_SPEC.md](UX_UI_SPEC.md).
   separate. v8's dedicated `comparison_results(parent_result_id)` index bounds
   final-scale disposal. Collision groups have a 100,000-member cap and fail typed
   beyond it (`ComparisonError.collisionGroupTooLarge`).
+- Accepted Task051/052 Collection organizer surface: create/list Collections,
+  move user snapshots by stable SnapshotID, preserve `Unsorted` as `NULL`, and
+  edit snapshot display name and user note. Full capture-organization and
+  remembered-default behavior remains incomplete.
 - Optional explicit selected-entry classification runtime: FSD-owned Data-only
   request and one no-follow 0...4096-byte current-source prefix read; app-scoped
   single-flight runtime, five-second inference-only deadline, cancellation/generation
@@ -66,16 +91,33 @@ See canonical target details in [UX_UI_SPEC.md](UX_UI_SPEC.md).
 
 ## Not implemented
 
-- Collection UI, capture-organization sheet and Collection-facing repository/
-  rename/move/note controls; schema/data foundations exist. Full intended semantics
-  remain in [SNAPSHOT_COLLECTIONS.md](SNAPSHOT_COLLECTIONS.md).
-- HTML export, automatic mount detection/capture, login-item support, full volume
-  identity service, EmbeddedRawProvider/reader-helper production integration and
-  physical raw-device access. These remain scoped roadmap requirements, not claims.
+- Full capture-organization sheet and remembered-default controls; the current
+  Collection organizer supports create/list/move and snapshot label/note editing.
+  Full intended semantics remain in [SNAPSHOT_COLLECTIONS.md](SNAPSHOT_COLLECTIONS.md).
+- Observation-only mount detection, validated physical-drive identity,
+  Auto Capture (which must default OFF), Drive Sets, per-drive history, and
+  explicit Save Comparison with separate durable live-side evidence.
+- HTML export, catalog backup/restore, login-item support,
+  EmbeddedRawProvider/reader-helper production integration, physical raw-device
+  access, stock-macOS NTFS support proof, and multi-Library/cloud behavior.
+  These remain visible PRD/MVP scope items or pending decisions; this status
+  update does not remove or mark them complete.
 
 ## Phase 1.5 runtime verification status
 
-filetype v1.1.3 is the BRAIN-accepted production provider; ADR-035 integration is implemented by task033A (`556872844b90640cc2a64e40d99594a78cef61af`) and independently audited by task034 (accepted `PASS_WITH_ADVISORY` at publication `9d1a8ea237c6c2941895b1c3640118371d2e2d4d`). Task035 verifies the physical runtime and synchronizes status; final independent implementation audit and Phase 1.5 BRAIN acceptance remain pending. Task035 current verification: clean Debug/Release arm64 builds passed; full Debug 494 executed / 491 passed / 0 failed / 3 existing external-probe skips; focused classification/isolation/schema 242 executed / 242 passed / 0 failed / 0 skipped; supplemental schema-safety 18 executed / 18 passed / 0 failed / 0 skipped. Exact commands, durations and per-suite counts: [FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md](../handoffs/FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md).
+**Current status (2026-10-18): Phase 1.5 runtime has final BRAIN technical
+acceptance.** The accepted State records 29 of 30 requirements evidenced, one
+not applicable, and zero unproven; clean arm64 Debug/Release builds, the
+historical full Debug run (494 executed / 491 passed / 0 failed / 3 existing
+external-probe skips), and the final focused audit (260/260) are part of that
+accepted evidence. Task036's immutable review handoff is
+[`FSD_P15_RUNTIME_FINAL_AUDIT_R_20261007-094654.md`](../handoffs/FSD_P15_RUNTIME_FINAL_AUDIT_R_20261007-094654.md);
+the BRAIN acceptance and control-plane repair are recorded in
+[STATE/PROJECT_STATE.md](../STATE/PROJECT_STATE.md). This technical acceptance
+does not claim manual VoiceOver, physical-media, or full FSD2 Full internal
+application acceptance.
+
+filetype v1.1.3 is the BRAIN-accepted production provider; ADR-035 integration is implemented by task033A (`556872844b90640cc2a64e40d99594a78cef61af`) and independently audited by task034 (accepted `PASS_WITH_ADVISORY` at publication `9d1a8ea237c6c2941895b1c3640118371d2e2d4d`). Task035 verified the physical runtime and synchronized status. Its focused and supplemental suite counts remain historical evidence, not claims that this document change reran them. Exact task035 details are in [FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md](../handoffs/FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md).
 
 Helper `FSD/Helpers/FSDClassificationHostSeam`, accepted SHA256 `665a6569ee60614313e50629c4166358b89859f15dac4c522905ee5a730752e7`; exact detector `github.com/h2non/filetype@v1.1.3`; host-owned provider `fsd.bundled-helper-host.v1`; classified model version/confidence nil. Fresh Debug/Release unsigned bundles contain byte-identical arm64/minos 13.0 helper at `Contents/Helpers/FSDClassificationHostSeam` and exact `Contents/Resources/THIRD_PARTY_NOTICES.txt`, with no Go construction/download/network in normal builds and no bundled Go cache/module/model/database. Scratch-copy ad-hoc deep/strict signing passed; no distribution readiness follows.
 
@@ -87,7 +129,7 @@ The demonstrated short legacy-CFB ambiguity is neutralized by the guard.
 
 Magika remains a blocked, non-exclusive candidate; its task025 evidence is preserved.
 
-Residual limits: synthetic CFB discriminants prove adapter routing, not realistic legacy-file coverage; network/process observations cover six current real-helper runs only, corroborated by accepted historical static closure. Task033A/task034 controlled rebuild and notice/dependency closure are accepted historical evidence, not task035 reruns. Task034 Reviewer-only Go introspection telemetry counter is a process advisory, not a product defect; task035 invokes no Go and changes no Owner-global Go configuration/telemetry mode. Source authority is a point-in-time dev+ino proof, not a namespace lock. The accepted schema/provider whitespace-normalization advisory remains historical and is not repaired here. Manual UI, VoiceOver and physical-media acceptance remain **NOT PERFORMED — DEFERRED BY OWNER**. Independent final runtime audit and BRAIN Phase 1.5 acceptance are still required.
+Residual limits: synthetic CFB discriminants prove adapter routing, not realistic legacy-file coverage; network/process observations cover six current real-helper runs only, corroborated by accepted historical static closure. Task033A/task034 controlled rebuild and notice/dependency closure are accepted historical evidence, not task035 reruns. Task034 Reviewer-only Go introspection telemetry counter is a process advisory, not a product defect; task035 invokes no Go and changes no Owner-global Go configuration/telemetry mode. Source authority is a point-in-time dev+ino proof, not a namespace lock. The accepted schema/provider whitespace-normalization advisory remains historical and is not repaired here. Manual UI, VoiceOver and physical-media acceptance remain **NOT PERFORMED — DEFERRED BY OWNER**. The final runtime audit and Phase 1.5 technical acceptance are complete; the manual and FSD2 Full internal-acceptance gates remain separate.
 
 ## Product limitations
 
@@ -108,9 +150,9 @@ This section is implementation baseline, not a parallel control issue ledger.
 | KI-012 | Remembered Collection defaults are volume-only. Folder/image/raw-partition sources fall through to active Collection then Unsorted; never invent path-based identity. [SNAPSHOT_COLLECTIONS.md](SNAPSHOT_COLLECTIONS.md) §9.3 owns this contract. |
 | KI-013 | Milestone-2 snapshots captured before 2026-08-04 may silently lack a sibling subtree due to the fixed skipDescendants/symlink defect. The snapshot cannot reveal this residue; recapture important old data before trusting removed-entry conclusions. The owner's flat 45-entry A006C84S capture has not been source-reverified. |
 | KI-016, KI-019, KI-023 | Aggregate-signature skipping and matched-subtree visual collapse are unimplemented. Per-entry matched evidence is correct. Public collision-member detail query is still absent. Over-cap equal-key groups fail typed and bounded; they cannot complete. |
-| KI-017 | Live-side comparisons are workspace-scoped: cancel/dispose comparison then delete transient snapshots on close. Only snapshot/snapshot records persist in recent comparisons. Keep-live promotion requires an explicit design. |
+| KI-017 | Current default: live-side comparisons are workspace-scoped and transient evidence is disposed on close; only snapshot/snapshot records persist. ADR-038 now records the Owner-approved explicit Save Comparison direction using separate durable captured evidence. Its backing, reference-remapping, schema, migration, recovery, and large-tree mechanics remain `TECHNICAL_PROOF_PENDING`; never update a completed transient `snapshot_kind` in place. |
 | KI-020 | Rendered-window appearance, VoiceOver and focus traversal await owner observation; no XCUITest target exists. Manual requirements/backlog are owned by [TEST_PLAN.md](TEST_PLAN.md) §8. |
-| KI-025 | Implementation gap CLOSED by task035 physical verification: runtime implemented, schema-v9 durable separate provider identity verified, and actual filetype helper integration independently audited/BRAIN-accepted. This disposition satisfies the three existing absence conditions without redefining them. Independent final runtime audit, Phase 1.5 BRAIN acceptance and deferred manual acceptance remain separate gates. Evidence: [FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md](../handoffs/FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md). |
+| KI-025 | Implementation gap CLOSED by Task035 physical verification and final Task036/BRAIN acceptance: runtime implemented; schema-v9 provider identity and filetype helper integration are independently audited and accepted. This disposition satisfies the three existing absence conditions without redefining them. Manual acceptance remains deferred and separate. Evidence: [FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md](../handoffs/FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md) and the Task036 handoff above. |
 
 The separately recorded legacy **startup-error wording** finding remains unresolved;
 it is distinct from fixed capture and comparison error mappers. The ignored
@@ -119,8 +161,11 @@ are preserved. Neither is repaired by documentation consolidation.
 
 Manual acceptance remains **NOT PERFORMED — DEFERRED BY OWNER**; overall MVP
 approval and notarized/distributable release readiness are **NOT CLAIMED**.
-Internal alpha remains local-only macOS 15+ Apple Silicon (ADR-006); local
-development needs no Apple Developer account, signing or notarization.
+FSD2 Full internal application acceptance remains a separate pending gate;
+Developer ID signing and notarization are not gates for that internal phase.
+Deferred public distribution readiness remains a later Owner decision. Internal
+alpha remains local-only macOS 15+ Apple Silicon (ADR-006); local development
+needs no Apple Developer account, signing or notarization.
 
 ## Baseline evidence retrieval
 

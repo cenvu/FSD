@@ -12,7 +12,8 @@ in immutable handoffs. [TEST_PLAN.md](TEST_PLAN.md) owns validation/manual backl
 
 - Track A OpenDesign may occur now as design work.
 - Backend implementation only after explicit product-resume authorization.
-- P15 sequence stays canonical.
+- P15 implementation is BRAIN-accepted and technically closed; its accepted
+  safety contracts remain canonical.
 - Identity/mount ADR gates mount-dependent features.
 - Compare hierarchy/ancestor work is independent of compare truth.
 - Dashboard/history/search service additions should be UI-neutral.
@@ -20,6 +21,21 @@ in immutable handoffs. [TEST_PLAN.md](TEST_PLAN.md) owns validation/manual backl
 - E2E/manual validation follows integrated demo path.
 - No roadmap item grants authorization.
 - Do not reorder or rewrite P15 slice contracts.
+
+Owner direction recorded 2026-10-18: FSD2 Full targets the concrete product
+contracts in [UX_UI_SPEC.md](UX_UI_SPEC.md) §§6–14, and internal application
+acceptance is the first acceptance gate. Wave A ADRs remain proposed until BRAIN
+reviews their final text and the identified technical proof. Developer ID
+signing and notarization are not current internal-acceptance gates. This
+direction does not authorize product implementation or remove prior PRD/MVP
+requirements.
+
+Status reconciliation (2026-10-18): milestone-level deferrals below preserve
+what was deferred at each planning stage. The current implementation baseline
+supersedes old “not implemented” claims for accepted Tasks047–052 and Phase 1.5.
+The Owner has since placed observation-only mount status, optional Auto Capture
+(default OFF), Drive Sets, and explicit Save Comparison in the FSD2 Full target;
+their implementation and technical proof are still pending.
 
 ## Milestone 1 — Application, catalog, and snapshot foundation
 
@@ -76,7 +92,7 @@ in immutable handoffs. [TEST_PLAN.md](TEST_PLAN.md) owns validation/manual backl
 - **Targeted automated validation:** the `TEST_PLAN.md` §4 benchmark classes (10k / 100k / 1M) run and recorded; migration preserves prior snapshots; HTML report opens with neither the app nor the source volume present; full read-only suite re-run.
 - **Manual test requirement:** **YES — Manual Session B**, the final consolidated MVP acceptance session (`TEST_PLAN.md` §8).
 - **Independent audit required:** **YES — mandatory pre-MVP audit.**
-- **Explicitly deferred:** automatic mount-triggered capture and login-item support, unless the project owner pulls them into MVP scope; notarization and any distribution channel (ADR-006).
+- **Planning-time deferral:** automatic mount-triggered capture and login-item support were deferred at the Milestone 5 plan date. The 2026-10-18 FSD2 Full direction now includes observation-only mount status and optional Auto Capture (default OFF); these remain unimplemented and require the proposed ADR proof. Login-item support remains deferred. Notarization and any distribution channel remain separate future distribution readiness (ADR-006), not internal-acceptance gates.
 
 ## Deferred beyond the MVP milestones
 
@@ -90,7 +106,15 @@ in immutable handoffs. [TEST_PLAN.md](TEST_PLAN.md) owns validation/manual backl
 Runtime follows the provenance/schema prerequisite and eight bounded slices in
 [P15_RUNTIME_PLAN.md](P15_RUNTIME_PLAN.md). Preparation and inference are separate;
 optional runtime inference does not block core MVP criteria. ADR-031/032 own the
-design; ADR-035 owns the accepted filetype v1.1.3 integration. The schema-v9 provenance prerequisite and independent task034 integration gate are satisfied; task035 Slice08 verification evidence and implementation status are recorded in [PRODUCT_STATE.md](PRODUCT_STATE.md) and [FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md](../handoffs/FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md). Independent final runtime audit and BRAIN acceptance remain pending. JSON export format version 1 excludes classification. Manual acceptance remains **NOT PERFORMED — DEFERRED BY OWNER**. No runtime or schema work is authorized by this roadmap.
+design; ADR-035 owns the accepted filetype v1.1.3 integration. The schema-v9
+provenance prerequisite and independent task034 integration gate are satisfied;
+task035 verification evidence is recorded in [PRODUCT_STATE.md](PRODUCT_STATE.md)
+and [FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md](../handoffs/FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md).
+Final Task036 runtime audit and Phase 1.5 technical acceptance are recorded in
+[STATE/PROJECT_STATE.md](../STATE/PROJECT_STATE.md); earlier text that says they
+remain pending is superseded. JSON export format version 1 excludes
+classification. Manual acceptance remains **NOT PERFORMED — DEFERRED BY OWNER**.
+No runtime or schema work is authorized by this roadmap.
 
 - **Requirements binding on this phase:**
   - fully offline execution, no network access;
@@ -104,6 +128,48 @@ design; ADR-035 owns the accepted filetype v1.1.3 integration. The schema-v9 pro
   - a classification failure never invalidates or changes the status of an otherwise-valid completed metadata snapshot.
 - **Append-only enforcement:** the preparation boundary uses the repository-level guarantee (no update/delete API, deterministic duplicate-run rejection) together with the existing unique key. Direct SQL remains outside the typed application API and is covered by the existing schema verification seam.
 - **Explicitly out of scope for runtime entry:** backfilling or reclassifying any snapshot captured before Phase 1.5 begins.
+
+## FSD2 Full closeout and measurable exit gates
+
+**Owner direction (2026-10-18):** FSD2 Full targets the concrete product
+contracts in [UX_UI_SPEC.md](UX_UI_SPEC.md) §§6–14. This section separates
+implementation completion, internal application acceptance, and future public
+distribution readiness. It is a roadmap gate definition, not implementation
+authorization. Current implementation and known gaps remain in
+[PRODUCT_STATE.md](PRODUCT_STATE.md); ADR-036–038 remain Proposed / Owner
+Direction Approved / Technical Proof Pending until BRAIN review.
+
+| Gate | Measurable completion criteria | Evidence and authority |
+|---|---|---|
+| **Feature Complete** | (1) A requirements ledger accounts for 100% of normative target items in UX §§6–14 and every still-applicable PRD/MVP requirement, with each item marked implemented, explicitly deferred/out of scope by Owner, or superseded by an identified accepted decision; zero unclassified items. (2) ADR-036, ADR-037, and ADR-038 have BRAIN-accepted final text and no unresolved `TECHNICAL_PROOF_PENDING` item that blocks implemented behavior. (3) Every required automated test in the accepted traceability ledger passes; zero unexpected failures/skips; schema migrations, integrity, foreign-key, immutability, recovery, and source-read-only checks pass; clean arm64 Debug and Release builds. (4) Identity tests cover `UniqueStrongMatch`, `Unknown`, `Ambiguous`, `Conflict`, and `ManualAssociation`, and the approved physical-device matrix has no false automatic association. (5) Drive Set create/rename/membership/delete tests prove many-to-many behavior and zero snapshot/Collection/evidence deletion on set deletion. (6) Save Comparison tests prove offline reopen, exact profile/result evidence, atomicity, idempotency, recovery, cleanup, cancellation/failure rollback, and bounded large-tree behavior; the existing transient default remains unchanged. | UX §§6–14; [PRD.md](PRD.md) §§5–7; accepted ADR-012/019/020/028 and proposed ADR-036–038; [TEST_PLAN.md](TEST_PLAN.md) §§1–7 and 9; schema verification and task-scoped build/test receipts. Wave A-specific rows are not yet in TEST_PLAN and must be added through an authorized documentation change before this gate can pass. |
+| **Internal Acceptance Complete** | Feature Complete is already satisfied; an integrated internal app build launches on the supported macOS 15+ Apple Silicon environment; an Owner-approved internal acceptance session records a result and evidence for every required end-to-end workflow (capture and source unchanged, reconnect/ambiguity behavior, Auto Capture default OFF and explicit opt-in, offline browse/search, Drive Sets vs Collections, snapshot/live comparisons, Save Comparison and offline reopen, recovery/failure states); zero unresolved hard-gate failures; Owner explicitly accepts the internal application. Existing deferred manual acceptance is not silently lifted by this roadmap text; its availability and exact session must be explicitly authorized and recorded. Developer ID signing and notarization are not gates here. | [PRD.md](PRD.md) §§5–7 and 9; UX §§6–14; [TEST_PLAN.md](TEST_PLAN.md) §§6–8 plus the authorized Wave A acceptance plan; Owner acceptance record and integrated-build receipt. |
+| **Deferred Public Distribution Readiness** | A separate future Owner decision authorizes public distribution; the release candidate then satisfies the accepted signing, notarization, Gatekeeper, packaging, license/notice, integrity, and release-publication gates for that distribution channel. This is not required for FSD2 Full Feature Complete or Internal Acceptance Complete. | ADR-006; [PRD.md](PRD.md) §4; the future Owner-approved release plan and release-specific validation evidence. |
+
+The target and test authorities do not yet contain a complete Wave A test
+matrix. The Feature Complete gate therefore requires both (a) final BRAIN
+acceptance of the ADRs and (b) an authorized traceability update that maps the
+negative cases and recovery requirements above to executable tests and the
+approved internal acceptance session. This documentation closeout does not
+claim those tests or acceptance have occurred.
+
+### Preserved scope decisions
+
+The following remain explicit pending scope decisions; this internal-first
+direction does not delete or mark them complete:
+
+- self-contained HTML export (PRD US-05; MVP Milestone 5);
+- catalog backup/restore and migration recovery policy (MVP Milestone 5; see
+  [ARCHITECTURE.md](ARCHITECTURE.md) §7);
+- the embedded ext2/3/4 reader, including its feasibility, security, and license
+  gates (PRD §4.1; the deferred MVP backlog);
+- stock-macOS NTFS support proof and provider behavior (PRD §4.1 and the
+  canonical filesystem support authorities);
+- multiple Libraries and cloud/cross-machine behavior (UX §§15–16; current MVP
+  non-goals and deferred backlog).
+
+Each item needs an explicit Owner/BRAIN scope disposition before a completion
+claim can treat it as included, deferred, or superseded. No such disposition is
+created by this document change.
 
 
 ## Deferred backlog

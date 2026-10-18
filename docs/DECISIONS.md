@@ -124,15 +124,27 @@ Snapshot Collections are a purely logical, user-defined grouping stored in `coll
 
 `source_collection_defaults` remembers one Collection per stable source identity, keyed by `(source_kind, volume_id)` for `source_kind = 'volume'` only, referencing the existing `volumes` table's own canonical identity (persistent UUID or fallback fingerprint) — never a display name or a current mount path. `folder`, `disk_image`, and `raw_partition` are reserved in the `source_kind` enumeration but blocked by a `CHECK` constraint in schema version 3, because no canonical, foreign-key-able identity table exists yet for any of them (a live folder's only durable identity would be a security-scoped bookmark plus a stable file identifier, which has no schema representation today). Inventing a text key from a path or a device node name for these would be exactly the fragile-key problem this feature must avoid. Extending remembered defaults to those source kinds is deferred until that identity table is built (`MVP_PLAN.md` deferred backlog), not worked around with a weaker key now. Full specification: `SNAPSHOT_COLLECTIONS.md` §9.3.
 
-## ADR-021 — Magika content classification deferred to Phase 1.5; architecture seam prepared now, runtime not built
+## ADR-021 — Content classification outside MVP; Phase 1.5 enrichment boundary
 
 **Status:** Accepted
 
 **Supersession note:** this ADR retains its original pre-implementation context.
+Its original title said “runtime not built,” which described its 2026-08-05
+status and is no longer current.
 ADR-031 and the accepted 2026-08-07 nullable-boundary audit record the now
 implemented and audited preparation seam; ADR-032 records the completed
-runtime design. Current schema is v8; runtime implementation remains not
-started/inactive and requires a separately authorized schema change.
+runtime design. The following sentence was true at this ADR's original date:
+schema v8 was current, runtime implementation was not started, and a separate
+schema authorization was required. It is historical, not current status.
+
+**Current implementation/status amendment (Task036, 2026-10-07; recorded
+2026-10-18):** schema v9 and the bounded Data-only runtime were separately
+implemented; the final runtime audit and Phase 1.5 technical acceptance were
+BRAIN-accepted with advisory. See [STATE/PROJECT_STATE.md](../STATE/PROJECT_STATE.md)
+and the Task036 handoff. This closes the Phase 1.5 implementation status without
+changing this ADR's accepted MVP boundary: classification remains optional
+derived enrichment and never affects snapshot or comparison truth. Overall MVP
+and manual acceptance remain separate and unclaimed.
 
 Magika-based file content classification is explicitly excluded from the MVP runtime and deferred to Phase 1.5 (`MVP_PLAN.md`), which may start only after the MVP core passes its acceptance gates (snapshot capture, offline browsing, snapshot history, metadata diff, interruption safety, performance tests). This ADR prepares the seam for that future phase without building it now:
 
@@ -144,7 +156,12 @@ Magika-based file content classification is explicitly excluded from the MVP run
 - no sampled bytes and no full-file payload hashes are ever persisted, in the MVP or in the eventual Phase 1.5 implementation — only bounded byte-range reads are permitted once built;
 - Magika itself is not installed, not added as a dependency, and not executed anywhere in this repository as of this ADR.
 
-This ADR records schema and architecture preparation only. It does not authorize starting Phase 1.5 implementation; that requires the MVP core acceptance gates above to pass first, per `MVP_PLAN.md`.
+This ADR records schema and architecture preparation only. It does not
+authorize starting Phase 1.5 implementation; that requires the MVP core
+acceptance gates above to pass first, per `MVP_PLAN.md`. The later separately
+authorized implementation and current acceptance status are recorded in the
+dated status amendment above; neither changes this ADR's boundary or authorizes
+future work.
 
 ## ADR-022 — Gate resolution, milestone restructuring, and risk-based review policy
 
@@ -432,7 +449,7 @@ APPROVE WITH CONDITIONS**, per
 This supersedes the original audit-next gate. Its deferred manual acceptance,
 then-inactive runtime and separately tracked limitations are historical preparation state.
 
-**Implementation/status amendment (task035):** schema v9 now durably separates nullable `provider_identifier` from detector/model versions; legacy v8 rows retain NULL without backfill. Append-only, unique-run, immutability, comparison and export semantics above remain binding. filetype v1.1.3 is the BRAIN-accepted production provider; ADR-035 integration is implemented by task033A (`556872844b90640cc2a64e40d99594a78cef61af`) and independently audited by task034 (accepted `PASS_WITH_ADVISORY` at publication `9d1a8ea237c6c2941895b1c3640118371d2e2d4d`). Task035 verifies the physical runtime and synchronizes status; final independent implementation audit and Phase 1.5 BRAIN acceptance remain pending. Task035 current verification: clean Debug/Release arm64 builds passed; full Debug 494 executed / 491 passed / 0 failed / 3 existing external-probe skips; focused classification/isolation/schema 242 executed / 242 passed / 0 failed / 0 skipped; supplemental schema-safety 18 executed / 18 passed / 0 failed / 0 skipped. Exact commands, durations and per-suite counts: [FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md](../handoffs/FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md).
+**Implementation/status amendment (task035):** schema v9 now durably separates nullable `provider_identifier` from detector/model versions; legacy v8 rows retain NULL without backfill. Append-only, unique-run, immutability, comparison and export semantics above remain binding. filetype v1.1.3 is the BRAIN-accepted production provider; ADR-035 integration is implemented by task033A (`556872844b90640cc2a64e40d99594a78cef61af`) and independently audited by task034 (accepted `PASS_WITH_ADVISORY` at publication `9d1a8ea237c6c2941895b1c3640118371d2e2d4d`). Task035 verified the physical runtime and synchronized status. At the Task035 snapshot, the final independent implementation audit and Phase 1.5 BRAIN acceptance were still pending; Task036 subsequently completed that audit and BRAIN accepted Phase 1.5 with advisory, as recorded in [STATE/PROJECT_STATE.md](../STATE/PROJECT_STATE.md) and the Task036 handoff. This dated status correction does not change ADR-031's accepted semantics. Task035's historical verification was: clean Debug/Release arm64 builds; full Debug 494 executed / 491 passed / 0 failed / 3 existing external-probe skips; focused classification/isolation/schema 242/242; supplemental schema-safety 18/18. Exact commands, durations and per-suite counts: [FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md](../handoffs/FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md).
 
 ## ADR-032 — Magika Runtime Adapter Design
 
@@ -442,7 +459,7 @@ then-inactive runtime and separately tracked limitations are historical preparat
 `handoffs/FSD_P15_MAGIKA_RUNTIME_DESIGN_A_20260807-155630.md`.
 At that design milestone, runtime implementation was **NOT STARTED / INACTIVE** and schema was **v8**; the schema change required below needed separate authorization. No migration or runtime was implemented by this ADR.
 
-**Implementation/status amendment (task035):** the separately authorized schema-v9 prerequisite and Data-only runtime are implemented. filetype v1.1.3 is the BRAIN-accepted production provider; ADR-035 integration is implemented by task033A (`556872844b90640cc2a64e40d99594a78cef61af`) and independently audited by task034 (accepted `PASS_WITH_ADVISORY` at publication `9d1a8ea237c6c2941895b1c3640118371d2e2d4d`). Task035 verifies the physical runtime and synchronizes status; final independent implementation audit and Phase 1.5 BRAIN acceptance remain pending. Task035 current verification: clean Debug/Release arm64 builds passed; full Debug 494 executed / 491 passed / 0 failed / 3 existing external-probe skips; focused classification/isolation/schema 242 executed / 242 passed / 0 failed / 0 skipped; supplemental schema-safety 18 executed / 18 passed / 0 failed / 0 skipped. Exact commands, durations and per-suite counts: [FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md](../handoffs/FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md). Seven typed outcomes retain the 4-row/3-no-row split; `busy` is control-only. The explicit selected-entry action alone reads one 0...4096-byte current-source prefix; normal workflows stay metadata-only. JSON format version 1 still excludes classification; inference means no historical content verification. Manual acceptance remains **NOT PERFORMED — DEFERRED BY OWNER**.
+**Implementation/status amendment (task035):** the separately authorized schema-v9 prerequisite and Data-only runtime are implemented. filetype v1.1.3 is the BRAIN-accepted production provider; ADR-035 integration is implemented by task033A (`556872844b90640cc2a64e40d99594a78cef61af`) and independently audited by task034 (accepted `PASS_WITH_ADVISORY` at publication `9d1a8ea237c6c2941895b1c3640118371d2e2d4d`). Task035 verified the physical runtime and synchronized status. At the Task035 snapshot, the final independent implementation audit and Phase 1.5 BRAIN acceptance were still pending; Task036 subsequently completed that audit and BRAIN accepted Phase 1.5 with advisory, as recorded in [STATE/PROJECT_STATE.md](../STATE/PROJECT_STATE.md) and the Task036 handoff. This dated status correction does not change ADR-032's accepted design semantics. Task035's historical verification was: clean Debug/Release arm64 builds; full Debug 494 executed / 491 passed / 0 failed / 3 existing external-probe skips; focused classification/isolation/schema 242/242; supplemental schema-safety 18/18. Exact commands, durations and per-suite counts: [FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md](../handoffs/FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md). Seven typed outcomes retain the 4-row/3-no-row split; `busy` is control-only. The explicit selected-entry action alone reads one 0...4096-byte current-source prefix; normal workflows stay metadata-only. JSON format version 1 still excludes classification; inference means no historical content verification. Manual acceptance remains **NOT PERFORMED — DEFERRED BY OWNER**.
 
 The Magika file-type enrichment adapter packaging was evaluated across four shapes.
 
@@ -594,10 +611,339 @@ The following target-only status records the contract-time decision (2026-10-06)
 
 `IMPLEMENTATION=NOT_IMPLEMENTED` and `AUDIT=NOT_AUDITED`: no helper source, binary, rename, Xcode phase, test or notice file exists, and this ADR claims none. ADR-033 decision 8 (rename only after a provider is selected) is satisfied for the rename in task033 only. Magika remains preserved historical candidate evidence (`BLOCKED_NON_EXCLUSIVE_CANDIDATE`). `FILETYPE_SELECTED_FOR_PRODUCTION=NO` stands until BRAIN accepts a passing independent audit.
 
-The contract-time `NOT_IMPLEMENTED` / `NOT_AUDITED` gates and target-only selection in the decision above describe task032, before the separately authorized integration and audit. **Current implementation/status amendment (task035):** `IMPLEMENTATION=IMPLEMENTED`; `AUDIT=INDEPENDENTLY_AUDITED`; `PRODUCTION_PROVIDER_ACCEPTED=YES`. filetype v1.1.3 is the BRAIN-accepted production provider; ADR-035 integration is implemented by task033A (`556872844b90640cc2a64e40d99594a78cef61af`) and independently audited by task034 (accepted `PASS_WITH_ADVISORY` at publication `9d1a8ea237c6c2941895b1c3640118371d2e2d4d`). Task035 verifies the physical runtime and synchronizes status; final independent implementation audit and Phase 1.5 BRAIN acceptance remain pending. Helper SHA256 `665a6569ee60614313e50629c4166358b89859f15dac4c522905ee5a730752e7`, detector `github.com/h2non/filetype@v1.1.3`, provider `fsd.bundled-helper-host.v1`, unsigned bundle `Contents/Helpers/FSDClassificationHostSeam`, arm64/minos 13.0; notices at `Contents/Resources/THIRD_PARTY_NOTICES.txt`. Normal builds need no Go construction/download/network. Accepted engineering notice/reproducibility closure comes from task033A/task034 and is not claimed as re-executed by task035.
+The contract-time `NOT_IMPLEMENTED` / `NOT_AUDITED` gates and target-only selection in the decision above describe task032, before the separately authorized integration and audit. **Current implementation/status amendment (task035):** `IMPLEMENTATION=IMPLEMENTED`; `AUDIT=INDEPENDENTLY_AUDITED`; `PRODUCTION_PROVIDER_ACCEPTED=YES`. filetype v1.1.3 is the BRAIN-accepted production provider; ADR-035 integration is implemented by task033A (`556872844b90640cc2a64e40d99594a78cef61af`) and independently audited by task034 (accepted `PASS_WITH_ADVISORY` at publication `9d1a8ea237c6c2941895b1c3640118371d2e2d4d`). Task035 verified the physical runtime and synchronized status. At the Task035 snapshot, the final independent implementation audit and Phase 1.5 BRAIN acceptance were still pending; Task036 subsequently completed that audit and BRAIN accepted Phase 1.5 with advisory, as recorded in [STATE/PROJECT_STATE.md](../STATE/PROJECT_STATE.md) and the Task036 handoff. This dated status correction does not change ADR-035's accepted decision semantics. Helper SHA256 `665a6569ee60614313e50629c4166358b89859f15dac4c522905ee5a730752e7`, detector `github.com/h2non/filetype@v1.1.3`, provider `fsd.bundled-helper-host.v1`, unsigned bundle `Contents/Helpers/FSDClassificationHostSeam`, arm64/minos 13.0; notices at `Contents/Resources/THIRD_PARTY_NOTICES.txt`. Normal builds need no Go construction/download/network. Accepted engineering notice/reproducibility closure comes from task033A/task034 and is not claimed as re-executed by task035.
 
 General realistic legacy DOC/XLS/PPT determinism remains unproven.
 Available pinned realistic PNG/DOCX/XLSX/PPTX bounded fixtures were single-valued in accepted implementation/audit evidence.
 The demonstrated short legacy-CFB ambiguity is neutralized by the guard.
 
-The guard remains only `len(input) <= 513 && prefix D0 CF 11 E0 -> noMatch before Match`; synthetic discriminants are not realistic legacy fixtures. Manual acceptance remains **NOT PERFORMED — DEFERRED BY OWNER**; local ad-hoc checks establish no Developer ID, notarization or App Store readiness. Magika remains historical blocked-candidate evidence. The final independent runtime audit remains required.
+The guard remains only `len(input) <= 513 && prefix D0 CF 11 E0 -> noMatch before Match`; synthetic discriminants are not realistic legacy fixtures. Manual acceptance remains **NOT PERFORMED — DEFERRED BY OWNER**; local ad-hoc checks establish no Developer ID, notarization or App Store readiness. Magika remains historical blocked-candidate evidence. The final independent runtime audit was still required at the task032 contract-time snapshot; Task036 later completed and BRAIN-accepted it as recorded above. This does not change the remaining legacy-file determinism and manual-acceptance limits.
+
+## ADR-036 — Physical Drive Identity and Mount Policy (Wave A candidate)
+
+**Status:** Proposed — Owner direction approved 2026-10-18; technical proof
+pending; not BRAIN-accepted.
+
+**Scope:** Target contract for local physical-drive identity, mounted
+volume/partition observation, reconnect behavior, and automatic-capture
+eligibility. This proposal authorizes no watcher, capture, source, schema, or
+migration implementation.
+
+### Context
+
+FSD's current catalog records volume and capture-time facts, but it does not
+provide a validated service that reconnects a mount to one physical drive.
+Display labels and mount locations are presentation/session facts. A physical
+device can expose several partitions or volumes, and a volume may reappear with
+a different mount path or BSD node. UUID-like values can be absent, duplicated,
+or unverified for the device class. Incorrectly joining histories is more
+harmful than leaving a source unresolved.
+
+Apple documents Disk Arbitration callbacks and description keys for device,
+media, and volume properties, including media and volume UUID fields. Apple
+documents `kIOMediaUUIDKey` as a persistent UUID when one is available. These
+references establish that the APIs expose observation callbacks and candidate
+facts; they do not establish uniqueness or cross-enclosure stability for every
+drive, bridge, reader, partition, filesystem, or cloned identifier. No hardware
+identity behavior was tested for this documentation task. The limits stated
+here are a documentation-scope inference, not an empirical hardware result.
+See [Disk Arbitration
+API](https://developer.apple.com/documentation/diskarbitration/diskarbitration-h),
+[Disk Arbitration constants](https://developer.apple.com/documentation/diskarbitration/diskarbitration-constants),
+and [`kIOMediaUUIDKey`](https://developer.apple.com/documentation/kernel/kiomediauuidkey).
+
+### Proposed concepts
+
+- **PhysicalDrive:** a stable, local catalog identity representing one physical
+  drive after the evidence policy or an explicit user association identifies
+  it. The local ID is a reference key, not a hardware fact or proof by itself.
+- **Volume/Partition:** a filesystem-bearing volume or partition observed on a
+  device. A PhysicalDrive may expose multiple Volumes/Partitions. Each can have
+  different filesystem and volume identifiers.
+- **MountSession:** one observed appearance/mount interval for a Volume. Its
+  local session identity and observed path, BSD name, timestamps, and available
+  description facts belong to that session. They are not stable PhysicalDrive
+  identity by themselves.
+- **Immutable captured source facts:** the values recorded for the specific
+  snapshot at capture time, including available source/volume/device/partition
+  identifiers and mount path. Later reconnects or manual associations never
+  rewrite these historical facts.
+
+### Proposed resolution and policy
+
+The resolver records each evidence value with its source, scope, quality,
+observation time, and validation status. Candidate evidence classes may include
+filesystem UUID, media/device identifiers, and device-topology facts, but no
+field is considered a strong identity key until the required device matrix
+validates its stability and collision behavior.
+
+Automatic reconnection requires independent corroborating evidence, exactly one
+candidate that meets the validated policy, and no conflicting high-quality
+evidence. The evidence count, independence rules, weights, thresholds, and
+supported-device matrix are `TECHNICAL_PROOF_PENDING`. The following may never
+establish a source identity alone: display name, current mount path, BSD node,
+or one unverified UUID. A unique previously unseen drive may receive a new
+PhysicalDrive ID only after the same validated evidence policy establishes it
+as distinct; otherwise it remains unassociated until user action.
+
+| Resolution | Proposed meaning | Reconnect, history, and capture behavior |
+|---|---|---|
+| `UniqueStrongMatch` | Exactly one existing PhysicalDrive satisfies the validated independent-evidence policy, with no conflict. | Reconnect the observed Volume/MountSession to that local ID. Auto Capture is eligible only if separately enabled and all capture policy checks pass. |
+| `Unknown` | Available evidence is absent or below threshold. | Keep the Volume/MountSession unassociated. Do not merge history or start Auto Capture. |
+| `Ambiguous` | Two or more PhysicalDrive candidates satisfy or plausibly satisfy the policy. | Preserve the candidate set for explicit user choice. Do not choose the first, closest, or most recently mounted candidate. Do not start Auto Capture. |
+| `Conflict` | Independent high-quality facts disagree, or an identifier collision prevents a unique result. | Fail closed, retain the conflicting facts, require review, and do not merge histories or start Auto Capture. |
+| `ManualAssociation` | The user explicitly associates an observed Volume/Partition with a selected local PhysicalDrive. | Store an auditable local association. Preserve capture-time facts and prior evidence; do not silently merge or rewrite snapshots. A later contradictory observation returns to `Conflict`. |
+
+Manual associations may support later reconnects, but they do not upgrade an
+unverified hardware fact into a strong identifier. Changing or removing an
+association changes only the current local relationship. Historical captures
+remain inspectable with the facts recorded when they were made.
+
+The mount observer is observation-only: it may observe appeared/disappeared or
+description-change events and read bounded device/volume description metadata.
+It must not call APIs that mount, unmount, rename, claim, or eject a disk; it
+must not read file payloads. Auto Capture is OFF by default. It may start work
+only after explicit opt-in and only for an eligible, uniquely resolved source;
+unknown, ambiguous, or conflict outcomes cannot trigger capture. A mount event
+does not itself authorize capture.
+
+### Alternatives considered
+
+1. **Match by name, mount path, or BSD node:** rejected because these can change
+   or be reused and describe a display/session or current device node rather
+   than a stable physical source.
+2. **Match by one UUID:** rejected as a universal rule because availability,
+   scope, duplication, cloning, and hardware exposure are not validated for
+   every supported device path.
+3. **Multi-evidence, unique-match, fail-closed resolution with explicit manual
+   association:** proposed. It can leave a drive unresolved when evidence is
+   insufficient, but avoids silently attaching the wrong history.
+
+### Risks and negative-test gates
+
+False matches can merge histories and cause an incorrect Auto Capture; false
+non-matches create extra unresolved records and require user work. USB bridges,
+card readers, multi-LUN devices, cloned filesystems, multiple partitions,
+identifier reuse, and changes in mount path or BSD node are specific risks.
+Before implementation can be accepted, tests must include:
+
+- same display name at different mount paths, same mount path reused, BSD-node
+  reuse, missing UUID, duplicated/cloned UUID, and conflicting evidence;
+- one drive with multiple partitions/volumes, multiple drives through the same
+  reader/enclosure class, disconnect/reconnect, and remount at a different path;
+- no automatic association or capture for `Unknown`, `Ambiguous`, or `Conflict`;
+- explicit manual association and correction without rewriting snapshot facts,
+  entry rows, or existing comparison evidence;
+- Auto Capture OFF on first run and after reset; no capture start from an event
+  unless the user opted in and the evidence policy returns an eligible result;
+- observer-level proof that no mount/unmount/eject API or file-payload read is
+  invoked; ordinary source-read-only and interruption tests remain applicable.
+
+Official API documentation is feasibility evidence only. A documented hardware
+identity threshold, supported-device matrix, remount behavior, and empirical
+negative-test results remain `TECHNICAL_PROOF_PENDING`; this ADR does not claim
+them verified. Traceability: [PRD.md](PRD.md) §§5.1, 6.1, 7; [UX_UI_SPEC.md](UX_UI_SPEC.md)
+§§8–9; [ARCHITECTURE.md](ARCHITECTURE.md) §§2 and 10; [TEST_PLAN.md](TEST_PLAN.md)
+§§1–3 and 8.
+
+## ADR-037 — Drive Sets vs Snapshot Collections (Wave A candidate)
+
+**Status:** Proposed — Owner direction approved 2026-10-18; technical proof
+pending; not BRAIN-accepted.
+
+**Scope:** A separate user-managed grouping of confirmed PhysicalDrive IDs.
+This proposal authorizes no product or schema implementation.
+
+### Context and proposed semantics
+
+The Owner approved a Drive Set as a physical-drive grouping, distinct from a
+Collection of logical snapshots. Preserve accepted [ADR-019](#adr-019--snapshot-collections-null-based-unsorted-unique-normalized-names-immutable-snapshot-boundary),
+[ADR-020](#adr-020--source-collection-defaults-are-volume-only-until-a-normalized-non-volume-source-identity-table-exists),
+and [SNAPSHOT_COLLECTIONS.md](SNAPSHOT_COLLECTIONS.md): Collections stay
+snapshot-level; a snapshot belongs to zero or one Collection; `Unsorted` stays
+`collection_id = NULL`; collection default rules stay volume-only until a
+separately accepted identity model exists. No Collection is renamed or converted
+into a Drive Set, and no existing membership is inferred.
+
+Proposed model: a Drive Set has its own stable local ID and user-facing name.
+Membership is a separate many-to-many relation between Drive Set IDs and
+confirmed local PhysicalDrive IDs. A PhysicalDrive may appear in zero or more
+Drive Sets, and a Drive Set may contain zero or more PhysicalDrives. The IDs
+refer to catalog entities; names, mount paths, BSD nodes, and current
+availability are not membership keys.
+
+Create, rename, membership changes, and deletion affect Drive Set metadata and
+membership only. Offline drives remain members and display as offline; their
+membership is not removed when the device disconnects. Unknown or ambiguous
+Volumes are not inferred into a Drive Set. The user must first make an explicit
+association with a PhysicalDrive, then choose membership. A conflict remains
+unresolved and cannot change set membership automatically.
+
+Deleting a Drive Set deletes the set and its membership rows only. It must not
+delete or mutate PhysicalDrives, Volumes/Partitions, MountSessions, snapshots,
+entries, Collections, terminal comparisons, or saved-comparison evidence.
+PhysicalDrive deletion and duplicate Drive Set name policy are outside this
+direction and must be resolved before an implementation needs them.
+
+### Alternatives considered
+
+1. **Rename Collections to Drive Sets or reuse `collections`:** rejected because
+   it changes the accepted snapshot grouping model and conflates logical
+   snapshots with physical devices.
+2. **One Collection or Drive Set per source with one-to-one membership:**
+   rejected as the Owner-approved direction permits organizing a physical drive
+   in multiple contexts and grouping multiple drives together.
+3. **Separate Drive Set entity with many-to-many membership over stable local
+   PhysicalDrive IDs:** proposed, conditional on ADR-036 identity resolution.
+
+### Risks and negative-test gates
+
+An incorrect PhysicalDrive association could make set membership appear to
+contain the wrong device; identity resolution must therefore fail closed before
+membership is offered. Before implementation can be accepted, tests must prove:
+
+- one PhysicalDrive can belong to multiple Drive Sets and one Drive Set can
+  contain multiple PhysicalDrives;
+- create, rename, add, remove, and set deletion preserve stable IDs and do not
+  change any snapshot Collection membership;
+- offline status does not delete membership; an unknown, ambiguous, or
+  conflicting Volume is never auto-added;
+- deleting a Drive Set leaves PhysicalDrive/Volume records, all snapshot and
+  entry facts, Collections, comparisons, and saved evidence byte-for-byte or
+  semantically unchanged;
+- no existing Collection membership is inferred from a matching name, mount
+  path, or source label.
+
+Technical proof remains pending for PhysicalDrive identity availability,
+stable local IDs, relation constraints, migration compatibility, and bounded
+listing behavior. These exact schema and migration mechanics are not decided
+here. Traceability: [PRD.md](PRD.md) §5.6; [UX_UI_SPEC.md](UX_UI_SPEC.md) §6;
+[SNAPSHOT_COLLECTIONS.md](SNAPSHOT_COLLECTIONS.md) §§2–4, 8–9; [TEST_PLAN.md](TEST_PLAN.md)
+§7. The current PRD §2 contains pre-decision wording that calls the Drive Set
+direction unresolved. The 2026-10-18 Owner decision resolves target direction
+only; it does not amend PRD requirements or accept an implementation schema.
+
+## ADR-038 — Durable Live Comparison via Explicit Save (Option B candidate)
+
+**Status:** Proposed — Owner direction approved 2026-10-18; technical proof
+pending; not BRAIN-accepted.
+
+**Scope:** Preserve the existing live-comparison default and define an explicit
+save boundary for durable reopening. This proposal authorizes no product,
+schema, migration, or comparison-engine implementation.
+
+### Context
+
+Snapshot-to-snapshot comparisons persist. Live-side comparisons currently use
+transient snapshots; closing the comparison workspace disposes the comparison
+and unreferenced transient snapshots under [ADR-012](#adr-012--transient-snapshot-comparison-and-lifecycle).
+Terminal comparison evidence is protected under
+[ADR-028](#adr-028--terminal-comparison-evidence-is-immutable-schema-version-7-and-the-complete-object-inventory).
+Schema v9's `trg_snapshots_capture_facts_immutable` includes `snapshot_kind`;
+an existing completed transient row cannot be changed in place into a user
+snapshot. ADR-012, ADR-028, schema v9, and all existing terminal evidence stay
+binding.
+
+### Proposed decision and separate backing-evidence strategy
+
+The Owner-approved direction is **Option B with an explicit user action**:
+unsaved live comparisons remain transient and keep their current disposal
+behavior; a user may choose **Save Comparison** after a comparison completes.
+Save is never automatic. It produces a separate durable saved-comparison
+artifact with durable metadata-only backing evidence for every live side and
+enough immutable comparison/profile/result evidence to reopen without the
+source volume or live folder.
+
+The save must preserve the exact captured input represented by the completed
+comparison. It must not silently rescan a changed live source. Conceptually,
+the save creates new durable backing objects from the completed transient
+evidence and points the saved artifact at those objects; it never changes the
+transient's `snapshot_kind`, capture facts, status, entries, or identifiers.
+Existing user-snapshot sides may be referenced by their stable snapshot IDs.
+Whether live evidence is copied into newly created user snapshots or stored in
+a separate durable evidence type, and how entries/results are cloned or
+remapped, are `TECHNICAL_PROOF_PENDING`.
+
+The saved artifact must have valid references to complete backing evidence and
+retain comparison orientation, profile identity/version, outcome counts, and
+the result detail needed for offline reopening. It must not depend on a
+workspace-only comparison row or a transient that normal cleanup can delete.
+The original terminal comparison evidence remains untouched. Save applies only
+to a completed comparison; cancelled, failed, or still-running work cannot be
+presented as a saved successful comparison.
+
+### Transaction, recovery, cleanup, idempotency, and bounds
+
+These are required behavioral properties, not a decision about table layout:
+
+- **Atomic save:** create the saved comparison, its separate live-side backing
+  evidence, and all required saved result/profile references as one logical
+  all-or-nothing operation. Validate roots/counts/references before making the
+  saved artifact visible. If staging is required, incomplete staging is never
+  surfaced as saved history.
+- **Reference integrity:** every saved side and result reference resolves to
+  durable evidence; foreign-key/integrity checks reject missing or mismatched
+  evidence. Deleting a user snapshot referenced by a saved comparison must
+  never silently corrupt it; restriction, separate retention, or an explicit
+  delete flow must be decided and proven before implementation.
+- **Failure and cancellation:** rollback or clean only newly created save state;
+  preserve the original completed comparison, terminal evidence, source
+  snapshots, and live workspace state. Show a bounded error and do not report
+  success or leave a partial saved record.
+- **Recovery:** after a crash, recovery either observes the whole committed
+  saved artifact or no visible save. Any staging cleanup must be idempotent,
+  scoped to uncommitted save work, and unable to delete shared or original
+  evidence.
+- **Idempotency:** retrying the same Save operation after an uncertain outcome
+  must return the same saved artifact or determine that no commit occurred;
+  repeated requests must not create duplicate backing evidence or result rows.
+- **Cleanup:** explicit deletion of a saved comparison may remove its saved
+  result graph and backing objects only when no other saved comparison
+  references them. It must not cascade into ordinary user snapshots,
+  Collections, or pre-existing terminal comparison evidence.
+- **Large trees:** copy/read evidence in bounded pages or streams; do not
+  materialize whole trees or all comparison rows in memory. Define a measured
+  size/transaction budget, progress and cancellation behavior, and a fail-closed
+  limit before implementation. Cancellation, limit, disk-full, or database
+  errors must not expose a partial save or change original evidence.
+
+### Alternatives considered
+
+1. **Persist only snapshot-to-snapshot comparisons:** safe under current
+   behavior, but does not meet the approved reopenable live-comparison target.
+2. **Explicit Save Comparison with separate durable captured evidence (Option
+   B):** proposed. It preserves transient behavior by default and records the
+   user's explicit choice while keeping existing completed transient rows
+   immutable.
+3. **Automatically retain every live comparison or use a new independent
+   comparison evidence lifecycle (Option C):** not selected. Automatic save
+   changes current user expectations and catalog growth; a wholly new lifecycle
+   increases schema, migration, recovery, and compatibility scope.
+
+### Risks and negative-test gates
+
+The save crosses snapshot identity, comparison-result immutability, large-tree
+boundedness, and crash-recovery boundaries. Before implementation can be
+accepted, tests must prove:
+
+- a completed transient's `snapshot_kind` update is rejected; Save creates
+  separate backing evidence and leaves the original transient and all
+  pre-existing terminal comparison evidence unchanged;
+- closing the workspace after Save still permits offline reopening with the
+  exact profile revision, orientation, counts, result detail, and backing
+  metadata, with source media absent;
+- failures at each save phase, cancellation, process termination, disk-full,
+  and retry leave either one complete saved artifact or none, never dangling
+  references, duplicate results, or modified source evidence;
+- saved-comparison deletion preserves ordinary user snapshots and any backing
+  evidence still referenced elsewhere;
+- generated large-tree cases demonstrate bounded memory, bounded page reads,
+  documented transaction/size limits, cancellation, deterministic replay, and
+  acceptable recovery time without whole-tree materialization.
+
+Specific copying/cloning, identifier/reference remapping, table ownership,
+schema objects, migration path from schema v9, and large-save transaction
+mechanics remain `TECHNICAL_PROOF_PENDING`. The cited runtime and hardware
+behavior has not been tested by this documentation task. Traceability:
+[PRD.md](PRD.md) §§5.4, 5.5, 7; [UX_UI_SPEC.md](UX_UI_SPEC.md) §§13–14;
+[ARCHITECTURE.md](ARCHITECTURE.md) §8; [TEST_PLAN.md](TEST_PLAN.md) §§1, 5, and 8.
