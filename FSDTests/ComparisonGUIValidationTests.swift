@@ -979,24 +979,71 @@ final class ComparisonGUIValidationTests: XCTestCase {
 
         browser.select(entryID: 9701)
         XCTAssertEqual(browser.selectedDetails?.name, "needle.txt")
+        XCTAssertNil(SnapshotInspectorSearchContext.message(
+            snapshotID: snapshotID,
+            selectedEntryID: browser.selectedEntryID,
+            searchResults: browser.searchResults,
+            searchFailureMessage: browser.searchFailureMessage,
+            isSearching: browser.isSearching
+        ), "an unsubmitted query has no active result relationship")
         browser.select(entryID: Int64.max)
         XCTAssertNil(browser.selectedDetails, "a failed lookup cannot leave the prior entry visible")
+        browser.select(entryID: 9701)
 
         browser.searchText = "missing-token"
         browser.runSearch()
+        XCTAssertEqual(SnapshotInspectorSearchContext.message(
+            snapshotID: snapshotID,
+            selectedEntryID: browser.selectedEntryID,
+            searchResults: browser.searchResults,
+            searchFailureMessage: browser.searchFailureMessage,
+            isSearching: browser.isSearching
+        ), "Search in progress; selected-item result membership is not known yet.")
         try await waitForSearchCompletion(browser)
         XCTAssertEqual(browser.searchResults?.snapshotID, snapshotID)
         XCTAssertTrue(browser.searchResults?.hits.isEmpty == true)
         XCTAssertNil(browser.searchFailureMessage, "zero matches are not a query failure")
+        XCTAssertEqual(SnapshotInspectorSearchContext.message(
+            snapshotID: snapshotID,
+            selectedEntryID: browser.selectedEntryID,
+            searchResults: browser.searchResults,
+            searchFailureMessage: browser.searchFailureMessage,
+            isSearching: browser.isSearching
+        ), "Selected item — not in current search results.")
+        XCTAssertEqual(browser.selectedDetails?.id, 9701, "zero matches retain the valid selection")
 
         browser.searchText = "needle"
         browser.runSearch()
         try await waitForSearchCompletion(browser)
         XCTAssertEqual(browser.searchResults?.hits.map(\.id), [9701])
+        XCTAssertNil(SnapshotInspectorSearchContext.message(
+            snapshotID: snapshotID,
+            selectedEntryID: browser.selectedEntryID,
+            searchResults: browser.searchResults,
+            searchFailureMessage: browser.searchFailureMessage,
+            isSearching: browser.isSearching
+        ), "a selected item in current results has no previous-selection message")
+        browser.select(entryID: Int64.max)
+        XCTAssertNil(browser.selectedDetails, "a missing selection never retains old metadata")
+        XCTAssertEqual(SnapshotInspectorSearchContext.message(
+            snapshotID: snapshotID,
+            selectedEntryID: browser.selectedEntryID,
+            searchResults: browser.searchResults,
+            searchFailureMessage: browser.searchFailureMessage,
+            isSearching: browser.isSearching
+        ), "Selected item — not in current search results.")
+        browser.select(entryID: 9701)
         browser.searchText = ""
         browser.clearSearchWhenQueryIsEmpty()
         XCTAssertNil(browser.searchResults, "clearing the query removes the displayed results")
         XCTAssertFalse(browser.isSearching)
+        XCTAssertNil(SnapshotInspectorSearchContext.message(
+            snapshotID: snapshotID,
+            selectedEntryID: browser.selectedEntryID,
+            searchResults: browser.searchResults,
+            searchFailureMessage: browser.searchFailureMessage,
+            isSearching: browser.isSearching
+        ), "clearing search restores normal inspector context")
 
         let secondID = try SyntheticSnapshot.createSnapshot(
             database: database, volumeID: 705, session: 1, name: "Explore Fixture"
@@ -1019,6 +1066,9 @@ final class ComparisonGUIValidationTests: XCTestCase {
         XCTAssertEqual(browser.searchResults?.snapshotID, snapshotID)
         browser.cancelClassificationForSnapshotClose()
         XCTAssertNil(browser.searchResults, "closing a snapshot invalidates its pending/displayed search state")
+        XCTAssertNil(browser.selectedEntryID, "closing a browser releases its snapshot selection")
+        XCTAssertNil(browser.selectedDetails, "closing a browser releases its stored entry metadata")
+        XCTAssertEqual(browser.searchText, "", "closing a browser releases its query")
 
         let secondBrowser = SnapshotBrowserModel(database: database, summary: secondSummary)
         XCTAssertNil(secondBrowser.searchResults)
@@ -1029,6 +1079,15 @@ final class ComparisonGUIValidationTests: XCTestCase {
         XCTAssertEqual(secondBrowser.searchResults?.snapshotID, secondID)
         XCTAssertTrue(secondBrowser.searchResults?.hits.isEmpty == true,
                       "a repeated label cannot carry the first snapshot's hits into the next snapshot")
+        secondBrowser.select(entryID: 9801)
+        XCTAssertEqual(secondBrowser.selectedDetails?.id, 9801)
+        XCTAssertEqual(SnapshotInspectorSearchContext.message(
+            snapshotID: secondID,
+            selectedEntryID: secondBrowser.selectedEntryID,
+            searchResults: secondBrowser.searchResults,
+            searchFailureMessage: secondBrowser.searchFailureMessage,
+            isSearching: secondBrowser.isSearching
+        ), "Selected item — not in current search results.")
 
         try database.execute("ALTER TABLE entries RENAME TO unavailable_entries")
         secondBrowser.searchText = "needle"
@@ -1036,6 +1095,15 @@ final class ComparisonGUIValidationTests: XCTestCase {
         try await waitForSearchCompletion(secondBrowser)
         XCTAssertNil(secondBrowser.searchResults, "a failed query must not keep an earlier result set visible")
         XCTAssertEqual(secondBrowser.searchFailureMessage, "Search failed. No results are being shown. Try again.")
+        XCTAssertEqual(SnapshotInspectorSearchContext.message(
+            snapshotID: secondID,
+            selectedEntryID: secondBrowser.selectedEntryID,
+            searchResults: secondBrowser.searchResults,
+            searchFailureMessage: secondBrowser.searchFailureMessage,
+            isSearching: secondBrowser.isSearching
+        ), "Search failed; the selected snapshot item remains available.")
+        XCTAssertEqual(secondBrowser.selectedDetails?.id, 9801,
+                       "a query failure stays distinct from the still-valid stored selection")
         XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM entry_classifications")?.int64Value, 0,
                        "opening, selecting and searching never starts classification")
     }
@@ -1057,15 +1125,40 @@ final class ComparisonGUIValidationTests: XCTestCase {
         XCTAssertTrue(source.contains("physical source connection and identity are unverified"))
         XCTAssertTrue(source.contains("Label(\"THIS SNAPSHOT\""))
         XCTAssertTrue(source.contains("Search scope: This Snapshot"))
-        XCTAssertTrue(source.contains("Search covers captured metadata in Snapshot"))
+        XCTAssertTrue(source.contains("Captured metadata in Snapshot"))
         XCTAssertTrue(source.contains("does not reveal the item in the tree"))
         XCTAssertTrue(source.contains("if results.isTruncated"))
         XCTAssertTrue(source.contains("showing the first \\(results.limit)"))
         XCTAssertTrue(source.contains("accessibilityHint(\"Updates stored metadata in the inspector."))
         XCTAssertTrue(source.contains("Button(\"Classify selected file\")"))
         XCTAssertTrue(source.contains("Hide metadata inspector"))
+        XCTAssertTrue(source.contains("scrollView.contentView.frame.width"), "tree layout follows the actual AppKit tree viewport")
+        XCTAssertTrue(source.contains("NSView.frameDidChangeNotification"), "tree columns update when the actual pane is resized")
+        XCTAssertTrue(source.contains("Picker(selection: $model.searchField)"), "picker uses a nonvisual label")
+        XCTAssertTrue(source.contains(".accessibilityLabel(\"Search field\")"), "picker keeps one descriptive accessible label")
+        XCTAssertTrue(source.contains(".labelsHidden()"), "redundant visible picker wording is removed")
+        XCTAssertFalse(source.contains("Picker(\"Search field\""), "the spoken label is not also rendered visibly")
         XCTAssertFalse(source.contains("SourceAvailabilityProbe().availability"))
         XCTAssertFalse(source.contains("mountPath"))
+    }
+
+    func testResponsiveExplorerTreeColumnLayoutKeepsNameAndKindReadable() {
+        let narrow = SnapshotTreeColumnLayout(for: 320)
+        XCTAssertEqual(narrow.nameWidth, 230)
+        XCTAssertEqual(narrow.kindWidth, 90)
+        XCTAssertNil(narrow.sizeWidth, "logical size is deferred when the actual tree pane is narrow")
+        XCTAssertLessThanOrEqual(narrow.nameWidth + narrow.kindWidth, 320)
+
+        let medium = SnapshotTreeColumnLayout(for: 579)
+        XCTAssertEqual(medium.nameWidth, 320)
+        XCTAssertEqual(medium.kindWidth, 90)
+        XCTAssertNil(medium.sizeWidth)
+
+        let wide = SnapshotTreeColumnLayout(for: 580)
+        XCTAssertEqual(wide.nameWidth, 320)
+        XCTAssertEqual(wide.kindWidth, 90)
+        XCTAssertEqual(wide.sizeWidth, 122)
+        XCTAssertLessThanOrEqual(wide.nameWidth + wide.kindWidth + (wide.sizeWidth ?? 0), 580 - 30)
     }
 
     private func waitForSearchCompletion(_ browser: SnapshotBrowserModel) async throws {

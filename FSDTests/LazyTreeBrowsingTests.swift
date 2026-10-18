@@ -541,7 +541,7 @@ final class LazyTreeBrowsingTests: XCTestCase {
         outline.scrollRowToVisible(nextRow)
 
         let repoRoot = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
-        let captureDirectory = repoRoot.appendingPathComponent(".ai-scratch/task045/real-gui", isDirectory: true)
+        let captureDirectory = repoRoot.appendingPathComponent(".ai-scratch/task050/real-gui", isDirectory: true)
         try FileManager.default.createDirectory(at: captureDirectory, withIntermediateDirectories: true)
         for width in [1120, 1330, 1440] {
             window.setContentSize(NSSize(width: width, height: 700))
@@ -574,7 +574,7 @@ final class LazyTreeBrowsingTests: XCTestCase {
         outline.scrollRowToVisible(errorRow)
         outline.layoutSubtreeIfNeeded()
         let errorCell = try XCTUnwrap(outline.view(atColumn: nameColumn, row: errorRow, makeIfNecessary: true) as? NSTableCellView)
-        XCTAssertTrue(errorCell.textField?.stringValue.contains("Couldn't load entries 501–501 of 501") == true)
+        XCTAssertTrue(errorCell.textField?.accessibilityLabel()?.contains("Couldn't load entries 501–501 of 501") == true)
         let retryButton = try XCTUnwrap(buttons(in: errorCell).first { $0.title == "Retry" })
         XCTAssertEqual(retryButton.accessibilityLabel(), "Retry loading entries 501–501 of 501 from the saved snapshot.")
         window.displayIfNeeded()
@@ -607,6 +607,101 @@ final class LazyTreeBrowsingTests: XCTestCase {
         try lastPagePNG.write(to: lastPageImageURL, options: .atomic)
         print("GUI_LAST_PAGE_CAPTURE path=\(lastPageImageURL.path)")
         print("GUI_KEYBOARD_ACCESSIBILITY=Space activated Next and Retry; AX labels verified; error recovered")
+    }
+
+    func testNarrowTreePaneKeepsNextAndRetryButtonsInsideVisibleNameColumn() throws {
+        let result = try SyntheticCatalog.populate(
+            database: database, directoryCount: 1, filesPerDirectory: 501, volumeID: 45_106
+        )
+        let tree = SnapshotTreeDataSource(database: database, snapshotID: result.snapshotID)
+        let root = try XCTUnwrap(try tree.root())
+        let folderID = try XCTUnwrap(try tree.children(ofParent: root.id).first?.id)
+        var shouldFailNextPage = true
+        let (coordinator, outline, rootItem) = try coordinatorFixture(
+            dataSource: tree,
+            root: root,
+            pageLoader: { parentID, offset, limit in
+                if parentID == folderID && offset == 500 && shouldFailNextPage {
+                    shouldFailNextPage = false
+                    throw CatalogDatabaseError.sqlite(1, "synthetic transient page error")
+                }
+                return try tree.children(ofParent: parentID, offset: offset, limit: limit)
+            }
+        )
+        let scrollView = try XCTUnwrap(coordinatorScrollView)
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 297, height: 360),
+            styleMask: [.titled, .closable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        defer { window.orderOut(nil) }
+        window.contentView = scrollView
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        scrollView.layoutSubtreeIfNeeded()
+        let layout = SnapshotTreeColumnLayout(for: scrollView.contentView.frame.width)
+        coordinator.updateTreeColumns(for: scrollView.contentView.frame.width)
+        XCTAssertNil(layout.sizeWidth)
+
+        let folder = try XCTUnwrap(appKitRows(of: rootItem, outline: outline)
+            .compactMap { $0 as? SnapshotTreeItem }.first)
+        outline.expandItem(folder)
+        let firstControl = try XCTUnwrap(appKitRows(of: folder, outline: outline)
+            .compactMap { $0 as? SnapshotTreePageControlItem }.first)
+
+        func assertButtonFits(_ title: String, in control: SnapshotTreePageControlItem,
+                              file: StaticString = #filePath, line: UInt = #line) throws {
+            let nameColumn = outline.column(withIdentifier: NSUserInterfaceItemIdentifier("name"))
+            let row = outline.row(forItem: control)
+            XCTAssertGreaterThanOrEqual(row, 0, "the paging control must have a visible row", file: file, line: line)
+            outline.scrollRowToVisible(row)
+            window.displayIfNeeded()
+            outline.layoutSubtreeIfNeeded()
+            let cell = try XCTUnwrap(outline.view(atColumn: nameColumn, row: row, makeIfNecessary: true) as? NSTableCellView,
+                                     file: file, line: line)
+            let button = try XCTUnwrap(buttons(in: cell).first { $0.title == title }, file: file, line: line)
+            let buttonFrame = button.convert(button.bounds, to: cell)
+            let fullMessage = controlMessage(control, coordinator: coordinator, outline: outline)
+            XCTAssertEqual(cell.textField?.accessibilityLabel(), fullMessage,
+                           "the complete page state remains available to assistive technology", file: file, line: line)
+            let expectedCompactMessage = title == "Retry" ? "Page load failed" : "Page 1 of 2"
+            XCTAssertEqual(cell.textField?.stringValue, expectedCompactMessage,
+                           "the visible page message stays readable beside its essential control", file: file, line: line)
+            XCTAssertGreaterThan(button.frame.width, 0, "\(title) must have a visible hit target", file: file, line: line)
+            XCTAssertGreaterThanOrEqual(buttonFrame.minX, 0, "\(title) must not start outside the Name column", file: file, line: line)
+            XCTAssertLessThanOrEqual(buttonFrame.maxX, cell.bounds.maxX,
+                                     "\(title) must fit inside the actual narrow Name column", file: file, line: line)
+        }
+
+        try assertButtonFits("Next", in: firstControl)
+        window.setContentSize(NSSize(width: 430, height: 360))
+        scrollView.layoutSubtreeIfNeeded()
+        coordinator.updateTreeColumns(for: scrollView.contentView.frame.width)
+        outline.layoutSubtreeIfNeeded()
+        let nameColumn = outline.column(withIdentifier: NSUserInterfaceItemIdentifier("name"))
+        let firstPageRow = outline.row(forItem: firstControl)
+        outline.scrollRowToVisible(firstPageRow)
+        window.displayIfNeeded()
+        outline.layoutSubtreeIfNeeded()
+        let expandedCell = try XCTUnwrap(outline.view(
+            atColumn: nameColumn,
+            row: firstPageRow,
+            makeIfNecessary: true
+        ) as? NSTableCellView)
+        let firstPageMessage = controlMessage(firstControl, coordinator: coordinator, outline: outline)
+        XCTAssertEqual(expandedCell.textField?.stringValue, firstPageMessage,
+                       "resizing the pane wider restores its full page message")
+
+        window.setContentSize(NSSize(width: 297, height: 360))
+        scrollView.layoutSubtreeIfNeeded()
+        coordinator.updateTreeColumns(for: scrollView.contentView.frame.width)
+        outline.layoutSubtreeIfNeeded()
+        try assertButtonFits("Next", in: firstControl)
+        try clickButton("Next", for: firstControl, coordinator: coordinator, outline: outline)
+        let failedControl = try XCTUnwrap(appKitRows(of: folder, outline: outline)
+            .compactMap { $0 as? SnapshotTreePageControlItem }.first)
+        try assertButtonFits("Retry", in: failedControl)
     }
 
     func testPartialSnapshotIsMarkedInHistoryAndStillBrowsable() throws {
@@ -785,7 +880,8 @@ final class LazyTreeBrowsingTests: XCTestCase {
         coordinator: LazyMetadataOutlineView.Coordinator,
         outline: NSOutlineView
     ) -> String {
-        controlCell(control, coordinator: coordinator, outline: outline).textField?.stringValue ?? ""
+        let label = controlCell(control, coordinator: coordinator, outline: outline).textField
+        return label?.accessibilityLabel() ?? label?.stringValue ?? ""
     }
 
     private func controlButton(

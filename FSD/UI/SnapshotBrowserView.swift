@@ -259,6 +259,10 @@ final class SnapshotBrowserModel: ObservableObject {
         Task { await control.cancel() }
         classificationPhase = .idle
         classificationMessage = nil
+        selectedEntryID = nil
+        selectedDetails = nil
+        searchText = ""
+        error = nil
         cancelPendingSearch()
     }
 
@@ -393,6 +397,55 @@ final class SnapshotTreePageControlItem: NSObject {
     }
 }
 
+private final class SnapshotTreePageControlCell: NSTableCellView {
+    var messageLabel: NSTextField?
+    var actionButtons: [NSButton] = []
+    var fullMessage = ""
+    var compactMessage: String?
+
+    override func setFrameSize(_ newSize: NSSize) {
+        super.setFrameSize(newSize)
+        needsLayout = true
+    }
+
+    override func layout() {
+        super.layout()
+        guard let messageLabel else { return }
+
+        let visibleMessage = bounds.width < 280 ? compactMessage ?? fullMessage : fullMessage
+        if messageLabel.stringValue != visibleMessage {
+            messageLabel.stringValue = visibleMessage
+        }
+        let inset: CGFloat = 2
+        let spacing: CGFloat = 5
+        let messageHeight = min(messageLabel.fittingSize.height, max(0, bounds.height - 2))
+        let buttonSizes = actionButtons.map(\.fittingSize)
+        let buttonWidth = buttonSizes.reduce(0) { $0 + $1.width }
+            + CGFloat(max(0, actionButtons.count - 1)) * spacing
+        let buttonHeight = buttonSizes.map(\.height).max() ?? 0
+
+        let boundedButtonHeight = min(buttonHeight, max(0, bounds.height - 2))
+        let buttonStart = max(inset, bounds.width - buttonWidth - inset)
+        var buttonX = buttonStart
+        for (button, size) in zip(actionButtons, buttonSizes) {
+            let boundedWidth = min(size.width, max(0, bounds.width - buttonX - inset))
+            button.frame = NSRect(
+                x: buttonX,
+                y: max(0, (bounds.height - boundedButtonHeight) / 2),
+                width: boundedWidth,
+                height: boundedButtonHeight
+            )
+            buttonX += boundedWidth + spacing
+        }
+        messageLabel.frame = NSRect(
+            x: inset,
+            y: max(0, (bounds.height - messageHeight) / 2),
+            width: max(0, buttonStart - inset - spacing),
+            height: messageHeight
+        )
+    }
+}
+
 struct LazyMetadataOutlineView: NSViewRepresentable {
     let dataSource: SnapshotTreeDataSource
     let root: SnapshotTreeNode?
@@ -412,17 +465,19 @@ struct LazyMetadataOutlineView: NSViewRepresentable {
         let nameColumn = NSTableColumn(identifier: .init("name"))
         nameColumn.title = "Name"
         nameColumn.width = 320
+        nameColumn.minWidth = 170
         outlineView.addTableColumn(nameColumn)
         outlineView.outlineTableColumn = nameColumn
 
         let kindColumn = NSTableColumn(identifier: .init("kind"))
         kindColumn.title = "Kind"
-        kindColumn.width = 90
+        kindColumn.width = 80
+        kindColumn.minWidth = 80
         outlineView.addTableColumn(kindColumn)
 
         let sizeColumn = NSTableColumn(identifier: .init("size"))
         sizeColumn.title = "Logical size"
-        sizeColumn.width = 110
+        sizeColumn.width = 122
         outlineView.addTableColumn(sizeColumn)
 
         outlineView.dataSource = context.coordinator
@@ -434,11 +489,14 @@ struct LazyMetadataOutlineView: NSViewRepresentable {
         scrollView.hasVerticalScroller = true
         scrollView.hasHorizontalScroller = true
         scrollView.autohidesScrollers = true
+        context.coordinator.observeTreeViewport(scrollView)
+        context.coordinator.updateTreeColumns(for: scrollView.contentView.frame.width)
         return scrollView
     }
 
     func updateNSView(_ nsView: NSScrollView, context: Context) {
         context.coordinator.onSelect = onSelect
+        context.coordinator.updateTreeColumns(for: nsView.contentView.frame.width)
         context.coordinator.setRoot(root, dataSource: dataSource)
     }
 
@@ -479,6 +537,8 @@ struct LazyMetadataOutlineView: NSViewRepresentable {
         private var accessClock: UInt64 = 0
         private var isReloadingOutline = false
         private var selectedEntryID: Int64?
+        private var viewportObservers: [NSObjectProtocol] = []
+        private var lastTreeViewportWidth: CGFloat = 0
 
         private(set) var maximumCachedBranchPagesObserved = 0
         private(set) var maximumRetainedEntryItemsObserved = 0
@@ -550,6 +610,10 @@ struct LazyMetadataOutlineView: NSViewRepresentable {
         }
 
         func releaseForBrowserExit() {
+            for observer in viewportObservers {
+                NotificationCenter.default.removeObserver(observer)
+            }
+            viewportObservers.removeAll()
             isReloadingOutline = true
             dataSource.invalidate()
             rootGeneration &+= 1
@@ -558,6 +622,47 @@ struct LazyMetadataOutlineView: NSViewRepresentable {
             selectedEntryID = nil
             outlineView?.reloadData()
             isReloadingOutline = false
+        }
+
+        func observeTreeViewport(_ scrollView: NSScrollView) {
+            for observer in viewportObservers {
+                NotificationCenter.default.removeObserver(observer)
+            }
+            viewportObservers.removeAll()
+            scrollView.postsFrameChangedNotifications = true
+            let clipView = scrollView.contentView
+            clipView.postsFrameChangedNotifications = true
+            for observedView in [scrollView, clipView] {
+                let observer = NotificationCenter.default.addObserver(
+                    forName: NSView.frameDidChangeNotification,
+                    object: observedView,
+                    queue: .main
+                ) { [weak self, weak clipView] _ in
+                    guard let clipView else { return }
+                    self?.updateTreeColumns(for: clipView.frame.width)
+                }
+                viewportObservers.append(observer)
+            }
+        }
+
+        func updateTreeColumns(for viewportWidth: CGFloat) {
+            guard viewportWidth.isFinite, viewportWidth > 0,
+                  let outlineView,
+                  let nameColumn = outlineView.tableColumns.first(where: { $0.identifier.rawValue == "name" }),
+                  let kindColumn = outlineView.tableColumns.first(where: { $0.identifier.rawValue == "kind" }),
+                  let sizeColumn = outlineView.tableColumns.first(where: { $0.identifier.rawValue == "size" })
+            else { return }
+
+            guard abs(viewportWidth - lastTreeViewportWidth) > 0.5 else { return }
+            lastTreeViewportWidth = viewportWidth
+
+            let layout = SnapshotTreeColumnLayout(for: viewportWidth)
+            if abs(nameColumn.width - layout.nameWidth) > 0.5 { nameColumn.width = layout.nameWidth }
+            if abs(kindColumn.width - layout.kindWidth) > 0.5 { kindColumn.width = layout.kindWidth }
+            sizeColumn.isHidden = layout.sizeWidth == nil
+            if let sizeWidth = layout.sizeWidth, abs(sizeColumn.width - sizeWidth) > 0.5 {
+                sizeColumn.width = sizeWidth
+            }
         }
 
         func outlineView(_ outlineView: NSOutlineView, numberOfChildrenOfItem item: Any?) -> Int {
@@ -604,7 +709,7 @@ struct LazyMetadataOutlineView: NSViewRepresentable {
         }
 
         func outlineView(_ outlineView: NSOutlineView, heightOfRowByItem item: Any) -> CGFloat {
-            item is SnapshotTreePageControlItem ? 26 : outlineView.rowHeight
+            item is SnapshotTreePageControlItem ? 30 : outlineView.rowHeight
         }
 
         func outlineViewSelectionDidChange(_ notification: Notification) {
@@ -988,14 +1093,18 @@ struct LazyMetadataOutlineView: NSViewRepresentable {
         }
 
         private static func makeControlCell(_ item: SnapshotTreePageControlItem) -> NSTableCellView {
-            let cell = NSTableCellView()
+            let cell = SnapshotTreePageControlCell()
             cell.identifier = NSUserInterfaceItemIdentifier("snapshot-page-control")
-            let label = NSTextField(labelWithString: item.presentation.message)
+            let fullMessage = item.presentation.message
+            let label = NSTextField(labelWithString: fullMessage)
             label.lineBreakMode = .byTruncatingTail
+            label.setContentHuggingPriority(.defaultLow, for: .horizontal)
             label.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-            label.setAccessibilityLabel(item.presentation.message)
+            label.setAccessibilityLabel(fullMessage)
             cell.textField = label
-            let arranged: [NSView] = [label] + item.presentation.buttons.map { descriptor in
+            cell.fullMessage = fullMessage
+            cell.compactMessage = compactPageControlMessage(item.presentation)
+            let buttons: [NSButton] = item.presentation.buttons.map { descriptor in
                 let button = NSButton(
                     title: descriptor.title,
                     target: item,
@@ -1007,21 +1116,21 @@ struct LazyMetadataOutlineView: NSViewRepresentable {
                 button.setAccessibilityHelp(item.presentation.message)
                 return button
             }
-            let stack = NSStackView(views: arranged)
-            stack.orientation = .horizontal
-            stack.alignment = .centerY
-            stack.distribution = .fill
-            stack.spacing = 5
-            stack.translatesAutoresizingMaskIntoConstraints = false
-            cell.addSubview(stack)
-            NSLayoutConstraint.activate([
-                stack.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 2),
-                stack.trailingAnchor.constraint(lessThanOrEqualTo: cell.trailingAnchor, constant: -2),
-                stack.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
-                stack.topAnchor.constraint(greaterThanOrEqualTo: cell.topAnchor, constant: 1),
-                stack.bottomAnchor.constraint(lessThanOrEqualTo: cell.bottomAnchor, constant: -1)
-            ])
+            cell.messageLabel = label
+            cell.actionButtons = buttons
+            cell.addSubview(label)
+            for button in buttons { cell.addSubview(button) }
             return cell
+        }
+
+        private static func compactPageControlMessage(_ presentation: SnapshotTreePagePresentation) -> String {
+            let actions = Set(presentation.buttons.map(\.title))
+            if actions.contains("Retry") { return "Page load failed" }
+            if actions.contains("Reload") { return "Entries released" }
+            if let page = presentation.message.components(separatedBy: " · ").first(where: { $0.hasPrefix("Page ") }) {
+                return page
+            }
+            return presentation.message
         }
 
         private static func makeCell(identifier: NSUserInterfaceItemIdentifier) -> NSTableCellView {
@@ -1059,6 +1168,24 @@ struct LazyMetadataOutlineView: NSViewRepresentable {
     }
 }
 
+struct SnapshotTreeColumnLayout: Equatable {
+    let nameWidth: CGFloat
+    let kindWidth: CGFloat
+    let sizeWidth: CGFloat?
+
+    init(for treePaneWidth: CGFloat) {
+        if treePaneWidth >= 580 {
+            nameWidth = 320
+            kindWidth = 90
+            sizeWidth = 122
+        } else {
+            nameWidth = max(170, min(320, treePaneWidth - 90))
+            kindWidth = 90
+            sizeWidth = nil
+        }
+    }
+}
+
 // MARK: - Browser
 
 struct SnapshotBrowserView: View {
@@ -1081,12 +1208,14 @@ struct SnapshotBrowserView: View {
                     .accessibilityLabel(failure)
             }
             if let results = model.searchResults {
-                SearchResultsView(
-                    results: results,
-                    selectedEntryID: model.selectedEntryID,
-                    onSelect: { model.select(entryID: $0) }
-                )
+                if results.snapshotID == model.summary.id {
+                    SearchResultsView(
+                        results: results,
+                        selectedEntryID: model.selectedEntryID,
+                        onSelect: { model.select(entryID: $0) }
+                    )
                     .frame(minHeight: 88, maxHeight: 176)
+                }
             }
             HSplitView {
                 LazyMetadataOutlineView(
@@ -1094,10 +1223,11 @@ struct SnapshotBrowserView: View {
                     root: model.rootNode,
                     onSelect: { model.select(entryID: $0) }
                 )
-                .frame(minWidth: 320)
+                .frame(minWidth: 297)
                 if isInspectorVisible {
                     EntryInspectorView(model: model)
                         .frame(minWidth: 220)
+                        .accessibilityIdentifier("snapshot-metadata-inspector")
                 }
             }
             footer
@@ -1152,33 +1282,50 @@ struct SnapshotBrowserView: View {
     }
 
     private var searchBar: some View {
-        VStack(alignment: .leading, spacing: 5) {
+        VStack(alignment: .leading, spacing: 7) {
             HStack(spacing: 8) {
                 Label("THIS SNAPSHOT", systemImage: "magnifyingglass")
                     .font(.caption.weight(.semibold))
                     .accessibilityLabel("Search scope: This Snapshot")
-                Picker("Search field", selection: $model.searchField) {
-                    ForEach(MetadataSearchQuery.Field.allCases, id: \.self) { field in
-                        Text(field.label).tag(field)
-                    }
-                }
-                .frame(width: 148)
                 TextField("Search stored filenames or paths", text: $model.searchText)
                     .accessibilityLabel("Search stored metadata in snapshot \(model.summary.id)")
+                    .frame(minWidth: 150)
                     .onSubmit { model.runSearch() }
                     .onChange(of: model.searchText) { _, value in
                         if value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                             model.clearSearchWhenQueryIsEmpty()
                         }
                     }
+            }
+            HStack(spacing: 8) {
+                Picker(selection: $model.searchField) {
+                    ForEach(MetadataSearchQuery.Field.allCases, id: \.self) { field in
+                        Text(field.label).tag(field)
+                    }
+                } label: {
+                    EmptyView()
+                }
+                .labelsHidden()
+                .accessibilityLabel("Search field")
+                .frame(width: 160)
+                Spacer(minLength: 4)
                 Button("Search", action: model.runSearch)
+                    .controlSize(.small)
                     .disabled(model.searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 if !model.searchText.isEmpty || model.searchResults != nil || model.searchFailureMessage != nil || model.isSearching {
                     Button("Clear", action: model.clearSearch)
+                        .controlSize(.small)
                 }
-                if model.isSearching { ProgressView().controlSize(.small) }
+                if model.isSearching {
+                    HStack(spacing: 5) {
+                        ProgressView().controlSize(.small)
+                        Text("Searching…").font(.caption).foregroundStyle(.secondary)
+                    }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Searching this snapshot")
+                }
             }
-            Text("Search covers captured metadata in Snapshot \(model.summary.id) only.")
+            Text("Captured metadata in Snapshot \(model.summary.id) only.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -1263,7 +1410,20 @@ private struct EntryInspectorView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Stored metadata").font(.headline)
-                if let details = model.selectedDetails {
+                if let message = SnapshotInspectorSearchContext.message(
+                    snapshotID: model.summary.id,
+                    selectedEntryID: model.selectedEntryID,
+                    searchResults: model.searchResults,
+                    searchFailureMessage: model.searchFailureMessage,
+                    isSearching: model.isSearching
+                ) {
+                    Text(message)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityLabel(message)
+                }
+                if let details = model.selectedDetails, details.id == model.selectedEntryID {
                     row("Name", details.name)
                     row("Path", details.relativePath.isEmpty ? "(root)" : details.relativePath)
                     row("Kind", details.itemKind.rawValue)
@@ -1317,6 +1477,9 @@ private struct EntryInspectorView: View {
                     }
                     Text(ClassificationUIText.disclaimer)
                         .font(.caption).foregroundStyle(.secondary)
+                } else if model.selectedEntryID != nil {
+                    Text("Stored metadata for this selection is unavailable.")
+                        .foregroundStyle(.secondary)
                 } else {
                     Text("Select an item to see its stored metadata.")
                         .foregroundStyle(.secondary)
@@ -1332,5 +1495,33 @@ private struct EntryInspectorView: View {
             Text(label).font(.caption).foregroundStyle(.secondary).frame(width: 110, alignment: .leading)
             Text(value).font(.caption).textSelection(.enabled)
         }
+    }
+}
+
+enum SnapshotInspectorSearchContext {
+    static func message(
+        snapshotID: SnapshotID,
+        selectedEntryID: Int64?,
+        searchResults: MetadataSearchResults?,
+        searchFailureMessage: String?,
+        isSearching: Bool
+    ) -> String? {
+        guard selectedEntryID != nil else { return nil }
+        if isSearching {
+            return "Search in progress; selected-item result membership is not known yet."
+        }
+        if searchFailureMessage != nil {
+            return "Search failed; the selected snapshot item remains available."
+        }
+        guard let searchResults else { return nil }
+        guard searchResults.snapshotID == snapshotID else {
+            return "Search results belong to another snapshot and are hidden."
+        }
+        guard searchResults.hits.contains(where: {
+            $0.snapshotID == snapshotID && $0.id == selectedEntryID
+        }) else {
+            return "Selected item — not in current search results."
+        }
+        return nil
     }
 }
