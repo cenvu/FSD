@@ -43,7 +43,7 @@ final class PhysicalDriveIdentityTests: XCTestCase {
         XCTAssertTrue(try db.query("PRAGMA foreign_key_check").isEmpty)
     }
     func testSyntheticFreshIdentitySchema() throws {
-        XCTAssertEqual(try db.schemaVersion,10)
+        XCTAssertEqual(try db.schemaVersion,CatalogDatabase.currentSchemaVersion)
         for table in CatalogMigrations.identityTableDefinitions { XCTAssertEqual(try count(table.name),0) }
         try healthy()
     }

@@ -35,7 +35,7 @@ final class SyntheticSourceResolutionRepositoryTests: XCTestCase {
         return result
     }
     private func healthy() throws {
-        XCTAssertEqual(try db.schemaVersion, 10)
+        XCTAssertEqual(try db.schemaVersion, CatalogDatabase.currentSchemaVersion)
         XCTAssertEqual(try db.scalar("PRAGMA foreign_keys")?.int64Value, 1)
         XCTAssertEqual(try db.scalar("PRAGMA integrity_check")?.stringValue, "ok")
         XCTAssertTrue(try db.query("PRAGMA foreign_key_check").isEmpty)

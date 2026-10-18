@@ -30,7 +30,7 @@ transient unless a future explicit save is implemented.
 
 **Exact gaps:** observation-only mount detection; opt-in Auto Capture (default
 OFF); hardware-backed PhysicalDrive resolution and manual-association UI; paged
-per-drive history; Drive Sets; bounded dashboard aggregates; This Drive/Library
+per-drive history; bounded dashboard aggregates; This Drive/Library
 search; classification search; compare hierarchy/ancestor reveal; explicit
 Save Comparison with separate durable captured evidence; full capture
 organization/default controls; and consolidated rendered-window, accessibility,
@@ -43,27 +43,31 @@ states must stay separated here:
   below. Task058 adds a backend-only local PhysicalDrive/evidence/manual-assertion
   foundation (BRAIN-accepted with advisory); no hardware proof. Task059 adds a
   synthetic-input observation contract and fail-closed resolver/read seam
-  (Worker implementation pending BRAIN review), without live observation.
+  (BRAIN-accepted with advisory), without live observation. Task060 adds manual
+  Drive Sets with a production v11 repository and Library workspace; Worker
+  implementation pending BRAIN review.
 - **Accepted feasibility (synthetic, not implementation):** Tasks054–056 are
   BRAIN-accepted `PASS_WITH_ADVISORY` for ADR-036 identity, ADR-037 Drive Sets and
   ADR-038 Save Comparison respectively. They are research and isolated synthetic
   SQLite/resolver prototypes only; they prove deterministic rule/relational
   behavior, not any product code, schema, hardware or migration.
 - **Future FSD2 Full work (not started):** observation-only mount status, validated
-  PhysicalDrive identity, manual-association UI, Drive Sets, completion
+  PhysicalDrive identity, manual-association UI, completion
   receipts, Save Comparison and the remaining UX/gaps below.
 
 ADR-036–038 remain Proposed / Owner Direction Approved / Technical Proof Pending;
-the identity evidence threshold and strong-profile set, Drive Set schema/migration,
-and completion-receipt/durable comparison backing remain `TECHNICAL_PROOF_PENDING`.
+the identity evidence threshold and strong-profile set and completion-receipt/durable
+comparison backing remain `TECHNICAL_PROOF_PENDING`. Task060 supplies synthetic
+production schema/migration and manual grouping evidence for BRAIN review; it
+does not promote ADR status or prove physical-device identity.
 See [DECISIONS.md](DECISIONS.md), [MVP_PLAN.md](MVP_PLAN.md) and
 [UX_UI_SPEC.md](UX_UI_SPEC.md). This status record authorizes no implementation.
 
 ## Implemented capabilities
 
 - Native macOS 15+ arm64 SwiftUI app and XCTest target in `FSD.xcodeproj`.
-- SQLite catalog schema **v10**; explicit transactional v4→v5 (both known v4
-  variants), v5→v6, v6→v7, v7→v8, v8→v9 and additive v9→v10 migrations. The v9 change appends nullable/no-default `provider_identifier`; legacy rows retain NULL without backfill. Fresh and migrated catalogs
+- SQLite catalog schema **v11**; explicit transactional v4→v5 (both known v4
+  variants), v5→v6, v6→v7, v7→v8, v8→v9 and additive v9→v10→v11 migrations. The v9 change appends nullable/no-default `provider_identifier`; legacy rows retain NULL without backfill. Fresh and migrated catalogs
   converge. `schema.sql` creates fresh catalogs only; `CatalogMigrations` moves
   existing ones. Complete ExpectedState inventory detects damaged/substituted
   schemas; per-connection foreign-key enforcement, normalization completion
@@ -127,7 +131,7 @@ See [DECISIONS.md](DECISIONS.md), [MVP_PLAN.md](MVP_PLAN.md) and
   Collection organizer supports create/list/move and snapshot label/note editing.
   Full intended semantics remain in [SNAPSHOT_COLLECTIONS.md](SNAPSHOT_COLLECTIONS.md).
 - Observation-only mount detection, validated physical-drive identity,
-  Auto Capture (which must default OFF), Drive Sets, per-drive history, and
+  Auto Capture (which must default OFF), per-drive history, and
   explicit Save Comparison with separate durable live-side evidence.
 - HTML export, catalog backup/restore, login-item support,
   EmbeddedRawProvider/reader-helper production integration, physical raw-device
@@ -215,3 +219,23 @@ repeat logs or then-next instructions. Use the task ledger for control returns.
 
 KI-021/022/024 fixed narratives and older gate corrections are recoverable from
 those handoffs and Git history; they are not current blockers.
+
+## Task060 — manually usable Drive Sets (pending BRAIN review)
+
+Library → Drive Sets provides create, rename, delete, explicit add/remove and
+paged local-record selection. Empty sets persist. Records may belong to several
+sets; deleting a set deletes its memberships only. The add sheet can explicitly
+create an **unverified local organization record**, then requires a separate Add
+action. This does not detect hardware, associate an observation or start capture.
+Records show **connection unknown**, never an invented connected/offline state;
+retired members remain visible and removable. Stable IDs disambiguate equal labels.
+
+Schema v11 adds only `drive_sets` and `drive_set_memberships`; no historical
+identity or membership backfill. Versioned Foundation normalization handles
+trim/NFC/case folding; SQLite NOCASE is not used as Unicode normalization.
+Revision checks reject stale actions and bounded errors offer Refresh. Create
+retries reuse the same opaque ID; repeated current membership is a no-op. A
+stale retry must refresh. No tombstone/import/merge or live-availability service
+is introduced. This is a local manual grouping slice, not the full ADR-037 future
+identity/mount integration. Strong hardware profiles remain zero. Owner visual,
+manual VoiceOver and real hardware acceptance are not claimed.

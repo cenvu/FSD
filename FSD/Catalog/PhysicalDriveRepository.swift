@@ -233,7 +233,7 @@ public final class PhysicalDriveRepository {
     private static func integer(_ row: DatabaseRow, _ key: String) throws -> Int64 {
         guard let value = row[key]?.int64Value else { throw PhysicalDriveIdentityError.corruptRecord }; return value
     }
-    private static func makeDrive(_ row: DatabaseRow) throws -> PhysicalDrive {
+    static func makeDrive(_ row: DatabaseRow) throws -> PhysicalDrive {
         guard let id = UUID(uuidString: try string(row,"id")) else { throw PhysicalDriveIdentityError.corruptRecord }
         return PhysicalDrive(id: PhysicalDriveID(rawValue: id), label: row["label"]?.stringValue,
             provenance: try string(row,"provenance"), revision: try integer(row,"revision"), retired: try integer(row,"retired") == 1,

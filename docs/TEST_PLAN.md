@@ -1231,3 +1231,30 @@ adapter/reducer or hypothetical strong-profile mechanism is wired into productio
 Tests establish deterministic synthetic behavior and catalog non-mutation, not
 empirical physical-device identity or H01–H14 acceptance. Real hardware, Owner
 data, mount/eject operations and live observation are prohibited for this task.
+
+## 16. Task060 synthetic Drive Sets production validation
+
+`DriveSetsTests` exercises empty/create/rename/delete, stable IDs and exact retry,
+Foundation composed/decomposed Unicode and case-fold duplicates, invalid/oversized
+names, revisions/missing/retired targets, many-to-many explicit pairs, duplicate
+membership no-op, SQL FK/admission guards, transaction rollback, bounded keyset
+pages/index usage, close/reopen persistence, real UI-model actions/errors, AppKit
+rendering and own-window button/sheet integration. No global accessibility scan.
+
+`DriveSetMigrationTests` uses generated populated v10 legacy and typed identity
+facts (including evidence and manual associate/revoke history). It checks every
+legacy row before/after upgrade, grouping and set deletion; the other set's pair
+survives. It executes actual production v11 migration failure injection before
+every DDL boundary and at version write, inventory drift rejection, successful
+retry/reopen, exact fresh/migrated new DDL and all table column/index/trigger
+parity for v4 (both variants), v5, v6, v7, v8, v9 and v10. SQLite integrity and FK
+checks are separate. Unsupported newer catalogs remain byte-preserved. Existing
+Task058/059/schema/catalog/Collection/snapshot/comparison/source-boundary suites
+remain required regressions; tests' current-version assertions follow the current
+schema while explicit historical capture/version facts remain historical.
+
+All new catalogs/facts are synthetic. This proves no hardware identity,
+connection state, mount behavior, H01–H14, Owner UI/VoiceOver acceptance, Auto
+Capture or full FSD2 completion. The mount-image regression is excluded because
+Task060 forbids mount/device operations. Actual command receipts belong to the
+single Task060 handoff; test/source presence alone is not a PASS receipt.

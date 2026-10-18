@@ -1405,3 +1405,48 @@ manual events and captured attribution are unchanged. Synthetic XCTest exercises
 production Swift and isolated generated catalogs; it proves no real storage
 observation, H01–H14, reconnect accuracy or hardware identity. ADR-036/037/038
 retain Proposed / Owner Direction Approved / Technical Proof Pending status.
+
+## 16. Manual Drive Sets — Task060 production slice
+
+Task060 implements the local organization subset of proposed ADR-037. v11 adds
+`drive_sets` (UUID ID, bounded display name, unique Foundation normalized name,
+normalization version, optimistic revision, timestamps) and many-to-many
+`drive_set_memberships` (explicit pair, added time, fixed admission provenance).
+Names use the existing Swift `PathIdentity.caseFold` recipe after trimming: NFC
+and locale-independent folding, pinned as `fsd-drive-set-name-v1`. Collection
+normalization/semantics are unchanged. No SQLite NOCASE Unicode assumption.
+
+Only the set FK cascades, and only to membership rows. Drive FK is RESTRICT;
+PhysicalDrive hard-delete guards remain intact. No legacy snapshot/volume/
+Collection/comparison relation references sets. No old row is backfilled.
+Membership updates are explicit remove/add, never inferred; retired targets
+cannot be admitted and retained retired memberships stay visible/removable.
+
+`DriveSetRepository` serializes atomic create/rename/delete/add/remove through
+CatalogDatabase. Existing mutable rows require expected set and target revisions.
+Create retry reuses its opaque ID and verifies current name; current identical
+membership/rename is a no-op; absent delete/remove is a no-op after applicable
+existence/revision checks. A stale retry is rejected, not replayed over newer
+organization. No operation receipt/history framework or resurrection protection
+across intentional delete-and-recreate is claimed. Set revisions advance on real
+membership or name changes. SQL guards enforce immutable IDs/creation/version,
+revision increments, active membership admission and no pair updates.
+
+Lists clamp to 1–200, sorted with keyset continuation. Members use one bounded
+indexed JOIN; the picker uses a bounded identity page and one bounded membership
+query. Pages are current reads, not frozen views; Refresh/First Page resets after
+mutation. IDs and new-table DDL, indexes and triggers are in canonical ExpectedState;
+current startup rejects drift. v10 retains its prior precommit inventory check,
+then v11 checks the complete inventory before its version row commits. DDL and
+version failure roll back the current step. Existing supported v4–v10 chains
+reach v11; the two known v4 variants remain supported.
+
+`DriveSetsView` is a Library sidebar destination with one set/member workspace,
+rename/create sheets, add-record sheet and destructive confirmations. Its model
+calls production repository APIs; no fake data adapter. Manual local record
+creation reuses Task058's explicit-local admission, marked unverified, then
+requires a separate membership action. Labels state connection unknown because
+there is no live service; this slice cannot assert offline/connected hardware.
+Bounded user errors expose no raw SQL/path. Existing startup catalog ownership,
+source/capture/comparison APIs, observation resolver and real strong profile
+count (zero) are unchanged. No source/hardware listener or automatic capture.

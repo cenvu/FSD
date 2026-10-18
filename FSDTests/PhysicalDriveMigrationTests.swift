@@ -38,12 +38,12 @@ final class PhysicalDriveMigrationTests: XCTestCase {
     func testV9MigrationPreservesEveryLegacyRowAndInventsNoIdentity() throws {
         let url = try v9("legacy")
         try CatalogSchemaFixture.createDatabase(at: url,sql: Self.legacyFacts)
-        let legacyTables = CatalogMigrations.ExpectedState.tables.filter { !CatalogMigrations.identityTableDefinitions.map(\.name).contains($0) && $0 != "schema_migrations" }
+        let legacyTables = CatalogMigrations.ExpectedState.tables.filter { !(CatalogMigrations.identityTableDefinitions + CatalogMigrations.driveSetTableDefinitions).map(\.name).contains($0) && $0 != "schema_migrations" }
         var before: [String: [String]] = [:]
         for table in legacyTables { before[table] = try raw(url,"SELECT * FROM \(table) ORDER BY rowid") }
         let db = try CatalogDatabase(url: url)
         defer { db.close() }
-        XCTAssertEqual(try db.schemaVersion,10)
+        XCTAssertEqual(try db.schemaVersion,CatalogDatabase.currentSchemaVersion)
         for table in CatalogMigrations.identityTableDefinitions {
             XCTAssertEqual(try db.scalar("SELECT COUNT(*) FROM \(table.name)")?.int64Value,0)
         }
@@ -74,7 +74,7 @@ final class PhysicalDriveMigrationTests: XCTestCase {
             let url = directory.appendingPathComponent("chain-\(number).sqlite")
             try CatalogSchemaFixture.createDatabase(at: url,sql: sql)
             let migrated = try CatalogDatabase(url: url)
-            XCTAssertEqual(try migrated.schemaVersion,10)
+            XCTAssertEqual(try migrated.schemaVersion,CatalogDatabase.currentSchemaVersion)
             for type in ["table","trigger","index"] {
                 let a = try schema(fresh,type: type); let b = try schema(migrated,type: type)
                 XCTAssertEqual(a.map { $0["name"] },b.map { $0["name"] })
@@ -118,13 +118,13 @@ final class PhysicalDriveMigrationTests: XCTestCase {
             if boundary == statements.count { try CatalogSchemaFixture.createDatabase(at: url,sql: "DROP TRIGGER fixture_version_failure;") }
             XCTAssertEqual(try raw(url,"SELECT type,name,sql FROM sqlite_master ORDER BY type,name"),originalSchema)
             let repaired = try CatalogDatabase(url: url)
-            XCTAssertEqual(try repaired.schemaVersion,10)
+            XCTAssertEqual(try repaired.schemaVersion,CatalogDatabase.currentSchemaVersion)
             XCTAssertEqual(try repaired.scalar("PRAGMA integrity_check")?.stringValue,"ok")
             XCTAssertTrue(try repaired.query("PRAGMA foreign_key_check").isEmpty)
             repaired.close()
             let after = try raw(url,"SELECT version,applied_at FROM schema_migrations ORDER BY version")
             let reopened = try CatalogDatabase(url: url,migrations: [SchemaMigration(version: 10,statements: ["CREATE TABLE invalid("])])
-            XCTAssertEqual(try reopened.schemaVersion,10)
+            XCTAssertEqual(try reopened.schemaVersion,CatalogDatabase.currentSchemaVersion)
             reopened.close()
             XCTAssertEqual(try raw(url,"SELECT version,applied_at FROM schema_migrations ORDER BY version"),after)
         }
@@ -145,7 +145,7 @@ final class PhysicalDriveMigrationTests: XCTestCase {
             XCTAssertEqual(try raw(url,"SELECT MAX(version) FROM schema_migrations"),["9"])
             XCTAssertEqual(try raw(url,"SELECT type,name,sql FROM sqlite_master ORDER BY type,name"),before)
             let reopened = try CatalogDatabase(url: url); defer { reopened.close() }
-            XCTAssertEqual(try reopened.schemaVersion,10)
+            XCTAssertEqual(try reopened.schemaVersion,CatalogDatabase.currentSchemaVersion)
         }
     }
 
@@ -158,7 +158,7 @@ final class PhysicalDriveMigrationTests: XCTestCase {
                 THEN RAISE(ABORT,'version before DDL') END; END;
             """)
         let db = try CatalogDatabase(url: url); defer { db.close() }
-        XCTAssertEqual(try db.schemaVersion,10)
+        XCTAssertEqual(try db.schemaVersion,CatalogDatabase.currentSchemaVersion)
     }
     func testNewerVersionRejectedWithoutCatalogMutation() throws {
         let url = try v9("future")

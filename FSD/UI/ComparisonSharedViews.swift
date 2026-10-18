@@ -109,6 +109,7 @@ enum FSDDestination: Hashable {
     case allDrives
     case recentCaptures
     case collections
+    case driveSets
     case comparisons
     case capture
 
@@ -117,6 +118,7 @@ enum FSDDestination: Hashable {
         case .libraryOverview: return "FSD  ›  Home"
         case .allDrives: return "Library  /  All Drives"
         case .recentCaptures: return "Library  /  Recent Captures"
+        case .driveSets: return "Library  /  Drive Sets"
         case .collections: return "Library  /  Collections"
         case .comparisons: return "Compare  /  Comparisons"
         case .capture: return "Library  /  Capture"
@@ -227,6 +229,12 @@ struct FSDAppShellView: View {
                 )
             case .recentCaptures:
                 FSDCaptureHistoryView(model: model)
+            case .driveSets:
+                if let catalog = model.database {
+                    DriveSetsView(database: catalog)
+                } else {
+                    EmptyStateView(title: "Catalog unavailable", systemImage: "exclamationmark.triangle")
+                }
             case .collections:
                 if let catalog = model.database {
                     SnapshotCollectionsView(
@@ -272,6 +280,7 @@ private struct FSDSidebarView: View {
 
                     sectionTitle("LIBRARY")
                     navigationRow("Recent Captures", icon: "clock.arrow.circlepath", destination: .recentCaptures)
+                    navigationRow("Drive Sets", icon: "externaldrive", destination: .driveSets)
                     navigationRow("Collections", icon: "square.stack.3d.up", destination: .collections)
 
                     sectionTitle("COMPARE")
@@ -285,14 +294,6 @@ private struct FSDSidebarView: View {
                     ) {
                         VStack(alignment: .leading, spacing: 5) {
                             navigationRow("All Drives", icon: "externaldrive", destination: .allDrives)
-
-                            Label("Drive Sets unavailable", systemImage: "rectangle.stack")
-                                .font(.system(size: FSDDesignTokens.bodySize - 1))
-                                .foregroundStyle(FSDDesignTokens.mutedText)
-                                .padding(.horizontal, 10)
-                                .frame(minHeight: 30, alignment: .leading)
-                                .accessibilityElement(children: .ignore)
-                                .accessibilityLabel("Drive Sets unavailable. Drive Set support is not available yet.")
 
                             Label("No connected-drive service yet", systemImage: "externaldrive")
                                 .font(.system(size: FSDDesignTokens.bodySize - 1))

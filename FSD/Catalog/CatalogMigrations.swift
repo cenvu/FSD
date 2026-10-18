@@ -22,7 +22,7 @@ public struct SchemaMigration: Sendable {
 public enum CatalogMigrations {
     /// The version a fresh `schema.sql` records and the version every supported
     /// catalog is brought to on open.
-    public static let currentVersion: Int64 = 10
+    public static let currentVersion: Int64 = 11
 
     /// The oldest version that can be migrated forward. Versions 1 through 3
     /// never existed as a materialized database, so they have no migration and
@@ -30,7 +30,7 @@ public enum CatalogMigrations {
     public static let oldestMigratableVersion: Int64 = 4
 
     public static let all: [SchemaMigration] = [
-        migrationToVersion5, migrationToVersion6, migrationToVersion7, migrationToVersion8, migrationToVersion9, migrationToVersion10
+        migrationToVersion5, migrationToVersion6, migrationToVersion7, migrationToVersion8, migrationToVersion9, migrationToVersion10, migrationToVersion11
     ]
 
     /// Version 4 to version 5.
@@ -319,19 +319,38 @@ public enum CatalogMigrations {
         ("trg_manual_associations_admission", "CREATE TRIGGER trg_manual_associations_admission\nBEFORE INSERT ON manual_drive_associations\nBEGIN\n    SELECT CASE\n      WHEN NEW.revision != COALESCE((SELECT MAX(revision) FROM manual_drive_associations WHERE observation_id = NEW.observation_id),0) + 1\n        OR NEW.previous_event_id IS NOT (SELECT id FROM manual_drive_associations WHERE observation_id = NEW.observation_id ORDER BY revision DESC LIMIT 1)\n        THEN RAISE(ABORT, 'Stale manual association revision')\n      WHEN NEW.action = 'associate' AND NEW.revision != 1\n        THEN RAISE(ABORT, 'Association already has history; use correction')\n      WHEN NEW.action IN ('correct','revoke') AND NEW.revision = 1\n        THEN RAISE(ABORT, 'Correction requires prior history')\n      WHEN NEW.action != 'revoke' AND NOT EXISTS (SELECT 1 FROM physical_drives WHERE id = NEW.target_drive_id AND revision = NEW.target_revision AND retired = 0)\n        THEN RAISE(ABORT, 'Missing, retired or stale drive')\n      WHEN NEW.action != 'revoke' AND NOT EXISTS (SELECT 1 FROM identity_observations WHERE id = NEW.observation_id AND revision = NEW.observation_revision AND scope IN ('volume','partition') AND state != 'conflict')\n        THEN RAISE(ABORT, 'Invalid manual observation')\n    END;\nEND;")
     ]
 
+    public static let migrationToVersion11 = SchemaMigration(version: 11, statements:
+        driveSetTableDefinitions.map(\.sql) + driveSetIndexDefinitions.map(\.sql) + driveSetTriggerDefinitions.map(\.sql))
+
+    public static let driveSetTableDefinitions: [(name: String, sql: String)] = [
+        ("drive_sets", "CREATE TABLE drive_sets (\n    id TEXT NOT NULL PRIMARY KEY CHECK (length(id) = 36),\n    name TEXT NOT NULL CHECK (length(CAST(name AS BLOB)) BETWEEN 1 AND 256 AND instr(name, char(0)) = 0),\n    normalized_name TEXT NOT NULL UNIQUE CHECK (length(CAST(normalized_name AS BLOB)) BETWEEN 1 AND 1024),\n    normalization_version TEXT NOT NULL CHECK (normalization_version = 'fsd-drive-set-name-v1'),\n    revision INTEGER NOT NULL DEFAULT 1 CHECK (typeof(revision) = 'integer' AND revision >= 1),\n    created_at TEXT NOT NULL,\n    updated_at TEXT NOT NULL\n);"),
+        ("drive_set_memberships", "CREATE TABLE drive_set_memberships (\n    set_id TEXT NOT NULL REFERENCES drive_sets(id) ON DELETE CASCADE ON UPDATE RESTRICT,\n    physical_drive_id TEXT NOT NULL REFERENCES physical_drives(id) ON DELETE RESTRICT ON UPDATE RESTRICT,\n    added_at TEXT NOT NULL,\n    admission TEXT NOT NULL CHECK (admission = 'explicit_local_selection'),\n    PRIMARY KEY (set_id, physical_drive_id)\n);")
+    ]
+
+    public static let driveSetIndexDefinitions: [(name: String, sql: String)] = [
+        ("idx_drive_sets_order", "CREATE INDEX idx_drive_sets_order ON drive_sets(normalized_name, id);"),
+        ("idx_drive_set_memberships_drive", "CREATE INDEX idx_drive_set_memberships_drive ON drive_set_memberships(physical_drive_id, set_id);")
+    ]
+
+    public static let driveSetTriggerDefinitions: [(name: String, sql: String)] = [
+        ("trg_drive_sets_revision", "CREATE TRIGGER trg_drive_sets_revision\nBEFORE UPDATE ON drive_sets\nWHEN NEW.id IS NOT OLD.id OR NEW.created_at IS NOT OLD.created_at\n  OR NEW.normalization_version IS NOT OLD.normalization_version OR NEW.revision != OLD.revision + 1\nBEGIN\n    SELECT RAISE(ABORT, 'Invalid Drive Set revision');\nEND;"),
+        ("trg_drive_set_memberships_admission", "CREATE TRIGGER trg_drive_set_memberships_admission\nBEFORE INSERT ON drive_set_memberships\nWHEN NOT EXISTS (SELECT 1 FROM physical_drives WHERE id = NEW.physical_drive_id AND retired = 0)\nBEGIN\n    SELECT RAISE(ABORT, 'Missing or retired local drive');\nEND;"),
+        ("trg_drive_set_memberships_no_update", "CREATE TRIGGER trg_drive_set_memberships_no_update\nBEFORE UPDATE ON drive_set_memberships\nBEGIN\n    SELECT RAISE(ABORT, 'Membership must be explicitly removed and added');\nEND;")
+    ]
+
     public enum ExpectedState {
         public static let tables = [
             "schema_migrations", "volumes", "collections", "source_collection_defaults",
             "snapshots", "entries", "scan_issues", "comparison_profiles", "comparisons",
             "comparison_collision_groups", "comparison_collision_members",
             "comparison_results", "entry_classifications"
-        ] + identityTableDefinitions.map(\.name)
+        ] + identityTableDefinitions.map(\.name) + driveSetTableDefinitions.map(\.name)
 
         /// Every canonical trigger, name and DDL. The DDL text is the
         /// `CREATE TRIGGER ... END;` statement as written in
         /// `docs/database/schema.sql`; `normalizedObjectSQL` removes the
         /// textual differences SQLite itself applies when storing it.
-        public static let triggerDefinitions: [(name: String, sql: String)] = identityTriggerDefinitions + [
+        public static let triggerDefinitions: [(name: String, sql: String)] = identityTriggerDefinitions + driveSetTriggerDefinitions + [
             ("trg_snapshots_complete_root_check",
              "CREATE TRIGGER IF NOT EXISTS trg_snapshots_complete_root_check\nBEFORE UPDATE OF status ON snapshots\nWHEN NEW.status IN ('complete', 'complete_with_warnings')\nBEGIN\n    SELECT CASE\n        WHEN (SELECT COUNT(*) FROM entries WHERE snapshot_id = NEW.id AND parent_id IS NULL AND relative_path = '') != 1 THEN\n            RAISE(ABORT, 'Snapshot must have exactly one root entry to complete')\n        WHEN NEW.normalization_version != 'fsd-normalizer-v1_app-1.0_os-1' THEN\n            RAISE(ABORT, 'Snapshot normalization_version is not supported for completion')\n    END;\nEND;"),
             ("trg_snapshots_insert_scanning_only",
@@ -396,7 +415,7 @@ public enum CatalogMigrations {
 
         /// Every canonical index, name and DDL, with the same definition
         /// guarantee as the trigger list.
-        public static let indexDefinitions: [(name: String, sql: String)] = identityIndexDefinitions + [
+        public static let indexDefinitions: [(name: String, sql: String)] = identityIndexDefinitions + driveSetIndexDefinitions + [
             ("idx_volumes_persistent_uuid",
              "CREATE INDEX IF NOT EXISTS idx_volumes_persistent_uuid\nON volumes(persistent_uuid)\nWHERE persistent_uuid IS NOT NULL;"),
             ("idx_volumes_fallback_fingerprint",

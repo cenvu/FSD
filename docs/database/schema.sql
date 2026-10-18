@@ -1,3 +1,5 @@
+-- Schema version 11 (Task060): explicit local Drive Sets; no historical backfill.
+--
 -- Schema version 10 (Task058): additive local/manual identity only; no hardware
 -- verification, legacy attribution or backfill. New history is append-only.
 --
@@ -796,7 +798,7 @@ INSERT OR IGNORE INTO comparison_profiles (
 );
 
 INSERT OR IGNORE INTO schema_migrations(version, applied_at)
-VALUES (10, CURRENT_TIMESTAMP);
+VALUES (11, CURRENT_TIMESTAMP);
 
 CREATE TRIGGER IF NOT EXISTS trg_collections_last_used_at_insert
 AFTER INSERT ON snapshots
@@ -997,3 +999,48 @@ BEGIN
     END;
 END;
 -- Task058 local identity foundation END
+
+-- Task060 Drive Sets BEGIN
+CREATE TABLE drive_sets (
+    id TEXT NOT NULL PRIMARY KEY CHECK (length(id) = 36),
+    name TEXT NOT NULL CHECK (length(CAST(name AS BLOB)) BETWEEN 1 AND 256 AND instr(name, char(0)) = 0),
+    normalized_name TEXT NOT NULL UNIQUE CHECK (length(CAST(normalized_name AS BLOB)) BETWEEN 1 AND 1024),
+    normalization_version TEXT NOT NULL CHECK (normalization_version = 'fsd-drive-set-name-v1'),
+    revision INTEGER NOT NULL DEFAULT 1 CHECK (typeof(revision) = 'integer' AND revision >= 1),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE drive_set_memberships (
+    set_id TEXT NOT NULL REFERENCES drive_sets(id) ON DELETE CASCADE ON UPDATE RESTRICT,
+    physical_drive_id TEXT NOT NULL REFERENCES physical_drives(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+    added_at TEXT NOT NULL,
+    admission TEXT NOT NULL CHECK (admission = 'explicit_local_selection'),
+    PRIMARY KEY (set_id, physical_drive_id)
+);
+
+CREATE INDEX idx_drive_sets_order ON drive_sets(normalized_name, id);
+
+CREATE INDEX idx_drive_set_memberships_drive ON drive_set_memberships(physical_drive_id, set_id);
+
+CREATE TRIGGER trg_drive_sets_revision
+BEFORE UPDATE ON drive_sets
+WHEN NEW.id IS NOT OLD.id OR NEW.created_at IS NOT OLD.created_at
+  OR NEW.normalization_version IS NOT OLD.normalization_version OR NEW.revision != OLD.revision + 1
+BEGIN
+    SELECT RAISE(ABORT, 'Invalid Drive Set revision');
+END;
+
+CREATE TRIGGER trg_drive_set_memberships_admission
+BEFORE INSERT ON drive_set_memberships
+WHEN NOT EXISTS (SELECT 1 FROM physical_drives WHERE id = NEW.physical_drive_id AND retired = 0)
+BEGIN
+    SELECT RAISE(ABORT, 'Missing or retired local drive');
+END;
+
+CREATE TRIGGER trg_drive_set_memberships_no_update
+BEFORE UPDATE ON drive_set_memberships
+BEGIN
+    SELECT RAISE(ABORT, 'Membership must be explicitly removed and added');
+END;
+-- Task060 Drive Sets END
