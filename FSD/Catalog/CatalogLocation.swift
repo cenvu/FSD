@@ -11,6 +11,9 @@ public struct CatalogLocation: Equatable, Sendable {
     public enum Origin: String, Sendable {
         /// `~/Library/Application Support/FSD/catalog.sqlite3` — the production default.
         case applicationSupport
+        /// `~/Library/Application Support/FSD-Internal-Preview/catalog.sqlite3` —
+        /// the dedicated Internal Preview catalog. Never the production catalog.
+        case internalPreview
         /// `-FSDCatalogPath <path>` on the command line.
         case launchArgument
         /// `FSD_CATALOG_PATH` in the environment.
@@ -37,15 +40,25 @@ public struct CatalogLocation: Equatable, Sendable {
 
     public var isOverridden: Bool { origin != .applicationSupport }
 
+    /// True only when this process resolved the dedicated Internal Preview
+    /// catalog. The UI uses this to show the explicit Internal Preview marker.
+    public var isInternalPreview: Bool { origin == .internalPreview }
+
     /// One line, printed at startup and shown in the app's diagnostics, so an
     /// operator or an automated probe can see which catalog is actually in use.
     public var diagnosticLine: String {
-        var line = "FSD catalog: \(url.path) (source: \(origin.rawValue))"
+        var line = isInternalPreview
+            ? "FSD Internal Preview catalog: \(url.path) (source: \(origin.rawValue))"
+            : "FSD catalog: \(url.path) (source: \(origin.rawValue))"
         if let rejectedOverridePath {
             line += " — override request \(rejectedOverridePath.debugDescription) ignored: "
-            line += origin == .testHost
-                ? "an XCTest host always uses its own isolated catalog"
-                : "catalog-path overrides are available in DEBUG builds only"
+            if origin == .testHost {
+                line += "an XCTest host always uses its own isolated catalog"
+            } else if isInternalPreview {
+                line += "the Internal Preview always uses its dedicated catalog"
+            } else {
+                line += "catalog-path overrides are available in DEBUG builds only"
+            }
         }
         return line
     }
@@ -53,12 +66,15 @@ public struct CatalogLocation: Equatable, Sendable {
 
 public enum CatalogLocationError: Error, LocalizedError, Equatable {
     case applicationSupportUnavailable
+    case internalPreviewUnavailable
     case emptyOverridePath
 
     public var errorDescription: String? {
         switch self {
         case .applicationSupportUnavailable:
             return "The Application Support directory is unavailable, so the catalog location cannot be resolved."
+        case .internalPreviewUnavailable:
+            return "The Application Support directory is unavailable, so the Internal Preview catalog location cannot be resolved. The Internal Preview never falls back to the production catalog."
         case .emptyOverridePath:
             return "The requested catalog path override is empty."
         }
@@ -68,6 +84,35 @@ public enum CatalogLocationError: Error, LocalizedError, Equatable {
 public enum CatalogLocationResolver {
     public static let launchArgumentName = "-FSDCatalogPath"
     public static let environmentVariableName = "FSD_CATALOG_PATH"
+
+    /// The Internal Preview stores its catalog in its own Application Support
+    /// directory, so it can never open, migrate or lock the production catalog.
+    public static let internalPreviewDirectoryName = "FSD-Internal-Preview"
+
+    /// Preview-flavor-only test seam: an explicit isolated catalog root for the
+    /// packaged Internal Preview launch smoke. It is honoured only when the
+    /// process already resolved the Internal Preview flavor, never by the
+    /// production build and never while hosting an XCTest bundle.
+    public static let internalPreviewTestRootVariableName = "FSD_INTERNAL_PREVIEW_TEST_ROOT"
+
+    /// Which catalog the compiled product resolves. The Internal Preview flavor
+    /// is selected at compile time so a stray runtime flag can never move a
+    /// production build onto the preview catalog, or the preview onto the
+    /// production catalog.
+    public enum Flavor: String, Sendable {
+        /// The shipping FishSock Differ product: production Application Support.
+        case production
+        /// The isolated FSD2 Internal Preview: its own dedicated catalog only.
+        case internalPreview
+
+        public static var buildTime: Flavor {
+            #if FSD_INTERNAL_PREVIEW
+            return .internalPreview
+            #else
+            return .production
+            #endif
+        }
+    }
 
     /// Overrides are a development and test affordance. A Release build resolves
     /// the Application Support default unconditionally and reports the ignored
@@ -88,9 +133,34 @@ public enum CatalogLocationResolver {
         arguments: [String] = CommandLine.arguments,
         environment: [String: String] = ProcessInfo.processInfo.environment,
         fileManager: FileManager = .default,
-        overrideAllowed: Bool = overrideIsAvailable
+        overrideAllowed: Bool = overrideIsAvailable,
+        flavor: Flavor = Flavor.buildTime
     ) throws -> CatalogLocation {
         let requested = requestedOverride(arguments: arguments, environment: environment)
+
+        // Internal Preview flavor. It resolves only its dedicated catalog and
+        // never consults the production path. The XCTest host still gets its own
+        // isolated synthetic catalog so automated runs never touch preview data.
+        if flavor == .internalPreview {
+            if isRunningAsTestHost(environment: environment) {
+                return CatalogLocation(
+                    url: testHostCatalogURL(),
+                    origin: .testHost,
+                    rejectedOverridePath: requested?.path
+                )
+            }
+            if let testRoot = environment[internalPreviewTestRootVariableName], !testRoot.isEmpty {
+                let trimmed = testRoot.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty else { throw CatalogLocationError.emptyOverridePath }
+                return CatalogLocation(url: catalogURL(forOverridePath: trimmed), origin: .internalPreview)
+            }
+            return CatalogLocation(
+                url: try internalPreviewURL(fileManager: fileManager),
+                origin: .internalPreview,
+                rejectedOverridePath: requested?.path
+            )
+        }
+
         if let requested, overrideAllowed {
             let trimmed = requested.path.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmed.isEmpty else { throw CatalogLocationError.emptyOverridePath }
@@ -156,6 +226,18 @@ public enum CatalogLocationResolver {
         }
         return applicationSupport
             .appendingPathComponent("FSD", isDirectory: true)
+            .appendingPathComponent(CatalogDatabase.defaultDatabaseFileName, isDirectory: false)
+    }
+
+    /// The Internal Preview's dedicated catalog. There is intentionally no
+    /// fallback to the production `FSD/catalog.sqlite3` path: if the Application
+    /// Support directory cannot be resolved the preview fails loudly instead.
+    public static func internalPreviewURL(fileManager: FileManager = .default) throws -> URL {
+        guard let applicationSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            throw CatalogLocationError.internalPreviewUnavailable
+        }
+        return applicationSupport
+            .appendingPathComponent(internalPreviewDirectoryName, isDirectory: true)
             .appendingPathComponent(CatalogDatabase.defaultDatabaseFileName, isDirectory: false)
     }
 

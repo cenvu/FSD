@@ -1,0 +1,25 @@
+{
+  "flavor": "FSD2_INTERNAL_PREVIEW",
+  "task": "FSD2_ISOLATED_INTERNAL_PREVIEW_BUILD_065",
+  "scheme": "FSD",
+  "configuration": "Preview",
+  "product_name": "FSD2InternalPreview",
+  "app_display_name": "FSD2 Internal Preview",
+  "bundle_identifier": "com.fsd.FSD-InternalPreview",
+  "marketing_version": "0.1.0",
+  "deployment_target": "15.0",
+  "architectures": ["arm64"],
+  "swift_flag": "FSD_INTERNAL_PREVIEW",
+  "flavor_marker": "FSD_PREVIEW_FLAVOR_ACTIVE",
+  "production_flavor_marker": "FSD_PRODUCTION_FLAVOR_ACTIVE",
+  "catalog_directory": "FSD-Internal-Preview",
+  "catalog_file": "catalog.sqlite3",
+  "required_resources": [
+    "Contents/Resources/schema.sql",
+    "Contents/Resources/THIRD_PARTY_NOTICES.txt"
+  ],
+  "required_helpers": [
+    "Contents/Helpers/FSDClassificationHostSeam"
+  ],
+  "artifact_name": "FSD2-Internal-Preview-Task065.zip"
+}

@@ -1,12 +1,48 @@
 import AppKit
 import SwiftUI
 
+/// Compile-time product identity. The Internal Preview is a separate flavor
+/// built with `FSD_INTERNAL_PREVIEW`; it has its own display name and its own
+/// dedicated catalog, and it must never be mistaken for the shipping product.
+enum FSDProductIdentity {
+    static let isInternalPreview: Bool = {
+        #if FSD_INTERNAL_PREVIEW
+        return true
+        #else
+        return false
+        #endif
+    }()
+
+    static let marker = "Internal Preview"
+    static let displayName = "FishSock Differ"
+    static let previewDisplayName = "FSD2 Internal Preview"
+
+    /// Literal compiled into the binary that records which flavor this build is.
+    /// Only the active compile-time branch's string survives, so the packaging
+    /// script can grep the staged binary for the Preview marker and abort if it
+    /// is missing — a build that forgot `FSD_INTERNAL_PREVIEW` fails packaging
+    /// instead of silently shipping a bundle that opens the production catalog.
+    /// The Preview marker value is declared in
+    /// `scripts/internal_preview_manifest.json` as `flavor_marker`.
+    static var flavorMarker: String {
+        #if FSD_INTERNAL_PREVIEW
+        return "FSD_PREVIEW_FLAVOR_ACTIVE"
+        #else
+        return "FSD_PRODUCTION_FLAVOR_ACTIVE"
+        #endif
+    }
+
+    static var windowTitle: String {
+        isInternalPreview ? "\(previewDisplayName) — \(marker)" : displayName
+    }
+}
+
 @main
 struct FSDApp: App {
     @StateObject private var model = ApplicationModel()
 
     var body: some Scene {
-        WindowGroup("FishSock Differ") {
+        WindowGroup(FSDProductIdentity.windowTitle) {
             FSDAppShellView(model: model)
                 .background(FSDWindowAppearanceConfigurator().frame(width: 1, height: 1).allowsHitTesting(false))
                 .frame(minWidth: 1120, minHeight: 720)
@@ -109,6 +145,10 @@ final class ApplicationModel: ObservableObject {
             // used without reading the UI. Standard error rather than standard
             // output because it is unbuffered and survives an abrupt exit.
             FileHandle.standardError.write(Data("\(location.diagnosticLine)\n".utf8))
+            // Flavor probe for the packaged Internal Preview launch smoke: this
+            // is the only place the compiled-in flavor marker is read, which
+            // keeps the literal in the binary so packaging can verify it.
+            FileHandle.standardError.write(Data("FSD flavor: \(FSDProductIdentity.flavorMarker)\n".utf8))
 
             // Single-process ownership (ADR-025) is taken before anything reads
             // or reconciles the catalog, so startup recovery can never interrupt

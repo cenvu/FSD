@@ -160,25 +160,29 @@ struct FSDAppShellView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            HStack(spacing: 0) {
-                FSDSidebarView(selection: $selection)
-                    .frame(width: FSDDesignTokens.sidebarWidth(for: geometry.size.width))
+            VStack(spacing: 0) {
+                internalPreviewIndicator
+                HStack(spacing: 0) {
+                    FSDSidebarView(selection: $selection)
+                        .frame(width: FSDDesignTokens.sidebarWidth(for: geometry.size.width))
 
-                Rectangle()
-                    .fill(FSDDesignTokens.separator)
-                    .frame(width: 1)
-
-                VStack(spacing: 0) {
-                    FSDTopBarView(selection: selection) { destination in
-                        selection = destination
-                    }
                     Rectangle()
                         .fill(FSDDesignTokens.separator)
-                        .frame(height: 1)
-                    destinationView
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .frame(width: 1)
+
+                    VStack(spacing: 0) {
+                        FSDTopBarView(selection: selection) { destination in
+                            selection = destination
+                        }
+                        Rectangle()
+                            .fill(FSDDesignTokens.separator)
+                            .frame(height: 1)
+                        destinationView
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(FSDDesignTokens.window)
             }
             .background(FSDDesignTokens.window)
         }
@@ -194,6 +198,36 @@ struct FSDAppShellView: View {
                   )
             else { return }
             homeSelectedSnapshotID = newlyCompletedID
+        }
+    }
+
+    /// The visible Internal Preview marker. It exists only in the preview flavor,
+    /// names the exact catalog in use, and states the build's honest status.
+    @ViewBuilder
+    private var internalPreviewIndicator: some View {
+        if FSDProductIdentity.isInternalPreview {
+            HStack(spacing: 8) {
+                Image(systemName: "hammer.fill")
+                    .font(.system(size: 11, weight: .semibold))
+                Text("\(FSDProductIdentity.marker) — early internal build, not Feature Complete")
+                    .font(.system(size: 11, weight: .semibold))
+                Spacer(minLength: 12)
+                Text(model.catalogDiagnostics)
+                    .font(.system(size: 10))
+                    .foregroundStyle(FSDDesignTokens.secondaryText)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+            .padding(.horizontal, 12)
+            .frame(height: 26)
+            .frame(maxWidth: .infinity)
+            .background(FSDDesignTokens.toolbar)
+            .foregroundStyle(FSDDesignTokens.primaryText)
+            .overlay(alignment: .bottom) {
+                Rectangle().fill(FSDDesignTokens.separator).frame(height: 1)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Internal Preview build. Not Feature Complete.")
         }
     }
 
