@@ -127,16 +127,89 @@ final class InternalPreviewIsolationTests: XCTestCase {
         XCTAssertNotEqual(location.url.deletingLastPathComponent().lastPathComponent, CatalogLocationResolver.internalPreviewDirectoryName)
     }
 
-    func testPreviewTestRootSeamStaysInsideTheExplicitRoot() throws {
-        let root = directory.appendingPathComponent("isolated-preview-root", isDirectory: true)
+    /// FINDING_A regression. The original Task065 preview honoured the
+    /// `FSD_INTERNAL_PREVIEW_TEST_ROOT` environment variable, so the shipped
+    /// binary could be pointed at any directory — including the production FSD
+    /// catalog. The seam is removed; the variable must now be inert.
+    func testInternalPreviewIgnoresTheRemovedTestRootEnvironmentVariable() throws {
+        let productionLooking = directory.appendingPathComponent("FSD/catalog.sqlite3")
         let location = try CatalogLocationResolver.resolve(
             arguments: [],
-            environment: [CatalogLocationResolver.internalPreviewTestRootVariableName: root.path],
+            environment: ["FSD_INTERNAL_PREVIEW_TEST_ROOT": directory.path],
             flavor: .internalPreview
         )
         XCTAssertEqual(location.origin, .internalPreview)
-        XCTAssertEqual(location.url, root.appendingPathComponent(CatalogDatabase.defaultDatabaseFileName))
-        XCTAssertTrue(location.url.path.hasPrefix(root.path))
+        XCTAssertEqual(location.url, try CatalogLocationResolver.internalPreviewURL())
+        XCTAssertNotEqual(location.url, productionLooking)
+        XCTAssertFalse(location.url.path.hasPrefix(directory.path))
+        // A raw environment variable is not even reported as a rejected override.
+        XCTAssertNil(location.rejectedOverridePath)
+    }
+
+    /// FINDING_A regression: no launch argument or environment catalog path may
+    /// move the compiled preview, even when overrides are otherwise allowed.
+    func testInternalPreviewRejectsEveryRuntimeCatalogOverride() throws {
+        let decoy = directory.appendingPathComponent("decoy/catalog.sqlite3")
+        let location = try CatalogLocationResolver.resolve(
+            arguments: ["preview", "-FSDCatalogPath", decoy.path],
+            environment: [CatalogLocationResolver.environmentVariableName: decoy.path],
+            overrideAllowed: true,
+            flavor: .internalPreview
+        )
+        XCTAssertEqual(location.origin, .internalPreview)
+        XCTAssertEqual(location.url, try CatalogLocationResolver.internalPreviewURL())
+        XCTAssertNotEqual(location.url, decoy)
+        XCTAssertFalse(location.url.path.hasPrefix(directory.path))
+        XCTAssertEqual(location.rejectedOverridePath, decoy.path)
+    }
+
+    func testInternalPreviewDirectorySymlinkedOntoProductionFailsClosed() throws {
+        let appSupport = directory.appendingPathComponent("Library/Application Support", isDirectory: true)
+        let production = appSupport.appendingPathComponent(CatalogLocationResolver.productionDirectoryName, isDirectory: true)
+        try FileManager.default.createDirectory(at: production, withIntermediateDirectories: true)
+        try FileManager.default.createSymbolicLink(
+            at: appSupport.appendingPathComponent(CatalogLocationResolver.internalPreviewDirectoryName, isDirectory: true),
+            withDestinationURL: production
+        )
+        let fileManager = ApplicationSupportFileManager(root: appSupport)
+        XCTAssertThrowsError(try CatalogLocationResolver.internalPreviewURL(fileManager: fileManager)) { error in
+            XCTAssertEqual(error as? CatalogLocationError, .internalPreviewConflictsWithProduction)
+        }
+        XCTAssertThrowsError(try CatalogLocationResolver.resolve(
+            arguments: [],
+            environment: [:],
+            fileManager: fileManager,
+            flavor: .internalPreview
+        )) { error in
+            XCTAssertEqual(error as? CatalogLocationError, .internalPreviewConflictsWithProduction)
+        }
+    }
+
+    func testInternalPreviewCatalogFileSymlinkedOntoProductionFailsClosed() throws {
+        let appSupport = directory.appendingPathComponent("Library/Application Support", isDirectory: true)
+        let production = appSupport.appendingPathComponent(CatalogLocationResolver.productionDirectoryName, isDirectory: true)
+        let preview = appSupport.appendingPathComponent(CatalogLocationResolver.internalPreviewDirectoryName, isDirectory: true)
+        try FileManager.default.createDirectory(at: production, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: preview, withIntermediateDirectories: true)
+        let productionCatalog = production.appendingPathComponent(CatalogDatabase.defaultDatabaseFileName)
+        try Data("production-sentinel".utf8).write(to: productionCatalog)
+        try FileManager.default.createSymbolicLink(
+            at: preview.appendingPathComponent(CatalogDatabase.defaultDatabaseFileName),
+            withDestinationURL: productionCatalog
+        )
+        let fileManager = ApplicationSupportFileManager(root: appSupport)
+        XCTAssertThrowsError(try CatalogLocationResolver.internalPreviewURL(fileManager: fileManager)) { error in
+            XCTAssertEqual(error as? CatalogLocationError, .internalPreviewConflictsWithProduction)
+        }
+    }
+
+    /// Build-flavor identity enforcement: this host is a production build, so a
+    /// mistaken preview marker (or a unified marker) would be caught here and by
+    /// the packaging binary gate.
+    func testCompiledFlavorIdentityIsProductionInThisHost() {
+        XCTAssertEqual(CatalogLocationResolver.Flavor.buildTime, .production)
+        XCTAssertEqual(FSDProductIdentity.flavorMarker, "FSD_PRODUCTION_FLAVOR_ACTIVE")
+        XCTAssertNotEqual(FSDProductIdentity.flavorMarker, "FSD_PREVIEW_FLAVOR_ACTIVE")
     }
 
     // MARK: - Independent locks and persistence roots
@@ -245,5 +318,21 @@ final class InternalPreviewIsolationTests: XCTestCase {
 private final class EmptyApplicationSupportFileManager: FileManager {
     override func urls(for directory: FileManager.SearchPathDirectory, in domainMask: FileManager.SearchPathDomainMask) -> [URL] {
         []
+    }
+}
+
+/// A FileManager that reports a temporary Application Support directory, so the
+/// symlink fail-closed behavior can be exercised against a generated root
+/// without ever touching the real filesystem.
+private final class ApplicationSupportFileManager: FileManager {
+    private let root: URL
+
+    init(root: URL) {
+        self.root = root
+        super.init()
+    }
+
+    override func urls(for directory: FileManager.SearchPathDirectory, in domainMask: FileManager.SearchPathDomainMask) -> [URL] {
+        directory == .applicationSupportDirectory ? [root] : super.urls(for: directory, in: domainMask)
     }
 }

@@ -35,7 +35,7 @@ FLAVOR_MARKER="$(manifest_value flavor_marker)"
 PRODUCTION_FLAVOR_MARKER="$(manifest_value production_flavor_marker)"
 ARTIFACT_NAME="$(manifest_value artifact_name)"
 
-WORK_DIR="$REPO_ROOT/.ai-scratch/task065/package"
+WORK_DIR="$REPO_ROOT/.ai-scratch/task065r/package"
 BUILD_DIR="$WORK_DIR/derived"
 STAGE_DIR="$WORK_DIR/stage"
 ZIP_PATH="$WORK_DIR/$ARTIFACT_NAME"
@@ -135,13 +135,37 @@ fi
 echo "    marker present: $FLAVOR_MARKER"
 
 echo "==> Bounded isolated launch smoke"
-SMOKE_ROOT="$WORK_DIR/launch-smoke-root"
-rm -rf "$SMOKE_ROOT"
-mkdir -p "$SMOKE_ROOT"
+# The smoke runs entirely on a generated synthetic home. CFFIXED_USER_HOME
+# makes Foundation resolve Application Support under this throwaway directory,
+# so the script never reads, hashes or opens the Owner's real FSD or
+# FSD-Internal-Preview catalog. A synthetic production sentinel and a decoy are
+# generated to prove mutation invariance and override rejection.
+SMOKE_HOME="$WORK_DIR/launch-smoke-home"
+rm -rf "$SMOKE_HOME"
+SMOKE_APPSUP="$SMOKE_HOME/Library/Application Support"
+SMOKE_PROD_DIR="$SMOKE_APPSUP/FSD"
+SMOKE_PROD_CATALOG="$SMOKE_PROD_DIR/catalog.sqlite3"
+mkdir -p "$SMOKE_PROD_DIR"
+printf 'synthetic-production-sentinel-task065r\n' > "$SMOKE_PROD_CATALOG"
+EXPECTED_PREVIEW_CATALOG="$SMOKE_APPSUP/FSD-Internal-Preview/catalog.sqlite3"
+
+# A decoy catalog supplied through every runtime override channel that a
+# compiled preview must ignore: the removed test-root variable, the documented
+# environment variable and a launch argument.
+DECOY_ROOT="$WORK_DIR/launch-smoke-decoy"
+rm -rf "$DECOY_ROOT"
+mkdir -p "$DECOY_ROOT"
+DECOY_CATALOG="$DECOY_ROOT/catalog.sqlite3"
+
 SMOKE_LOG="$WORK_DIR/launch-smoke.log"
-PROD_CATALOG="$HOME/Library/Application Support/FSD/catalog.sqlite3"
-PROD_BEFORE="$( [[ -f "$PROD_CATALOG" ]] && shasum -a 256 "$PROD_CATALOG" | awk '{print $1}' || echo "absent" )"
-FSD_INTERNAL_PREVIEW_TEST_ROOT="$SMOKE_ROOT" "$APP_BINARY" >"$SMOKE_LOG" 2>&1 &
+PROD_BEFORE="$(shasum -a 256 "$SMOKE_PROD_CATALOG" | awk '{print $1}')"
+# LLVM_PROFILE_FILE keeps the instrumented app's coverage output inside the
+# scratch directory instead of the repository working directory.
+CFFIXED_USER_HOME="$SMOKE_HOME" \
+LLVM_PROFILE_FILE="$WORK_DIR/launch-smoke-%p.profraw" \
+FSD_INTERNAL_PREVIEW_TEST_ROOT="$DECOY_ROOT" \
+FSD_CATALOG_PATH="$DECOY_CATALOG" \
+  "$APP_BINARY" -FSDCatalogPath "$DECOY_CATALOG" >"$SMOKE_LOG" 2>&1 &
 SMOKE_PID=$!
 for _ in $(seq 1 20); do
   if grep -a -q "source: internalPreview" "$SMOKE_LOG"; then break; fi
@@ -155,25 +179,81 @@ if ! grep -a -q "source: internalPreview" "$SMOKE_LOG"; then
   cat "$SMOKE_LOG" >&2
   exit 1
 fi
-if ! grep -a -F -q "$SMOKE_ROOT" "$SMOKE_LOG"; then
-  echo "error: launch smoke did not honour the isolated test root." >&2
+RESOLVED_CATALOG="$(grep -a '^FSD Internal Preview catalog: ' "$SMOKE_LOG" | head -1 \
+  | sed -E 's/^FSD Internal Preview catalog: (.*) \(source: internalPreview\).*/\1/')"
+if [[ "$RESOLVED_CATALOG" != "$EXPECTED_PREVIEW_CATALOG" ]]; then
+  echo "error: launch smoke resolved the wrong catalog:" >&2
+  echo "       expected: $EXPECTED_PREVIEW_CATALOG" >&2
+  echo "       resolved: $RESOLVED_CATALOG" >&2
   cat "$SMOKE_LOG" >&2
   exit 1
 fi
-if grep -a -q "/Application Support/FSD/" "$SMOKE_LOG"; then
-  echo "error: launch smoke resolved a production catalog path." >&2
+# The decoy override channels must have been seen and explicitly ignored, not
+# honoured. The diagnostic reports the rejected request.
+if ! grep -a -F -q "override request \"$DECOY_CATALOG\" ignored" "$SMOKE_LOG"; then
+  echo "error: launch smoke did not report the decoy override as ignored." >&2
+  cat "$SMOKE_LOG" >&2
+  exit 1
+fi
+if ! grep -a -q "FSD flavor: $FLAVOR_MARKER" "$SMOKE_LOG"; then
+  echo "error: launch smoke did not report the preview flavor marker." >&2
+  cat "$SMOKE_LOG" >&2
+  exit 1
+fi
+if grep -a -F -q "$SMOKE_PROD_CATALOG" "$SMOKE_LOG"; then
+  echo "error: launch smoke resolved the synthetic production catalog." >&2
+  cat "$SMOKE_LOG" >&2
+  exit 1
+fi
+if grep -a -F -q "$HOME/Library/Application Support/FSD" "$SMOKE_LOG"; then
+  echo "error: launch smoke resolved the Owner production catalog path." >&2
   cat "$SMOKE_LOG" >&2
   exit 1
 fi
 SMOKE_LINE="$(grep -a "FSD Internal Preview catalog" "$SMOKE_LOG" | head -1)"
-PROD_AFTER="$( [[ -f "$PROD_CATALOG" ]] && shasum -a 256 "$PROD_CATALOG" | awk '{print $1}' || echo "absent" )"
+PROD_AFTER="$(shasum -a 256 "$SMOKE_PROD_CATALOG" | awk '{print $1}')"
 if [[ "$PROD_BEFORE" != "$PROD_AFTER" ]]; then
-  echo "error: production catalog changed during launch smoke." >&2
+  echo "error: synthetic production sentinel changed during launch smoke." >&2
   exit 1
 fi
 echo "    $SMOKE_LINE"
-echo "    production catalog unchanged ($PROD_BEFORE)"
-rm -rf "$SMOKE_ROOT"
+echo "    synthetic production sentinel unchanged ($PROD_BEFORE)"
+rm -rf "$SMOKE_HOME" "$DECOY_ROOT"
+
+echo "==> Bounded symlink fail-closed smoke"
+# A filesystem symlink that aliases the preview directory onto the production
+# directory must make the shipped preview refuse to start rather than open
+# production data. This runs on a generated synthetic home only.
+SYMLINK_HOME="$WORK_DIR/launch-symlink-home"
+rm -rf "$SYMLINK_HOME"
+SYMLINK_APPSUP="$SYMLINK_HOME/Library/Application Support"
+SYMLINK_PROD="$SYMLINK_APPSUP/FSD"
+mkdir -p "$SYMLINK_PROD"
+printf 'synthetic-production-sentinel-task065r\n' > "$SYMLINK_PROD/catalog.sqlite3"
+ln -s "$SYMLINK_PROD" "$SYMLINK_APPSUP/FSD-Internal-Preview"
+SYMLINK_LOG="$WORK_DIR/launch-symlink.log"
+CFFIXED_USER_HOME="$SYMLINK_HOME" \
+LLVM_PROFILE_FILE="$WORK_DIR/launch-symlink-%p.profraw" \
+  "$APP_BINARY" >"$SYMLINK_LOG" 2>&1 &
+SYMLINK_PID=$!
+for _ in $(seq 1 20); do
+  if grep -a -q "FSD startup failed" "$SYMLINK_LOG"; then break; fi
+  sleep 0.5
+done
+kill "$SYMLINK_PID" 2>/dev/null || true
+wait "$SYMLINK_PID" 2>/dev/null || true
+if grep -a -q "source: internalPreview" "$SYMLINK_LOG"; then
+  echo "error: symlinked preview still resolved a catalog instead of failing closed." >&2
+  cat "$SYMLINK_LOG" >&2
+  exit 1
+fi
+if ! grep -a -q "resolves onto the production FSD catalog" "$SYMLINK_LOG"; then
+  echo "error: symlinked preview did not fail closed with the production-conflict error." >&2
+  cat "$SYMLINK_LOG" >&2
+  exit 1
+fi
+echo "    symlinked preview refused to start (fail closed)"
+rm -rf "$SYMLINK_HOME"
 
 echo "==> Computing bundle tree digest"
 BUNDLE_TREE_SHA="$(
@@ -198,7 +278,7 @@ python3 - "$WORK_DIR" "$MANIFEST" "$BUILD_VERSION" "$DIRTY" "$BUNDLE_TREE_SHA" "
 import datetime, json, os, sys
 
 (work_dir, manifest_path, version, dirty, tree_sha, zip_sha, zip_size,
- zip_path, smoke_line, prod_hash) = sys.argv[1:]
+ zip_path, smoke_line, sentinel_sha) = sys.argv[1:]
 manifest = json.load(open(manifest_path))
 receipt = {
     "flavor": manifest["flavor"],
@@ -219,7 +299,9 @@ receipt = {
     "artifact_bytes": int(zip_size),
     "bundle_tree_sha256": tree_sha,
     "launch_smoke_line": smoke_line,
-    "production_catalog_sha256_after_smoke": prod_hash,
+    "launch_smoke_home": "CFFIXED_USER_HOME;generated_synthetic_only",
+    "synthetic_production_sentinel_sha256": sentinel_sha,
+    "owner_catalog_accessed": False,
     "built_at_utc": datetime.datetime.now(datetime.timezone.utc)
         .replace(microsecond=0).isoformat(),
 }
@@ -230,13 +312,18 @@ with open(receipt_path, "w") as handle:
 print(f"  receipt: {receipt_path}")
 PY
 
-echo "==> Staging artifact on Desktop"
-mkdir -p "$(dirname "$DESKTOP_ARTIFACT")"
-cp "$ZIP_PATH" "$DESKTOP_ARTIFACT"
-DESKTOP_SHA="$(shasum -a 256 "$DESKTOP_ARTIFACT" | awk '{print $1}')"
-if [[ "$DESKTOP_SHA" != "$ZIP_SHA" ]]; then
-  echo "error: desktop copy hash mismatch" >&2
-  exit 1
+if [[ "${FSD_PREVIEW_STAGE_DESKTOP:-1}" == "0" ]]; then
+  echo "==> Skipping Desktop staging (FSD_PREVIEW_STAGE_DESKTOP=0)"
+  DESKTOP_ARTIFACT="$ZIP_PATH"
+else
+  echo "==> Staging artifact on Desktop"
+  mkdir -p "$(dirname "$DESKTOP_ARTIFACT")"
+  cp "$ZIP_PATH" "$DESKTOP_ARTIFACT"
+  DESKTOP_SHA="$(shasum -a 256 "$DESKTOP_ARTIFACT" | awk '{print $1}')"
+  if [[ "$DESKTOP_SHA" != "$ZIP_SHA" ]]; then
+    echo "error: desktop copy hash mismatch" >&2
+    exit 1
+  fi
 fi
 
 cat <<EOF

@@ -1,6 +1,6 @@
-UPDATED_AT: 2026-10-19T12:49:28+07:00
+UPDATED_AT: 2026-10-19T13:45:35+07:00
 
-# Task065 isolated FSD2 Internal Preview build — Worker return
+# Task065R Internal Preview catalog-isolation repair — Worker return
 
 ## HOT
 
@@ -8,188 +8,184 @@ HMD_SCHEMA=FSD_HANDOFF_MARKDOWN
 HMD_VERSION=1.0.0
 PROJECT=FSD
 WORKSTREAM_ID=FSD2_INTERNAL_PREVIEW
-HANDOFF_ID=handoffs/FSD_FSD2_ISOLATED_INTERNAL_PREVIEW_BUILD_065_D_20261019-124928.md
+HANDOFF_ID=handoffs/FSD_FSD2_INTERNAL_PREVIEW_ISOLATION_REPAIR_065R_D_20261019-134535.md
 REPO=/Users/cenvu/DEV/FSD
 BRANCH=main
-LOCAL_HEAD=13dc15944349f73f443808ac3193833aa5ab5dcd
-REMOTE_HEAD=13dc15944349f73f443808ac3193833aa5ab5dcd
-LAST_VERIFIED_AT=2026-10-19T12:49:28+07:00
-AUTHORITY_PTRS=AGENTS.md|docs/BRAIN_OPERATOR.md|docs/AGENT.md|STATE/PROJECT_STATE.md|STATE/TASK_LEDGER.tsv|STATE/EVENTS.jsonl|.agents/skills/fsd-task-execution/SKILL.md|.agents/skills/fsd-independent-review/SKILL.md|.agents/skills/fsd-handoff-finalizer/SKILL.md|FSD/Catalog/CatalogLocation.swift|FSD/App/FSDApp.swift|FSD/UI/ComparisonSharedViews.swift|FSD.xcodeproj/project.pbxproj|FSDTests/InternalPreviewIsolationTests.swift|FSDTests/InternalPreviewSmokeTests.swift|scripts/build_internal_preview.sh|scripts/internal_preview_manifest.json|handoffs/FSD_FSD2_COMPARE_ANCESTOR_REVEAL_064_D_20261019-120311.md
+LOCAL_HEAD=9f77d5068faa8237504adc131c1d68846a8f5817
+REMOTE_HEAD=9f77d5068faa8237504adc131c1d68846a8f5817
+LAST_VERIFIED_AT=2026-10-19T13:45:35+07:00
+AUTHORITY_PTRS=AGENTS.md|docs/BRAIN_OPERATOR.md|docs/AGENT.md|STATE/PROJECT_STATE.md|STATE/TASK_LEDGER.tsv|STATE/EVENTS.jsonl|.agents/skills/fsd-task-execution/SKILL.md|.agents/skills/fsd-independent-review/SKILL.md|.agents/skills/fsd-handoff-finalizer/SKILL.md|FSD/Catalog/CatalogLocation.swift|FSD/App/FSDApp.swift|FSD.xcodeproj/project.pbxproj|FSDTests/InternalPreviewIsolationTests.swift|FSDTests/InternalPreviewSmokeTests.swift|scripts/build_internal_preview.sh|scripts/internal_preview_manifest.json|handoffs/FSD_FSD2_ISOLATED_INTERNAL_PREVIEW_BUILD_065_D_20261019-124928.md
 CURRENT_PHASE=POST_V0_1_FSD2_FOUNDATION
-CURRENT_GATE=FSD2_ISOLATED_INTERNAL_PREVIEW_BUILD_065
+CURRENT_GATE=FSD2_INTERNAL_PREVIEW_ISOLATION_REPAIR_065R
 STATUS=WORKER_COMPLETE_PENDING_BRAIN
-BLOCKER=NONE_FOR_SCOPED_PREVIEW;OWNER_MANUAL_DOUBLE_CLICK_ACCEPTANCE_PENDING;NO_DEVELOPER_ID_NOTARIZATION_OR_PUBLIC_RELEASE
-PROPOSED_NEXT=WAIT(BRAIN_REVIEW_TASK065_ISOLATED_INTERNAL_PREVIEW_BUILD)
+BLOCKER=NONE_FOR_SCOPED_REPAIR;OWNER_MANUAL_DOUBLE_CLICK_ACCEPTANCE_PENDING;NO_DEVELOPER_ID_NOTARIZATION_OR_PUBLIC_RELEASE
+PROPOSED_NEXT=WAIT(BRAIN_REVIEW_TASK065R_INTERNAL_PREVIEW_ISOLATION_REPAIR)
 NO_AUTO_NEXT=YES
 
 ## Execution identity and scope
 
 PROJECT=FSD
-TASK_ID=FSD2_ISOLATED_INTERNAL_PREVIEW_BUILD_065
+TASK_ID=FSD2_INTERNAL_PREVIEW_ISOLATION_REPAIR_065R
 ROLE=WORKER
-BASE_HEAD=13dc15944349f73f443808ac3193833aa5ab5dcd
-UPSTREAM_HEAD=13dc15944349f73f443808ac3193833aa5ab5dcd
+BASE_HEAD=9f77d5068faa8237504adc131c1d68846a8f5817
+UPSTREAM_HEAD=9f77d5068faa8237504adc131c1d68846a8f5817
 ACCEPTED_STATE=STATE/PROJECT_STATE.md
-SCOPE=ISOLATED_DOUBLE_CLICKABLE_FSD2_INTERNAL_PREVIEW_BUILD_COMPILE_TIME_FLAVOR_SEPARATE_CATALOG_ARM64_APP_ZIP_MANIFEST_SMOKE
-ALLOWED_PATHS=EIGHT_SUBSTANTIVE_PATHS_LISTED_BELOW_PLUS_ONE_HISTORY_CURRENT_WORKER_LEDGER_EVENT_DESKTOP
-FORBIDDEN_PATHS=ACCEPTED_STATE_RULE_LEDGER_OLD_HISTORY_SCHEMA_RECEIPT_WRITER_SAVE_DELETE_SOURCE_CAPTURE_PROVIDER_HELPER_OWNER_DATA_HARDWARE_PUBLIC_RELEASE_TASK066
-SUCCESS_CRITERIA=COMPILE_TIME_PREVIEW_ISOLATION_DEDICATED_CATALOG_NEVER_PRODUCTION_ARM64_APP_AND_ZIP_DETERMINISTIC_MANIFEST_GENERATED_FIXTURE_E2E_SMOKE_ISOLATION_TESTS_SELECTED_SUITE_CLEAN_BUILDS_REVIEW_PUBLICATION
-VALIDATIONS=GENERATED_FIXTURE_XCTEST_OWN_WINDOW_CAPTURE_ARTIFACT_HASH_PREVIEW_LAUNCH_SMOKE_PRODUCTION_HASH_INVARIANT_CLEAN_ARM64_BUILDS_PROTECTED_HASHES_EXACT_CHECKER
-NEXT_BOUNDARY=RETURN_TO_BRAIN_ONLY
+SCOPE=CATALOG_RESOLVER_PREVIEW_ISOLATION_REPAIR;PREVIEW_PACKAGING_SYNTHETIC_ONLY;FOCUSED_NEGATIVE_TESTS;MINIMAL_BUILD_CONFIGURATION;NORMAL_REPORTING
+ALLOWED_PATHS=FSD/Catalog/CatalogLocation.swift|FSDTests/InternalPreviewIsolationTests.swift|scripts/build_internal_preview.sh|scripts/internal_preview_manifest.json|STATE/TASK_LEDGER.tsv|STATE/EVENTS.jsonl|handoffs/CURRENT_HANDOFF.md|handoffs/FSD_FSD2_INTERNAL_PREVIEW_ISOLATION_REPAIR_065R_D_20261019-134535.md
+FORBIDDEN_PATHS=OWNER_CATALOG_OR_MEDIA;HARDWARE_OBSERVER;SCHEMA;COMPLETION_RECEIPT;SAVE_DELETE;SOURCE_CAPTURE;PROVIDER_HELPER;SNAPSHOT_IMMUTABILITY;PUBLIC_RELEASE;TASK066;BRAIN_OWNED_PROJECT_STATE_AND_CLASSIFICATION
+SUCCESS_CRITERIA=NO_RUNTIME_ENV_ARG_TEST_SEAM_OR_SYMLINK_REDIRECTS_SHIPPED_PREVIEW_TO_PRODUCTION;FAIL_CLOSED;PACKAGING_READS_NO_OWNER_CATALOG;SYNTHETIC_SENTINEL_INVARIANCE;NEGATIVE_REGRESSION_TESTS;CLEAN_ARM64_PREVIEW_DEBUG_RELEASE;SELECTED_TESTS;REPRODUCIBLE_BUNDLE;INDEPENDENT_REVIEW;IMMUTABLE_HISTORY
 WORKER_RESULT=PASS_WITH_ADVISORY
 
-FACT: started clean main at 13dc15944349f73f443808ac3193833aa5ab5dcd. Fresh fetch
-found exactly one BRAIN-only commit showing the Task064 acceptance and the Task065
-authorization (STATE/PROJECT_STATE.md, STATE/TASK_LEDGER.tsv, STATE/EVENTS.jsonl only).
-Read local Owner policy, Compact, accepted PROJECT_STATE/ledger/events, CURRENT,
-the exact Task065 authorization and the current CatalogLocation implementation
-before any mutation. Loaded task-execution, independent-review and finalizer.
-No reset,stash,clean,force,rebase or Owner work overwrite.
+FACT: started clean main at 9f77d5068faa8237504adc131c1d68846a8f5817;
+`git fetch origin --prune` reported origin/main equal, ahead/behind 0/0. This task is a
+bounded safety correction of the already-published Task065 preview under the direct
+Owner/BRAIN task prompt; `STATE/PROJECT_STATE.md` (BRAIN-owned) still records Task065 as
+the pending gate and was deliberately NOT modified. No BRAIN acceptance or next decision
+was authored. Local Owner policy, Compact, accepted STATE, ledger/events, CURRENT and the
+task-execution/independent-review/finalizer skills were read before mutation.
+
+## Original BRAIN STOP and separate repair response
+
+The published Task065 Worker return was `PASS_WITH_ADVISORY`, and this return is not a
+rewrite of it. BRAIN review of Task065 returned `STOP_MATERIAL_PREVIEW_CATALOG_ISOLATION_GAP`.
+
+- FINDING_A (STOP, material): `CatalogLocationResolver.resolve()` accepted
+  `FSD_INTERNAL_PREVIEW_TEST_ROOT` inside the compiled Preview app, so the distributed
+  binary could be pointed at an arbitrary directory — including the production
+  `~/Library/Application Support/FSD` catalog — defeating the required never-production
+  isolation.
+- FINDING_B (material): `scripts/build_internal_preview.sh` hashed the real Owner
+  production catalog and checked only the main SQLite file, not WAL-state invariance.
+
+Repair evidence (separate from the original STOP):
+
+- `FSD/Catalog/CatalogLocation.swift`: the `FSD_INTERNAL_PREVIEW_TEST_ROOT` seam was
+  removed entirely (no constant, no branch, no string in the shipped preview binary). The
+  preview branch now derives its URL only from `internalPreviewURL(...)` and reports any
+  launch-argument/`FSD_CATALOG_PATH` request as rejected. `internalPreviewURL(...)`
+  fails closed with `CatalogLocationError.internalPreviewConflictsWithProduction` when the
+  symlink-resolved preview directory or catalog file aliases the production location.
+- `scripts/build_internal_preview.sh`: every real Owner catalog read/hash was removed. The
+  smokes run on a generated synthetic home (`CFFIXED_USER_HOME`) with a synthetic
+  production sentinel + decoy; the smoke asserts the resolved path, sentinel byte
+  invariance and override rejection, and a second smoke asserts the symlinked preview
+  fails closed with the production-conflict error.
 
 ## Delivered behavior and boundaries
 
-The preview flavor is selected only at compile time. `CatalogLocationResolver.Flavor.buildTime`
-returns `.internalPreview` only under `#if FSD_INTERNAL_PREVIEW`, and the `Preview`
-build configuration in `FSD.xcodeproj/project.pbxproj` is the only configuration that
-sets `SWIFT_ACTIVE_COMPILATION_CONDITIONS = FSD_INTERNAL_PREVIEW`. Debug and Release
-keep `DEBUG` only, so a stray runtime flag can never move production onto the preview
-catalog or the preview onto production.
+The flavor remains compile-time only: `Flavor.buildTime` returns `.internalPreview` only
+under `#if FSD_INTERNAL_PREVIEW`, and the `Preview` build configuration is the only one
+that sets `SWIFT_ACTIVE_COMPILATION_CONDITIONS = FSD_INTERNAL_PREVIEW`. In the preview
+flavor `resolve(...)` has no runtime catalog override path at all: it ignores
+`-FSDCatalogPath` and `FSD_CATALOG_PATH` (reporting them ignored), and the removed test
+root variable is inert. It returns only
+`~/Library/Application Support/FSD-Internal-Preview/catalog.sqlite3`, and when Application
+Support is unavailable it throws instead of falling back. The XCTest host still receives
+its own per-process temporary catalog.
 
-In the preview flavor `resolve(...)` returns only its dedicated catalog at
-`~/Library/Application Support/FSD-Internal-Preview/catalog.sqlite3` (origin
-`.internalPreview`). It never consults the production path, it reports a rejected
-production-looking override instead of honouring it, and when Application Support is
-unavailable it throws `CatalogLocationError.internalPreviewUnavailable` rather than
-falling back. The XCTest host still receives its own per-process isolated catalog in
-both flavors, so automated runs never touch preview or production data. The
-preview-only seam `FSD_INTERNAL_PREVIEW_TEST_ROOT` is read only after the flavor gate
-and only outside a test host; it cannot be reached by the production build.
+The symlink guard resolves symbolic links on the preview directory and file and rejects
+the location if it equals the production directory or file. This is a generated-fixture
+verified fail-closed boundary, not policy machinery. Hardlink, case-insensitive-alias and
+check/open TOCTOU aliases are not closed by a path-string comparison; they require local
+write access to the user's own Application Support and are recorded as a residual
+limitation, not a claim of completeness.
 
-Product identity is explicit: bundle id `com.fsd.FSD-InternalPreview`, name
-`FSD2InternalPreview`, display name `FSD2 Internal Preview`, window title carries the
-`Internal Preview` marker, and the shell shows an `internalPreviewIndicator` banner
-only in the preview flavor. A compile-time `FSDProductIdentity.flavorMarker` is
-compiled in and printed once to standard error at startup so an automated probe can
-confirm the flavor of the shipped binary.
-
-Isolation of the actual shipped artifact is verified twice by
-`scripts/build_internal_preview.sh`: a static grep of the staged binary for the
-preview marker `FSD_PREVIEW_FLAVOR_ACTIVE` (aborting packaging if the flag is missing,
-or if the production marker is present), then a bounded launch smoke with the isolated
-test root asserting `source: internalPreview`, that the isolated root was honoured, that
-no `/Application Support/FSD/` path was resolved, and that the production catalog hash is
-byte-identical before and after. The script builds the `Preview` configuration arm64,
-verifies bundle identity against `scripts/internal_preview_manifest.json`, computes a
-bundle-tree digest, creates the ZIP and writes a machine-readable receipt.
-
-No schema, completion receipt, Save/Delete body, saved format, source capture,
-provider, helper, hardware observer, source-media read, auto capture, public release or
-Task066 change was made. Production catalog was never opened or migrated.
+Packaged artifact flavor is verified twice: a static grep of the staged binary for
+`FSD_PREVIEW_FLAVOR_ACTIVE` (failing if absent or if the production marker is present),
+and behavioral launch smokes that assert the resolved isolated catalog and production
+sentinel invariance rather than a log marker alone. `scripts/internal_preview_manifest.json`
+gains `repair_task` and artifact name `FSD2-Internal-Preview-Task065R.zip`; identity,
+required resources/helpers and flavor marker pass through unchanged.
 
 ## Executed validation and candidate applicability
 
-Final candidate aggregate SHA256 (sorted path + NUL + file SHA hex + LF over the eight
-substantive paths below) =
-4b22935b7ac4fda9dceeb99d4383db449fc3626fd82c188b8ee75e2df96ee711
+Substantive changed-path SHA256 (working-tree content):
 
-Artifact: `~/Desktop/FSD2-Internal-Preview-Task065.zip` (Desktop transport copy):
-SHA256 c68ce3e8fc64ba28506b84bd6613e598ef2adef64526081fcb2f08c6d250ad90, bytes 4451080.
-Bundle tree digest f8de413d1d3d8a7fa3dbb03cb65902c63b23d89ca6dfe3e8434e592c9e4db430.
-Receipt `.ai-scratch/task065/package/build-receipt.json`.
+- `FSD/Catalog/CatalogLocation.swift` `f128a2ab6dc6bfe10e7f6a607381f4ca5d0a09a107a78afb77daead1e39290cc`
+- `FSDTests/InternalPreviewIsolationTests.swift` `ce2932f3db3b29329bbd4caf89b904e3b50c1f7de8b6066ed682ef7d231d2e05`
+- `scripts/build_internal_preview.sh` `c2339d0e03ae9bfec8c37728af5d998dc945f4201822d1efbacf95dead2a89cf`
+- `scripts/internal_preview_manifest.json` `9d4b777d374697ae8148c324caff5046bfe7506e359bf35eff92ced3c4168acb`
 
-- Extracted the Desktop ZIP to a fresh temp directory: recomputed bundle tree digest is
-  f8de413d1d3d8a7fa3dbb03cb65902c63b23d89ca6dfe3e8434e592c9e4db430 (matches), bundled
-  identity matches the manifest, resources `schema.sql`/`THIRD_PARTY_NOTICES.txt` and
-  helper `FSDClassificationHostSeam` present.
-- Launched the extracted copy: standard error printed
-  `FSD Internal Preview catalog: /Users/cenvu/Library/Application Support/FSD-Internal-Preview/catalog.sqlite3 (source: internalPreview)`
-  and `FSD flavor: FSD_PREVIEW_FLAVOR_ACTIVE`; the isolated preview catalog was created
-  and then removed. Production catalog SHA256 c2f7f9ba2078c409d00d0053f44f7381103f44b56cd8edc2d8060a748cf1daa6
-  was byte-identical before and after every launch.
-- Packaging script self-check (in-script bounded smoke over
-  `.ai-scratch/task065/package/launch-smoke-root`): marker present
-  `FSD_PREVIEW_FLAVOR_ACTIVE`; smoke line confirmed isolated preview resolution;
-  production catalog unchanged.
+Packaging (`.ai-scratch/task065r/package/build-receipt.json`):
 
-Selected XCTest (macOS, arm64, Debug) — InternalPreview isolation + smoke, comparison
-semantics/identity/snapshot/mode/persistence/workspace/browser/completion-receipt/
-end-to-end probe/GUI source-boundary/GUI validation, SavedComparison + migration,
-SchemaMigration/SchemaSafetyCorrection, DriveSet/PhysicalDrive/CompletionReceipt
-migration, SourceObservationResolver, Classification source-reader/invocation-isolation/
-security-integration, SnapshotCollections/SnapshotLifecycle, CatalogDatabase:
+- artifact `FSD2-Internal-Preview-Task065R.zip` SHA256
+  `3daa4c1dc32cf2bbed8bd4191aa2348b6e6f55e6f7ce83e6e1e0265a3777967f`, bytes 4451704
+- bundle tree SHA256 `fcf8ddbacbf24cdbce66455c5b69cd1dd22e72c32fb1e70cd4b07d62b8e6a594`,
+  identical in three clean Preview builds and after re-extracting the ZIP
+- launch smoke resolved
+  `<synthetic-home>/Library/Application Support/FSD-Internal-Preview/catalog.sqlite3`
+  (`source: internalPreview`), reported the decoy override ignored, and left the synthetic
+  production sentinel byte-identical (`59fe0e3f7d9ef121028f1ff72f18965bf9d2073fb2a45f625356876fab444fde`)
+- symlink smoke: preview refused to start with the production-conflict error
+- no owner catalog was read, hashed, stat-ed or opened; all paths under `.ai-scratch/task065r/`
+
+Selected XCTest (macOS, arm64, Debug) covering Task064's comparison set plus catalog,
+schema/receipt, Save/Delete, classification, snapshot and the new preview tests:
 
 ```text
-Executed 371 tests, with 0 failures (0 unexpected) in 122.085 seconds
+Executed 672 tests, with 0 failures (0 unexpected) in 328.6 seconds
 ** TEST SUCCEEDED **
 ```
 
-New tests: `InternalPreviewIsolationTests` (14) + `InternalPreviewSmokeTests` (3) = 17.
-The smoke exercises the real synthetic capture/explore/collections/drive-sets and
-comparison save/reopen/delete journeys over generated fixtures only.
+New/updated tests: `InternalPreviewIsolationTests` now 18 tests (was 14), including
+removed-test-root inertness, all runtime override channels rejected, directory-symlink and
+file-symlink fail-closed, no production fallback, and compiled flavor identity;
+`InternalPreviewSmokeTests` 3 tests unchanged and passing.
 
-Clean builds (separate derived data, arm64):
+Clean arm64 builds (separate derived data):
 
 ```text
-Debug   clean build: BUILD SUCCEEDED
-Release clean build: BUILD SUCCEEDED
+Preview (packaging clean build): BUILD SUCCEEDED
+Debug   clean build:             BUILD SUCCEEDED
+Release clean build:             BUILD SUCCEEDED
 ```
 
-Production binaries carry only `FSD_PRODUCTION_FLAVOR_ACTIVE`; the Preview binary
-carries `FSD_PREVIEW_FLAVOR_ACTIVE`. All configs keep `CODE_SIGNING_ALLOWED = NO`,
-`ENABLE_HARDENED_RUNTIME = NO`, `ARCHS = arm64`, `MACOSX_DEPLOYMENT_TARGET = 15.0`;
-no signing, notarization, release or tag change.
-
-Measured own-window screenshots regenerated by the smoke (`.ai-scratch/task065/screenshots`,
-FSD-owned window only, 1120/1330/1440):
-
-- `shell-1120.png` SHA256 a8c873d9d095d09d1fec5fc2fc65defe27e1356f7129a2d0d06c2abf0fbbe2fe
-- `shell-1330.png` SHA256 b18d42db65af9fb268e11598533f2ad0d0b8582431e43242f08fe0eb9e3534bd
-- `shell-1440.png` SHA256 64278218c59859fb335d538c3ec6c76ab676f6465168ddd47a30796448e5f747
-
-These captures are the shell rendered in the Debug XCTest host (production flavor), so
-they evidence the synthetic journeys' UI dimensions, not the packaged preview identity;
-preview identity is evidenced by the launch smoke above.
+Binary flavor markers: staged `FSD2InternalPreview` carries only
+`FSD_PREVIEW_FLAVOR_ACTIVE`; Debug (`FSD.debug.dylib`) and Release `FSD` carry only
+`FSD_PRODUCTION_FLAVOR_ACTIVE`. All configs keep `CODE_SIGNING_ALLOWED = NO`,
+`ENABLE_HARDENED_RUNTIME = NO`, `ARCHS = arm64`, `MACOSX_DEPLOYMENT_TARGET = 15.0`.
 
 ## Independent read-only review
 
-A separate read-only reviewer (distinct context, no file writes) verified the base SHA,
-the changed path set and the isolation code, test seam, project configuration, test
-falsifiability and the packaging script. Result PASS_WITH_ADVISORY. One material
-finding (F1) was reported: the packaging script verified bundle identity but had no
-falsifiable check that the compiled artifact actually resolves the preview catalog, so a
-missing compile-time flag would still produce a bundle that opens the production
-catalog. F1 was repaired within scope by the compile-time `flavorMarker`, the static
-binary-marker gate and the bounded isolated launch smoke now in the packaging script.
-Advisories retained: the smoke screenshots are production-flavor UI evidence (provenance
-labelled above); the preview test-root seam is honored in the built preview binary for
-launch-smoke purposes; the artifact ZIP is staged to the Desktop as Owner test transport.
+A separate read-only reviewer (distinct context, no file writes, no `xcodebuild`, no owner
+catalog access) examined the uncommitted diff against 9f77d50, the changed files, the
+receipt smokes and the selected test log. Result PASS_WITH_ADVISORY: findings A and B
+verified closed; production branch/first-order semantics verified unchanged; selected
+672/672 and clean Debug/Release verified. Advisories: the symlink smoke initially accepted
+any startup failure (tightened to require the production-conflict message); the symlink
+guard is a path-string comparison so hardlink/case-alias/TOCTOU aliases are out of the
+accidental-operator model (recorded as a residual limitation); and two new tests are
+invariants that also held on 9f77d50, not repair-regression proofs.
 
 ## Requirements-to-evidence postflight
 
-1. EVIDENCED — Authority and baseline: clean 13dc159; sole BRAIN-only authorization commit inspected; canonical Task065 action; execution/review/finalizer loaded; no forbidden reset/clean/stash/rebase.
-2. EVIDENCED — Compile-time isolation: `.internalPreview` only under `#if FSD_INTERNAL_PREVIEW`; `SWIFT_ACTIVE_COMPILATION_CONDITIONS = FSD_INTERNAL_PREVIEW` only on the Preview configuration; Debug/Release semantics unchanged.
-3. EVIDENCED — Dedicated catalog only: preview resolves `~/Library/Application Support/FSD-Internal-Preview/catalog.sqlite3`; production path never consulted; override reported not honoured.
-4. EVIDENCED — No fallback: unavailable Application Support throws `internalPreviewUnavailable`; asserted in tests.
-5. EVIDENCED — Production unchanged: Debug/Release resolve Application Support default and report ignored overrides as before; existing suites pass.
-6. EVIDENCED — Test-host isolation preserved: XCTest host still gets its own isolated catalog in both flavors.
-7. EVIDENCED — Test seam gated: `FSD_INTERNAL_PREVIEW_TEST_ROOT` read only in the preview flavor and outside a test host; unreachable by production.
-8. EVIDENCED — Product identity: distinct bundle id/name/display name/window title and preview-only indicator banner.
-9. EVIDENCED — Artifact: arm64 `Preview` app + ZIP built, identity verified against the manifest, bundle-tree digest reproducible after ZIP extraction.
-10. EVIDENCED — Deterministic manifest: `scripts/internal_preview_manifest.json` drives identity, flavor marker, required resources/helpers and artifact naming.
-11. EVIDENCED — Flavor of the shipped binary proven: static marker gate plus bounded isolated launch smoke asserting preview resolution and production byte-invariance.
-12. EVIDENCED — Omni-journey smoke: capture/explore/collections/drive-sets and comparison save/reopen/delete over generated fixtures; own-window screenshots at 1120/1330/1440.
-13. EVIDENCED — Isolation acceptance tests: 14 `InternalPreviewIsolationTests` incl. lock independence/relaunch persistence/v12->v13 migration/failed-migration rollback.
-14. EVIDENCED — Selected suite: 371/371 with 0 failures, 0 unexpected.
-15. EVIDENCED — Clean builds: clean arm64 Debug and Release `BUILD SUCCEEDED`.
-16. EVIDENCED — No forbidden access: no hardware observer, source-media, Owner data, auto capture, public release or Task066.
-17. EVIDENCED — Independent read-only review: PASS_WITH_ADVISORY; material F1 repaired; advisories recorded.
-18. EVIDENCED — Immutable data preserved: accepted PROJECT_STATE, rule ledger, prior histories, schema/receipt/Save/Delete/provider/helper unchanged.
-19. EVIDENCED — Canonical finalization: one flat history, CURRENT full mirror, one Worker ledger row, one append-only Worker event, Desktop transport refresh, exact checker.
+1. EVIDENCED — Authority/baseline: clean 9f77d50, upstream 0/0, direct repair authorization, owner dirty preserved, no reset/clean/stash/rebase.
+2. EVIDENCED — Pre-change research: resolver, packaging script, tests and `CFFIXED_USER_HOME` Foundation behavior inspected/measured before editing.
+3. EVIDENCED — FINDING_A repair: `FSD_INTERNAL_PREVIEW_TEST_ROOT` seam removed; absent from resolver, tests and shipped binary strings.
+4. EVIDENCED — No runtime redirect: preview ignores launch argument and `FSD_CATALOG_PATH`; compile-time flavor gate retained.
+5. EVIDENCED — Fail-closed symlink boundary: preview directory/file aliasing production throws `internalPreviewConflictsWithProduction`.
+6. EVIDENCED — No production fallback: unavailable Application Support throws `internalPreviewUnavailable`.
+7. EVIDENCED — FINDING_B repair: packaging reads/hashes/stats no real owner FSD or preview catalog.
+8. EVIDENCED — Synthetic invariance: synthetic home/sentinel/decoy; resolved-path, sentinel-invariance and override-rejection assertions.
+9. EVIDENCED — Packaged flavor verification: static marker gate plus behavioral launch smokes (not marker-only).
+10. EVIDENCED — Negative tests: removed seam inert, runtime overrides rejected, dir/file symlink fail-closed, no fallback, compiled flavor identity.
+11. EVIDENCED — Normal preview resolution correct: dedicated `FSD-Internal-Preview` directory and `catalog.sqlite3` asserted.
+12. EVIDENCED — Build-flavor identity enforced: `FSD_INTERNAL_PREVIEW` only on Preview; markers verified per binary.
+13. EVIDENCED — Production semantics preserved: `productionDirectoryName` refactor behavior-identical; Debug/Release resolve Application Support.
+14. EVIDENCED — Preview identity/banner preserved: bundle id/name/display name/window title/indicator unchanged.
+15. EVIDENCED — Schema v13/receipt/Save/Delete untouched; migration/receipt/Save suites pass in selected run.
+16. EVIDENCED — Source read-only, providers, immutable snapshots, classification untouched; selected suites pass.
+17. EVIDENCED — Prior Task064 comparison/ancestor behavior untouched; ancestor tests pass.
+18. EVIDENCED — Clean arm64 Preview/Debug/Release builds all `BUILD SUCCEEDED`.
+19. EVIDENCED — Tests: 18 isolation + 3 smoke; selected 672/672, 0 failures, 0 unexpected.
+20. EVIDENCED — Reproducible bundle digest across three builds and ZIP extraction; artifact SHA and receipt recorded.
+21. EVIDENCED — Independent read-only review PASS_WITH_ADVISORY; advisories recorded and one tightened.
+22. EVIDENCED — History/State preserved: Task065 handoff and history untouched, PROJECT_STATE unchanged, one history + ledger row + event; no Task066 or forbidden access.
 
 WORKER_EXECUTION_GUARD=FSD_WORKER_EXECUTION_V1
 WORKER_PREFLIGHT=PASS
-WORKER_REQUIREMENTS_TOTAL=19
-WORKER_REQUIREMENTS_EVIDENCED=19
+WORKER_REQUIREMENTS_TOTAL=22
+WORKER_REQUIREMENTS_EVIDENCED=22
 WORKER_REQUIREMENTS_NOT_APPLICABLE=0
 WORKER_REQUIREMENTS_UNPROVEN=0
 WORKER_POSTFLIGHT=PASS
@@ -197,25 +193,29 @@ NEXT_TASK_STARTED=NO
 
 ## Exact substantive scope and preservation
 
-- `FSD/Catalog/CatalogLocation.swift` SHA256 `8ad821443de3dac2807ebf1315c4143eaeca9b3d222d22f2dd71a5e0247ab7ff`
-- `FSD/App/FSDApp.swift` SHA256 `f0a0c7997a7aeeba4a928d3733365326eb6605ecf725bc06efa11deb9de579d5`
-- `FSD/UI/ComparisonSharedViews.swift` SHA256 `16f75c4ea66709c236c3e94c6dd89c30b7e7cae00c354c532f2ae67b4d8fe5c5`
-- `FSD.xcodeproj/project.pbxproj` SHA256 `7074bca7daee98104ac8abc9aa757154a37ebfdced5692cb627960f756e65c19`
-- `FSDTests/InternalPreviewIsolationTests.swift` SHA256 `fe3de73f9941acb694f2071142969dcd2dd34894f81c749240cc03865b04785c`
-- `FSDTests/InternalPreviewSmokeTests.swift` SHA256 `90ad64912635eedbcb1f11c48e119d97046f5c7d79502edced3d36172b7b40a5`
-- `scripts/build_internal_preview.sh` SHA256 `74ec0547f9965f8dcfc42e3549fe0bb37e69e6f1922c290e54402a6333523fa0`
-- `scripts/internal_preview_manifest.json` SHA256 `a87a9affbf725c9a8811a798af197fcebc15d47637c60adee2aff768e7b19b90`
+Reporting adds only this one history, the CURRENT full mirror, one Worker ledger row and
+one append-only Worker event; the Desktop packet is transport. The published Task065
+handoff bytes, BRAIN-owned `STATE/PROJECT_STATE.md` and all prior ledger/event rows are
+byte-preserved. TECHNICAL_SHA is the captured prepublication implementation basis
+(`9f77d50`); publication resolves from the immutable handoff Git history. The packaged
+artifact, smokes and receipt live under ignored `.ai-scratch/task065r/`; they are not
+repository authority.
 
-Reporting only adds this one history, the CURRENT full mirror, one Worker ledger row and
-one append-only Worker event; the Desktop packet is transport. TECHNICAL_SHA is the
-captured prepublication basis; publication resolves from the handoff Git history. The
-packaged artifact, screenshots and receipt live under ignored `.ai-scratch/task065/` and
-on the Desktop; they are not repository authority.
+## Residual limitations
+
+- The symlink guard compares symlink-resolved path strings; a hardlink, a
+  case-insensitive-filesystem alias, or a check/open race can still alias the production
+  inode and requires local write access to the user's own Application Support. Documented,
+  not claimed closed.
+- The ZIP container hash is not byte-reproducible across runs (archive timestamps); the
+  bundle-tree digest is reproducible and is the artifact equivalence measure.
+- Owner manual double-click of the packaged Preview, Developer ID/notarization and public
+  release remain out of scope and unperformed.
 
 ## Publication closure boundary
 
 This immutable technical record uses the actual prepublication HEAD/time. Its future
 publication SHA cannot be embedded self-referentially. The finalizer runs the exact
 canonical precheck, normal commit/push/fetch, postcheck with clean+synced 0/0,
-protected-byte/history verification and Desktop/CURRENT/Operator parity. Worker return
-is evidence for BRAIN review, not acceptance. Stop after Task065; no Task066.
+protected-byte/history verification and Desktop/CURRENT/Operator parity. Worker return is
+evidence for BRAIN review, not acceptance. Stop after Task065R; no Task066.

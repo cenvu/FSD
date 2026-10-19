@@ -67,6 +67,7 @@ public struct CatalogLocation: Equatable, Sendable {
 public enum CatalogLocationError: Error, LocalizedError, Equatable {
     case applicationSupportUnavailable
     case internalPreviewUnavailable
+    case internalPreviewConflictsWithProduction
     case emptyOverridePath
 
     public var errorDescription: String? {
@@ -75,6 +76,8 @@ public enum CatalogLocationError: Error, LocalizedError, Equatable {
             return "The Application Support directory is unavailable, so the catalog location cannot be resolved."
         case .internalPreviewUnavailable:
             return "The Application Support directory is unavailable, so the Internal Preview catalog location cannot be resolved. The Internal Preview never falls back to the production catalog."
+        case .internalPreviewConflictsWithProduction:
+            return "The Internal Preview catalog location resolves onto the production FSD catalog, so the Internal Preview refuses to start. The Internal Preview never opens the production catalog."
         case .emptyOverridePath:
             return "The requested catalog path override is empty."
         }
@@ -85,15 +88,12 @@ public enum CatalogLocationResolver {
     public static let launchArgumentName = "-FSDCatalogPath"
     public static let environmentVariableName = "FSD_CATALOG_PATH"
 
+    /// The production catalog directory under Application Support.
+    public static let productionDirectoryName = "FSD"
+
     /// The Internal Preview stores its catalog in its own Application Support
     /// directory, so it can never open, migrate or lock the production catalog.
     public static let internalPreviewDirectoryName = "FSD-Internal-Preview"
-
-    /// Preview-flavor-only test seam: an explicit isolated catalog root for the
-    /// packaged Internal Preview launch smoke. It is honoured only when the
-    /// process already resolved the Internal Preview flavor, never by the
-    /// production build and never while hosting an XCTest bundle.
-    public static let internalPreviewTestRootVariableName = "FSD_INTERNAL_PREVIEW_TEST_ROOT"
 
     /// Which catalog the compiled product resolves. The Internal Preview flavor
     /// is selected at compile time so a stray runtime flag can never move a
@@ -141,6 +141,12 @@ public enum CatalogLocationResolver {
         // Internal Preview flavor. It resolves only its dedicated catalog and
         // never consults the production path. The XCTest host still gets its own
         // isolated synthetic catalog so automated runs never touch preview data.
+        //
+        // There is deliberately no runtime catalog override in this flavor: no
+        // launch argument, environment variable, test seam or symlink may move
+        // the compiled preview onto an arbitrary path — in particular onto the
+        // production catalog. `internalPreviewURL` fails closed if the preview
+        // location aliases the production location.
         if flavor == .internalPreview {
             if isRunningAsTestHost(environment: environment) {
                 return CatalogLocation(
@@ -148,11 +154,6 @@ public enum CatalogLocationResolver {
                     origin: .testHost,
                     rejectedOverridePath: requested?.path
                 )
-            }
-            if let testRoot = environment[internalPreviewTestRootVariableName], !testRoot.isEmpty {
-                let trimmed = testRoot.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmed.isEmpty else { throw CatalogLocationError.emptyOverridePath }
-                return CatalogLocation(url: catalogURL(forOverridePath: trimmed), origin: .internalPreview)
             }
             return CatalogLocation(
                 url: try internalPreviewURL(fileManager: fileManager),
@@ -225,20 +226,41 @@ public enum CatalogLocationResolver {
             throw CatalogLocationError.applicationSupportUnavailable
         }
         return applicationSupport
-            .appendingPathComponent("FSD", isDirectory: true)
+            .appendingPathComponent(productionDirectoryName, isDirectory: true)
             .appendingPathComponent(CatalogDatabase.defaultDatabaseFileName, isDirectory: false)
     }
 
     /// The Internal Preview's dedicated catalog. There is intentionally no
     /// fallback to the production `FSD/catalog.sqlite3` path: if the Application
     /// Support directory cannot be resolved the preview fails loudly instead.
+    ///
+    /// The location is also verified against the production location after
+    /// resolving symbolic links, so a symlinked `FSD-Internal-Preview` directory
+    /// (or catalog file) that aliases the production catalog fails closed instead
+    /// of opening production data.
     public static func internalPreviewURL(fileManager: FileManager = .default) throws -> URL {
         guard let applicationSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
             throw CatalogLocationError.internalPreviewUnavailable
         }
-        return applicationSupport
+        let previewDirectory = applicationSupport
             .appendingPathComponent(internalPreviewDirectoryName, isDirectory: true)
+        let previewURL = previewDirectory
             .appendingPathComponent(CatalogDatabase.defaultDatabaseFileName, isDirectory: false)
+        let productionDirectory = applicationSupport
+            .appendingPathComponent(productionDirectoryName, isDirectory: true)
+        let productionURL = productionDirectory
+            .appendingPathComponent(CatalogDatabase.defaultDatabaseFileName, isDirectory: false)
+        if canonicalPath(previewDirectory) == canonicalPath(productionDirectory)
+            || canonicalPath(previewURL) == canonicalPath(productionURL) {
+            throw CatalogLocationError.internalPreviewConflictsWithProduction
+        }
+        return previewURL
+    }
+
+    /// A symlink-resolved, standardised path used only for the fail-closed
+    /// comparison between the preview and production locations.
+    private static func canonicalPath(_ url: URL) -> String {
+        url.resolvingSymlinksInPath().standardizedFileURL.path
     }
 
     private static func requestedOverride(
