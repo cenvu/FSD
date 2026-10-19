@@ -412,7 +412,8 @@ CURRENT IMPLEMENTATION:
 snapshot/snapshot comparison persists; live-side comparison uses transient
 snapshots and comparison state that is disposed when the workspace closes or
 abandoned transients are cleaned during recovery. This remains the default
-behavior until the explicit save action is implemented.
+behavior for unsaved work. Task063 adds the explicit Save action and the separate
+Saved Comparisons destination subsection over schema v13; it never auto-saves.
 
 OWNER DIRECTION APPROVED (2026-10-18):
 the user explicitly chooses **Save Comparison** to retain a live comparison.
@@ -651,3 +652,20 @@ decorative analytics.
 THIS_DOCUMENT_RECORDS_OWNER_PRODUCT_DIRECTION_AND_ACCEPTED_TASK047_052_SLICES.
 FSD2_FULL_TARGET=SECTIONS_6_TO_14;WAVE_A_ADRS=PROPOSED_ONLY.
 IT_DOES_NOT_AUTHORIZE_PRODUCT_IMPLEMENTATION_OR_CHANGE_ACCEPTED_ADR_SEMANTICS.
+
+### Task063 implemented persistence presentation (Worker evidence)
+
+Save Comparison is visible in the completed workspace with receipt eligibility,
+busy/cancel/retry/error/success states and Command-S. Ineligible comparisons show
+a reason. Cancel Save and Close waits for transaction settlement before disposal.
+Recent Comparisons are explicitly described as potentially temporary work.
+Saved Comparisons lists durable artifacts, supports reload/paging/offline opening,
+and confirms deletion with the exact artifact ID. A deleted completion needs the
+separate Save Again as New confirmation; retry never resurrects it.
+
+Offline detail presents frozen profile/revision/completion/counts/warnings,
+Content Not Verified, paged Results/Left/Right/Issues/Collisions/Members and selected
+typed metadata. LEFT is Before/Reference; RIGHT is After/Changed. Missing linked
+entries stay missing; collisions stay unpaired. This is a paged metadata/detail
+view, not a new hierarchical diff or ancestor-reveal implementation. Manual
+VoiceOver and Owner visual acceptance remain pending; ADR statuses are unchanged.

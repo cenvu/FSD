@@ -26,13 +26,12 @@ identity lacks an approved hardware strong profile or live observation adapter; 
 controls do not cover the full capture-organization/default flow; the dashboard
 has no bounded aggregate facade; search lacks drive/library scope; comparison
 navigation lacks ancestor projection; live-comparison retention remains
-transient by default; Task062 adds an explicit backend Save and saved metadata reader, with no user-facing Save control yet.
+transient by default; Task062 adds an explicit backend Save and saved metadata reader, Task063 adds the explicit Save control and a separate offline Saved Comparisons surface.
 
 **Exact gaps:** observation-only mount detection; opt-in Auto Capture (default
 OFF); hardware-backed PhysicalDrive resolution and manual-association UI; paged
 per-drive history; bounded dashboard aggregates; This Drive/Library
-search; classification search; compare hierarchy/ancestor reveal; explicit
-Save Comparison UI over the Task062 backend; full capture
+search; classification search; compare hierarchy/ancestor reveal; full capture
 organization/default controls; and consolidated rendered-window, accessibility,
 and manual internal acceptance.
 
@@ -263,8 +262,8 @@ original snapshot/comparison/source facts or normal transient cleanup change.
 Single-transaction READY publication and permanent operation receipts provide
 idempotent replay after original cleanup and non-resurrection after explicit
 delete. Reader pages require sealed valid evidence and use no source media or
-current profile/volume joins. Save is a backend API only: completion never saves
-automatically, and Save button/full browsing UI/export are unimplemented.
+current profile/volume joins. At Task062 this was a backend API only. Task063 adds explicit UI and paged
+offline browsing; completion still never saves automatically. Export is unimplemented.
 
 Conservative production ceilings are100K accounted rows,256 MiB encoded metadata,
 512 MiB logical SQLite growth and60s cooperative elapsed time, with256-row pages
@@ -272,3 +271,35 @@ and strict byte preflights. Generated10K-entry work is supported;100K entries pl
 50K results is explicitly rejected before copy. Hardware, real power loss/disk
 full, Owner catalog migration, UI/manual/VoiceOver and full FSD2 acceptance remain
 unproved. ADR036/037/038 statuses and existing privacy advisories are unchanged.
+
+## Task063 — explicit Save UI and offline library (Worker evidence)
+
+The Comparison destination now distinguishes Recent Comparisons from durable
+Saved Comparisons. Completed work with a validated Task061 receipt can be saved
+by an explicit button or Command-S. Busy/cancel/retry and bounded error states
+use the existing v13 transaction and ceilings. Legacy receiptless and invalid
+terminal evidence remain ineligible; no reconstruction, rescan or current-profile
+substitution. A close during Save cancels and waits for the actual commit/rollback
+outcome before the existing workspace disposal. A late cancellation can lose to
+a committed Save, which remains available offline.
+
+UI operation IDs are deterministic from the exact completion triple and the
+observed deleted-operation set. Retry/redraw/relaunch reuses an uncertain operation;
+exact READY discovery suppresses another copy. Discovery supports4096 total catalog
+operations;256-row primary-key pages plus one bounded overflow page read at most4352
+fixed-size rows, then fail closed above that supported4096-operation catalog limit. Deletion tombstones remain authoritative; Save Again as New requires a
+separate explicit confirmation. No preferences file, schema14 or format change.
+
+Saved library pages contain up to20 frozen summaries and8MiB receipt bytes,
+adapting the row count so a valid large receipt remains accessible. Full graph
+validation precedes offline browsing; result/side/issue/collision pages are at
+most256 rows. The read-only detail preserves before/reference LEFT and
+changed/after RIGHT, missing-side states, typed metadata, frozen executed profile,
+counts/warnings and Content Not Verified disclosure. A destructive confirmation
+identifies the artifact; deletion closes its reader and refreshes the library.
+Original snapshots, organizers, identity evidence and other artifacts are preserved.
+
+Task063 evidence is generated local catalogs and FSD-owned-window automation only.
+Real VoiceOver operation, Owner visual/manual acceptance, physical storage failure,
+hardware/source identity acceptance and Owner catalog migration remain pending.
+ADR036/037/038 proposal statuses and existing privacy advisories are unchanged.

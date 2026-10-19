@@ -23,12 +23,14 @@ struct ComparisonBrowserView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            SaveComparisonControls(workspace:workspace, model:workspace.savedComparisons)
             // Toolbar
             HStack {
                 Button(action: { workspace.closeComparison() }) {
                     Image(systemName: "chevron.left")
                     Text("Back to Creation")
                 }
+                .disabled(workspace.isClosing)
                 .padding(.trailing, 8)
                 .accessibilityLabel("Back to creation — close comparison workspace")
 
@@ -86,6 +88,7 @@ struct ComparisonBrowserView: View {
                         .accessibilityLabel("Next page of results")
                 }
             }
+            .disabled(workspace.savedComparisons.isSaving)
             .padding()
             .background(Color(NSColor.windowBackgroundColor))
 
@@ -144,6 +147,7 @@ struct ComparisonBrowserView: View {
                 ComparisonDetailPane(browser: browser)
                     .frame(minWidth: 300, idealWidth: 350)
             }
+            .disabled(workspace.savedComparisons.isSaving)
         }
     }
 

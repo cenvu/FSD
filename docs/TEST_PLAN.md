@@ -1325,3 +1325,38 @@ page byte preflights are separately exercised. Required affected regressions,
 clean arm64 Debug/Release and independent read-only review use exact receipts in
 the Task062 handoff. Real mount-image execution is excluded; no hardware, power
 loss, physical disk exhaustion, source content, Owner catalog or UI/manual proof.
+
+## 19. Task063 explicit Save UI and offline saved library
+
+`SavedComparisonUITests` runs real Swift/SQLite models against generated isolated
+file catalogs. It covers explicit Save, duplicate/concurrent clicks, stable retry
+and fresh-model/file reopen discovery, legacy/nonterminal rejection, no implicit
+Save, actual live-workspace disposal before offline reopen, frozen receipt/typed
+NULL/BLOB/Int64/orientation/summary/warnings, paged results/sides/issues/collisions,
+empty/loading/error/corrupt states, cancellation and budget/timeout failure,
+close-before-rollback and cancellation-losing-to-commit, confirmed deletion,
+tombstone non-resurrection, unrelated originals/artifacts and FK/integrity.
+Read-only adapters are tested for exact identity/side ownership/no writes,20-row
+library paging, valid large receipts requiring adaptive8MiB pages and the4096
+operation-discovery fail-closed limit.
+
+A causal pending-original-page test deliberately holds Save's transaction while
+an earlier browser callback is queued; main-actor heartbeat must still run within
+0.5s. Without the pause seam it waits for the injected2s transaction gate. A second
+causal test covers a hidden original page plus an offline reader being closed and
+returning to Compare while its catalog work still settles.
+The generated10K-entry Save records wall time and main-actor timer heartbeats.
+The accepted backend100K accounted-row ceiling remains;100K-entry scenarios are
+not advertised as UI Save support. Own-window AX presses, actual Command-S routing,
+key-view traversal and labelled/category/status controls are exercised. Screenshots
+cover completed Save, library, offline selected details, receiptless ineligible and
+injected lowered-budget error states at1120/1330/1440. Capture uses only SDK
+current-process shareable content and the exact FSD-owned test window ID. No global
+AX or other-app window enumeration, native source picker, media or Owner catalog.
+Automated labels/key routing do not prove real VoiceOver operation, exhaustive
+keyboard ergonomics or Owner visual acceptance; these remain pending.
+
+Require affected broader comparison/catalog/organizer/Task058–062 regressions,
+explicitly exclude the prohibited live disk-image mount test, clean arm64 Debug
+and Release, independent read-only source/safety/UI review and canonical finalizer.
+Synthetic rollback/reopen is not power-loss/disk-full or hardware acceptance.

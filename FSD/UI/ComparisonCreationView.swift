@@ -25,7 +25,7 @@ struct ComparisonCreationView: View {
                         .font(.system(size: FSDDesignTokens.labelSize, weight: .medium))
                         .foregroundStyle(FSDDesignTokens.mutedText)
                 }
-                Text("Saved comparison history")
+                Text("Recent work; live comparisons are temporary unless explicitly saved.")
                     .font(.system(size: FSDDesignTokens.overviewSubtitleSize))
                     .foregroundStyle(FSDDesignTokens.secondaryText)
             }

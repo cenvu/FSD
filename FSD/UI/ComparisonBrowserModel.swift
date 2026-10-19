@@ -56,6 +56,7 @@ final class ComparisonBrowserModel: ObservableObject {
     private let database: CatalogDatabase
     private let resultRepository: ComparisonResultRepository
     private var searchGeneration: UInt64 = 0
+    private var isPausedForSave = false
 
     init(database: CatalogDatabase, record: ComparisonRecord, pageSize: Int = 500) {
         self.database = database
@@ -64,7 +65,22 @@ final class ComparisonBrowserModel: ObservableObject {
         self.resultRepository = ComparisonResultRepository(database: database)
     }
 
+    /// Save owns the connection for a bounded but potentially long transaction.
+    /// Invalidate pending page callbacks before it starts, so they cannot issue
+    /// synchronous detail/navigation queries on the main actor while it runs.
+    func setSaveInProgress(_ active: Bool) {
+        guard active != isPausedForSave else { return }
+        isPausedForSave = active
+        if active {
+            searchGeneration += 1
+            isLoading = false
+        } else {
+            loadPage(at:activePageOffset)
+        }
+    }
+
     func open() {
+        guard !isPausedForSave else { return }
         do {
             resultCounts = try resultRepository.resultCounts(comparisonID: record.id)
             loadInitialPage()
@@ -99,6 +115,7 @@ final class ComparisonBrowserModel: ObservableObject {
     /// Loads one deterministic page at `offset`, replacing the current page.
     /// A response is applied only when no newer request superseded it.
     private func loadPage(at offset: Int) {
+        guard !isPausedForSave else { return }
         searchGeneration += 1
         let generation = searchGeneration
         let filter = activeFilter
@@ -148,6 +165,7 @@ final class ComparisonBrowserModel: ObservableObject {
     /// row lies outside the loaded page, the bounded page containing it is
     /// materialized and the row is selected within it.
     func navigate(direction: ComparisonResultRepository.ComparisonDirection) {
+        guard !isPausedForSave else { return }
         let anchor = selectedRow.map { ComparisonResultAnchor(resultPath: $0.resultPath, id: $0.id) }
         let filter = activeFilter
         let comparisonID = record.id
@@ -177,6 +195,7 @@ final class ComparisonBrowserModel: ObservableObject {
 
     /// Loads the bounded page containing `target`, then selects it.
     private func materializePage(containing target: ComparisonResultRow, direction: ComparisonResultRepository.ComparisonDirection) {
+        guard !isPausedForSave else { return }
         let anchor = ComparisonResultAnchor(resultPath: target.resultPath, id: target.id)
         let comparisonID = record.id
         let filter = activeFilter
@@ -233,6 +252,7 @@ final class ComparisonBrowserModel: ObservableObject {
     /// selection, each direction is available exactly when the repository
     /// returns a row beyond it. Never derived from page emptiness.
     func refreshNavigationAvailability() {
+        guard !isPausedForSave else { return }
         let anchor = selectedRow.map { ComparisonResultAnchor(resultPath: $0.resultPath, id: $0.id) }
         let filter = activeFilter
         let comparisonID = record.id
@@ -260,6 +280,7 @@ final class ComparisonBrowserModel: ObservableObject {
     /// Loads the selected row's two-side metadata and field-level differences
     /// through the approved repository APIs only.
     private func fetchDetailsForSelection() {
+        guard !isPausedForSave else { return }
         guard let rowID = selectedRowID, let row = currentPage?.rows.first(where: { $0.id == rowID }) else {
             selectedRow = nil
             selectedLeftMetadata = nil

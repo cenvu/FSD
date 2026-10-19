@@ -8,7 +8,21 @@ struct ComparisonDestinationView: View {
     }
     
     var body: some View {
-        VStack {
+        VStack(spacing:0) {
+            HStack {
+                Button("Compare") { workspaceModel.showsSavedComparisons = false }
+                    .accessibilityLabel("Compare workspace")
+                Button("Saved Comparisons") {
+                    workspaceModel.showsSavedComparisons = true
+                    workspaceModel.savedComparisons.reloadLibrary()
+                }
+                .accessibilityLabel("Saved Comparisons library")
+                Spacer()
+            }.padding(12)
+            Divider()
+            if workspaceModel.showsSavedComparisons {
+                SavedComparisonsView(model:workspaceModel.savedComparisons)
+            } else
             if let error = workspaceModel.error {
                 EmptyStateView(title: "Comparison Error", systemImage: "exclamationmark.triangle", detail: error)
             } else if workspaceModel.activeBrowser != nil {

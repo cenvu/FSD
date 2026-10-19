@@ -1604,3 +1604,46 @@ saved object inventory is verified before recording the version and on reopen.
 Injected DDL/version/COMMIT failures and file-backed reopen are synthetic recovery
 evidence. They do not prove real power loss, disk full, Owner migration, hardware,
 UI acceptance, public release or signing. Save UI/export remain outside this slice.
+
+## 19. Task063 explicit Save and saved-comparison presentation
+
+`SavedComparisonsModel` owns a serial catalog worker. Main-actor state changes
+publish busy, cancellation, retry, eligibility and bounded errors without running
+the repository transaction on the main actor. No initializer/completion/browse or
+navigation path calls Save. `ComparisonWorkspaceModel` cancels an active Save and
+waits behind its task/outcome barrier before normal explicit workspace disposal;
+committed Save wins over late cancellation. The original browser invalidates pending page callbacks and pauses main-actor
+catalog reads synchronously when Save starts; after settlement it reloads its
+bounded current page. This prevents an old result callback from waiting on the
+long Save transaction on the main actor. The original browser also stays paused
+while the Saved surface is visible; returning to Compare resumes only after a
+saved-worker barrier, even if a reader was closed before seal validation finished.
+Other comparison lifecycle is unchanged.
+
+Deterministic UI operation UUID bytes derive from SHA256 of a versioned namespace,
+catalog generation, completion token, ComparisonID and sorted observed tombstone
+operation IDs. This is operation identity, not content/device equivalence. Exact
+read-only discovery includes tombstones and admits catalogs of at most4096 total
+operations. It uses256-row primary-key pages plus one bounded overflow page
+(at most4352 fixed-size rows read); exceeding the4096-operation supported limit
+rejects eligibility with a specific reason. An existing exact READY artifact is fully opened before it is offered.
+Retries never generate a random operation. Explicit Save Again after deletion uses
+the new deterministic identity only after confirmation; old replay stays deleted.
+
+Read-only repository adapters add frozen summaries, exact completion operation
+lookup and exact side-owned entry lookup. Summary length preflight admits a prefix
+of up to20 receipts within8MiB (at least one valid receipt); next-page truth uses
+an ID-only keyset probe. The UI retains one library/evidence page and keyset cursors for visited pages. `SavedComparisonReader` supplies all result kinds, independent side
+entries, issues, collision groups/members and exact selected metadata. It opens
+without original tables/registries or filesystem reads. Local references and
+original provenance IDs are labelled separately; collision membership implies no
+pairing. UI errors never display arbitrary SQL/provider error text. No schema,
+serializer, Save transaction or deletion guard changes are introduced.
+
+The fixed database connection is serialized by CatalogDatabase. Repository and
+reader are Sendable by that lock/immutable ownership contract; their internal test
+checkpoint is configured before dispatch, never concurrently mutated. UI tests use
+isolated files and the FSD test window only. ScreenCaptureKit current-process
+shareable content is filtered to the exact owned window ID; no other application
+or global Accessibility tree is inspected. Manual VoiceOver/Owner acceptance and
+actual power-loss/disk-full proof are separate pending gates.

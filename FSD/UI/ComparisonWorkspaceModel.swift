@@ -37,24 +37,53 @@ final class ComparisonWorkspaceModel: ObservableObject {
     @Published var activeComparisonID: ComparisonID?
     @Published private(set) var activeBrowser: ComparisonBrowserModel?
 
+    let savedComparisons: SavedComparisonsModel
+    @Published var showsSavedComparisons = false {
+        didSet { updateOriginalBrowserPause() }
+    }
+    @Published private(set) var isClosing = false
+
     private let database: CatalogDatabase
     private let comparisonService: ComparisonService
     private let historyRepository: SnapshotHistoryRepository
     private let resultRepository: ComparisonResultRepository
     private let profileRepository: ComparisonProfileRepository
+    private var savedObservation: AnyCancellable?
+    private var savedBusyObservation: AnyCancellable?
     private var cancellationToken: ComparisonCancellationToken?
 
-    init(database: CatalogDatabase) {
+    init(database: CatalogDatabase, savedRepository: SavedComparisonRepository? = nil) {
         self.database = database
+        self.savedComparisons = SavedComparisonsModel(database:database,repository:savedRepository)
         self.comparisonService = ComparisonService(database: database)
         self.historyRepository = SnapshotHistoryRepository(database: database)
         self.resultRepository = ComparisonResultRepository(database: database)
         self.profileRepository = ComparisonProfileRepository(database: database)
 
+        self.savedObservation = savedComparisons.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }
+        self.savedBusyObservation = savedComparisons.$isSaving.removeDuplicates().sink { [weak self] active in
+            self?.updateOriginalBrowserPause(activeSave:active)
+        }
         self.selectedProfileID = ComparisonProfileRepository.fastMetadataProfileID
     }
 
+    private func updateOriginalBrowserPause(activeSave: Bool? = nil) {
+        guard !isClosing, let browser = activeBrowser else { return }
+        if (activeSave ?? savedComparisons.isSaving) || showsSavedComparisons {
+            browser.setSaveInProgress(true)
+        } else {
+            // A closed/hidden reader can still be finishing its queued seal
+            // validation. Resume original main-actor reads only past that work.
+            savedComparisons.whenCatalogIdle { [weak self, weak browser] in
+                guard let self, !self.isClosing, !self.showsSavedComparisons,
+                      !self.savedComparisons.isSaving, self.activeBrowser === browser else { return }
+                browser?.setSaveInProgress(false)
+            }
+        }
+    }
+
     func refresh() {
+        guard !savedComparisons.isSaving else { return }
         do {
             history = try resultRepository.listComparisons()
             availableSnapshots = try historyRepository.listSnapshots().filter { $0.isComplete }
@@ -222,6 +251,8 @@ final class ComparisonWorkspaceModel: ObservableObject {
     }
 
     func openComparison(_ record: ComparisonRecord) {
+        guard !savedComparisons.isSaving, !isClosing else { return }
+        savedComparisons.prepare(record)
         activeComparisonID = record.id
         activeBrowser = ComparisonBrowserModel(database: database, record: record)
         activeBrowser?.open()
@@ -234,6 +265,15 @@ final class ComparisonWorkspaceModel: ObservableObject {
     /// never touched, so leaving a snapshot-to-snapshot workspace preserves
     /// the persisted comparison.
     func closeComparison() {
+        guard !isClosing else { return }
+        if savedComparisons.isSaving {
+            isClosing = true
+            savedComparisons.cancelAndWait { [self] in
+                isClosing = false
+                closeComparison()
+            }
+            return
+        }
         do {
             try comparisonService.closeWorkspace()
         } catch {
@@ -249,6 +289,7 @@ final class ComparisonWorkspaceModel: ObservableObject {
     /// delete confirmation lives in the creation view; it always routes
     /// through this path.
     func deleteComparison(_ record: ComparisonRecord) {
+        guard !savedComparisons.isSaving, !isClosing else { return }
         do {
             try resultRepository.deleteComparison(record.id)
             try TransientSnapshotLifecycle(database: database).cleanupUnreferencedTransients()

@@ -46,11 +46,21 @@ public struct SavedEvidenceRow: Sendable, Equatable {
     public let original: [String: CompletionMetadataValue]
 }
 
+public struct SavedComparisonOperation: Sendable, Equatable {
+    public let id: UUID
+    public let artifactID: UUID
+    public let isDeleted: Bool
+}
+public struct SavedComparisonSummary: Identifiable, Sendable {
+    public let id: UUID
+    public let receipt: ComparisonCompletionReceipt
+}
+
 public enum SavedComparisonSide: String, Sendable { case left, right }
 
 /// Read-only handle, validated on open. Every page checks that the artifact
 /// still exists and is READY; sealed evidence is immutable under v13 guards.
-public final class SavedComparisonReader {
+public final class SavedComparisonReader: @unchecked Sendable {
     public let id: UUID
     public let receipt: ComparisonCompletionReceipt
     private let repository: SavedComparisonRepository
@@ -59,6 +69,11 @@ public final class SavedComparisonReader {
     }
     public func entries(side: SavedComparisonSide, after: Int64 = 0, limit: Int = 256) throws -> [SavedEvidenceRow] {
         try repository.page(id: id, table: "saved_entries", side: side, after: after, limit: limit)
+    }
+    public func entry(id: Int64, side: SavedComparisonSide) throws -> SavedEvidenceRow? {
+        guard id > 0 else { throw SavedComparisonError.corrupt("entry identity") }
+        let row = try entries(side:side,after:id-1,limit:1).first
+        return row?.id == id ? row : nil
     }
     public func issues(side: SavedComparisonSide, after: Int64 = 0, limit: Int = 256) throws -> [SavedEvidenceRow] {
         try repository.page(id: id, table: "saved_issues", side: side, after: after, limit: limit)
@@ -76,7 +91,10 @@ public final class SavedComparisonReader {
 
 /// Explicit backend action only. No initializer, completion path, reader or
 /// workspace lifecycle invokes save. All reads/copies are catalog metadata.
-public final class SavedComparisonRepository {
+// The production instance has immutable connection ownership; CatalogDatabase
+// serializes statements/transactions with its recursive lock. The internal test
+// observer must be configured before dispatch, never mutated during operations.
+public final class SavedComparisonRepository: @unchecked Sendable {
     public static let pageSize = 256
     private let database: CatalogDatabase
     // Internal failure/measurement seam; never changes transaction ownership.
@@ -205,6 +223,55 @@ public final class SavedComparisonRepository {
             guard let id = $0["id"]?.stringValue.flatMap(UUID.init(uuidString:)) else { throw SavedComparisonError.corrupt("artifact ID") }; return id
         }
     }
+    /// Exact completion discovery without a new schema/index. Support4096 total
+    /// operation rows;256-row primary-key pages plus one bounded overflow page
+    /// materialize at most4352 fixed-size rows before failing closed.
+    /// Includes tombstones; never treats absence in a truncated scan as absence.
+    public func operations(for receipt: ComparisonCompletionReceipt) throws -> [SavedComparisonOperation] {
+        try database.transaction {
+            var cursor = "", scanned = 0, matches: [SavedComparisonOperation] = []
+            while true {
+                let rows = try database.query("SELECT * FROM saved_operations WHERE id>? ORDER BY id LIMIT 256", bindings:[.text(cursor)])
+                if rows.isEmpty { return matches }
+                scanned += rows.count
+                guard scanned <= 4096 else { throw SavedComparisonError.budgetExceeded("operation discovery") }
+                for row in rows {
+                    guard let key = row["id"]?.stringValue, let operation = UUID(uuidString:key),
+                          let artifact = row["artifact_id"]?.stringValue.flatMap(UUID.init(uuidString:)),
+                          let state = row["state"]?.stringValue, ["ready","deleted"].contains(state) else { throw SavedComparisonError.corrupt("operation identity") }
+                    cursor = key
+                    if row["catalog_generation"]?.stringValue == receipt.catalogGeneration.uuidString &&
+                        row["completion_token"]?.stringValue == receipt.completionToken.uuidString &&
+                        row["comparison_id"]?.int64Value == receipt.comparisonID {
+                        matches.append(SavedComparisonOperation(id:operation,artifactID:artifact,isDeleted:state == "deleted"))
+                    }
+                }
+            }
+        }
+    }
+
+    /// Receipt summaries are frozen values. Full graph validation occurs on
+    /// open; a list summary alone never certifies a healthy saved graph.
+    public func summaries(after: String = "", limit: Int = 20) throws -> [SavedComparisonSummary] {
+        try database.transaction {
+            let count = max(1,min(20,limit))
+            let lengths = try database.query("SELECT length(receipt) AS bytes FROM saved_comparisons WHERE state='ready' AND id>? ORDER BY id LIMIT ?",bindings:[.text(after),.integer(Int64(count))])
+            var bytes: Int64 = 0, admitted = 0
+            for row in lengths {
+                guard let length = row["bytes"]?.int64Value, length > 0, length <= 8*1024*1024 else { throw SavedComparisonError.corrupt("summary receipt size") }
+                if bytes + length > 8*1024*1024 { break }
+                bytes += length; admitted += 1
+            }
+            if admitted == 0 { return [] }
+            let bindings: [DatabaseValue] = [.text(after),.integer(Int64(admitted))]
+            return try database.query("SELECT id,receipt FROM saved_comparisons WHERE state='ready' AND id>? ORDER BY id LIMIT ?",bindings:bindings).map { row in
+                guard let id = row["id"]?.stringValue.flatMap(UUID.init(uuidString:)), case .blob(let bytes) = row["receipt"] else { throw SavedComparisonError.corrupt("summary") }
+                do { return SavedComparisonSummary(id:id,receipt:try ComparisonCompletionReceipt.decode(bytes)) }
+                catch { throw SavedComparisonError.corrupt("summary receipt") }
+            }
+        }
+    }
+
     /// Entire owned graph removed in one transaction. Permanent operation row
     /// changes to deleted before cascade; retry can never rebuild this artifact.
     public func delete(id: UUID) throws {
