@@ -799,7 +799,7 @@ INSERT OR IGNORE INTO comparison_profiles (
 );
 
 INSERT OR IGNORE INTO schema_migrations(version, applied_at)
-VALUES (12, CURRENT_TIMESTAMP);
+VALUES (13, CURRENT_TIMESTAMP);
 
 CREATE TRIGGER IF NOT EXISTS trg_collections_last_used_at_insert
 AFTER INSERT ON snapshots
@@ -1163,3 +1163,291 @@ CREATE INDEX idx_receipt_results_right ON comparison_results(comparison_id, righ
 CREATE INDEX idx_receipt_member_entry ON comparison_collision_members(entry_id, side, group_id);
 CREATE INDEX idx_receipt_groups_order ON comparison_collision_groups(comparison_id, id);
 -- Task061 completion receipts END
+
+-- Task062: independent metadata-only saved evidence, schema v13.
+CREATE TABLE saved_comparisons (
+    id TEXT PRIMARY KEY NOT NULL CHECK (length(id)=36),
+    state TEXT NOT NULL CHECK (state IN ('building','ready')),
+    format_version INTEGER NOT NULL CHECK (format_version=1),
+    receipt BLOB NOT NULL CHECK (typeof(receipt)='blob' AND length(receipt) BETWEEN 1 AND 8388608),
+    graph_sha256 TEXT CHECK (length(graph_sha256)=64),
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE saved_operations (
+    id TEXT PRIMARY KEY NOT NULL CHECK (length(id)=36),
+    catalog_generation TEXT NOT NULL CHECK (length(catalog_generation)=36),
+    completion_token TEXT NOT NULL CHECK (length(completion_token)=36),
+    comparison_id INTEGER NOT NULL CHECK (comparison_id>0),
+    artifact_id TEXT NOT NULL UNIQUE CHECK (length(artifact_id)=36),
+    state TEXT NOT NULL CHECK (state IN ('ready','deleted'))
+);
+
+CREATE TABLE saved_trees (
+    id INTEGER PRIMARY KEY,
+    artifact_id TEXT NOT NULL REFERENCES saved_comparisons(id) ON DELETE CASCADE,
+    side TEXT NOT NULL CHECK (side IN ('left','right')),
+    origin_snapshot_id INTEGER NOT NULL CHECK (origin_snapshot_id>0),
+    UNIQUE(artifact_id,side),
+    UNIQUE(id,artifact_id)
+);
+
+CREATE TABLE saved_entries (
+    id INTEGER PRIMARY KEY,
+    artifact_id TEXT NOT NULL,
+    tree_id INTEGER NOT NULL,
+    origin_id INTEGER NOT NULL CHECK (origin_id>0),
+    parent_id INTEGER,
+    payload BLOB NOT NULL CHECK (typeof(payload)='blob' AND length(payload) BETWEEN 1 AND 524288),
+    UNIQUE(tree_id,origin_id),
+    UNIQUE(id,tree_id),
+    FOREIGN KEY (tree_id,artifact_id) REFERENCES saved_trees(id,artifact_id) ON DELETE CASCADE,
+    FOREIGN KEY (parent_id,tree_id) REFERENCES saved_entries(id,tree_id) DEFERRABLE INITIALLY DEFERRED
+);
+
+CREATE TABLE saved_issues (
+    id INTEGER PRIMARY KEY,
+    artifact_id TEXT NOT NULL,
+    tree_id INTEGER NOT NULL,
+    origin_id INTEGER NOT NULL CHECK (origin_id>0),
+    entry_id INTEGER,
+    payload BLOB NOT NULL CHECK (typeof(payload)='blob' AND length(payload) BETWEEN 1 AND 524288),
+    UNIQUE(tree_id,origin_id),
+    FOREIGN KEY (tree_id,artifact_id) REFERENCES saved_trees(id,artifact_id) ON DELETE CASCADE,
+    FOREIGN KEY (entry_id,tree_id) REFERENCES saved_entries(id,tree_id) DEFERRABLE INITIALLY DEFERRED
+);
+
+CREATE TABLE saved_results (
+    id INTEGER PRIMARY KEY,
+    artifact_id TEXT NOT NULL REFERENCES saved_comparisons(id) ON DELETE CASCADE,
+    origin_id INTEGER NOT NULL CHECK (origin_id>0),
+    parent_id INTEGER,
+    left_tree_id INTEGER NOT NULL,
+    right_tree_id INTEGER NOT NULL,
+    left_entry_id INTEGER,
+    right_entry_id INTEGER,
+    payload BLOB NOT NULL CHECK (typeof(payload)='blob' AND length(payload) BETWEEN 1 AND 524288),
+    UNIQUE(artifact_id,origin_id),
+    UNIQUE(id,artifact_id),
+    FOREIGN KEY (parent_id,artifact_id) REFERENCES saved_results(id,artifact_id) DEFERRABLE INITIALLY DEFERRED,
+    FOREIGN KEY (left_tree_id,artifact_id) REFERENCES saved_trees(id,artifact_id),
+    FOREIGN KEY (right_tree_id,artifact_id) REFERENCES saved_trees(id,artifact_id),
+    FOREIGN KEY (left_entry_id,left_tree_id) REFERENCES saved_entries(id,tree_id) DEFERRABLE INITIALLY DEFERRED,
+    FOREIGN KEY (right_entry_id,right_tree_id) REFERENCES saved_entries(id,tree_id) DEFERRABLE INITIALLY DEFERRED
+);
+
+CREATE TABLE saved_collision_groups (
+    id INTEGER PRIMARY KEY,
+    artifact_id TEXT NOT NULL REFERENCES saved_comparisons(id) ON DELETE CASCADE,
+    origin_id INTEGER NOT NULL CHECK (origin_id>0),
+    payload BLOB NOT NULL CHECK (typeof(payload)='blob' AND length(payload) BETWEEN 1 AND 524288),
+    UNIQUE(artifact_id,origin_id),
+    UNIQUE(id,artifact_id)
+);
+
+CREATE TABLE saved_collision_members (
+    id INTEGER PRIMARY KEY,
+    artifact_id TEXT NOT NULL,
+    origin_id INTEGER NOT NULL CHECK (origin_id>0),
+    group_id INTEGER NOT NULL,
+    side TEXT NOT NULL CHECK (side IN ('left','right')),
+    tree_id INTEGER NOT NULL,
+    entry_id INTEGER NOT NULL,
+    payload BLOB NOT NULL CHECK (typeof(payload)='blob' AND length(payload) BETWEEN 1 AND 524288),
+    UNIQUE(artifact_id,origin_id),
+    UNIQUE(group_id,side,entry_id),
+    FOREIGN KEY (group_id,artifact_id) REFERENCES saved_collision_groups(id,artifact_id) ON DELETE CASCADE,
+    FOREIGN KEY (tree_id,artifact_id) REFERENCES saved_trees(id,artifact_id),
+    FOREIGN KEY (entry_id,tree_id) REFERENCES saved_entries(id,tree_id)
+);
+
+CREATE INDEX idx_saved_entries_parent ON saved_entries(tree_id,parent_id);
+
+CREATE INDEX idx_saved_issues_entry ON saved_issues(tree_id,entry_id);
+
+CREATE INDEX idx_saved_results_order ON saved_results(artifact_id,id);
+
+CREATE INDEX idx_saved_collision_groups_order ON saved_collision_groups(artifact_id,id);
+
+CREATE INDEX idx_saved_collision_members_order ON saved_collision_members(artifact_id,id);
+
+CREATE INDEX idx_saved_entries_order ON saved_entries(artifact_id,id);
+
+CREATE INDEX idx_saved_issues_order ON saved_issues(artifact_id,id);
+
+CREATE INDEX idx_saved_results_left ON saved_results(left_entry_id,left_tree_id) WHERE left_entry_id IS NOT NULL;
+
+CREATE INDEX idx_saved_results_right ON saved_results(right_entry_id,right_tree_id) WHERE right_entry_id IS NOT NULL;
+
+CREATE INDEX idx_saved_results_parent ON saved_results(artifact_id,parent_id);
+
+CREATE INDEX idx_saved_members_entry ON saved_collision_members(tree_id,entry_id);
+
+CREATE INDEX idx_saved_members_group ON saved_collision_members(group_id,origin_id);
+
+CREATE TRIGGER trg_saved_artifact_insert BEFORE INSERT ON saved_comparisons
+WHEN NEW.state!='building' OR NEW.graph_sha256 IS NOT NULL OR EXISTS (SELECT 1 FROM saved_comparisons WHERE id=NEW.id) OR EXISTS (SELECT 1 FROM saved_operations WHERE artifact_id=NEW.id)
+BEGIN
+    SELECT RAISE(ABORT,'Saved artifact requires new explicit build');
+END;
+
+CREATE TRIGGER trg_saved_artifact_update BEFORE UPDATE ON saved_comparisons
+WHEN OLD.state!='building' OR NEW.state!='ready' OR NEW.id IS NOT OLD.id OR NEW.format_version IS NOT OLD.format_version OR NEW.receipt IS NOT OLD.receipt OR NEW.created_at IS NOT OLD.created_at OR NEW.graph_sha256 IS NULL
+BEGIN
+    SELECT RAISE(ABORT,'Saved artifact is immutable');
+END;
+
+CREATE TRIGGER trg_saved_artifact_delete BEFORE DELETE ON saved_comparisons
+BEGIN
+    SELECT CASE WHEN OLD.state!='ready' OR NOT EXISTS (SELECT 1 FROM saved_operations WHERE artifact_id=OLD.id AND state='ready') THEN RAISE(ABORT,'Saved deletion requires operation receipt') END;
+    UPDATE saved_operations SET state='deleted' WHERE artifact_id=OLD.id;
+END;
+
+CREATE TRIGGER trg_saved_operation_insert BEFORE INSERT ON saved_operations
+WHEN NEW.state!='ready' OR NOT EXISTS (SELECT 1 FROM saved_comparisons WHERE id=NEW.artifact_id AND state='ready') OR EXISTS (SELECT 1 FROM saved_operations WHERE id=NEW.id)
+BEGIN
+    SELECT RAISE(ABORT,'Invalid saved operation publication');
+END;
+
+CREATE TRIGGER trg_saved_operation_update BEFORE UPDATE ON saved_operations
+WHEN OLD.state!='ready' OR NEW.state!='deleted' OR NEW.id IS NOT OLD.id OR NEW.catalog_generation IS NOT OLD.catalog_generation OR NEW.completion_token IS NOT OLD.completion_token OR NEW.comparison_id IS NOT OLD.comparison_id OR NEW.artifact_id IS NOT OLD.artifact_id
+BEGIN
+    SELECT RAISE(ABORT,'Saved operation identity is immutable');
+END;
+
+CREATE TRIGGER trg_saved_operation_delete BEFORE DELETE ON saved_operations
+BEGIN
+    SELECT RAISE(ABORT,'Saved operation tombstones are permanent');
+END;
+
+CREATE TRIGGER trg_saved_trees_insert BEFORE INSERT ON saved_trees
+WHEN NOT EXISTS (SELECT 1 FROM saved_comparisons WHERE id=NEW.artifact_id AND state='building')
+BEGIN
+    SELECT RAISE(ABORT,'Saved evidence is immutable');
+END;
+
+CREATE TRIGGER trg_saved_trees_update BEFORE UPDATE ON saved_trees
+WHEN EXISTS (SELECT 1 FROM saved_comparisons WHERE id=OLD.artifact_id AND state='ready') OR NEW.artifact_id IS NOT OLD.artifact_id OR NEW.id IS NOT OLD.id
+BEGIN
+    SELECT RAISE(ABORT,'Saved evidence is immutable');
+END;
+
+CREATE TRIGGER trg_saved_trees_delete BEFORE DELETE ON saved_trees
+WHEN EXISTS (SELECT 1 FROM saved_comparisons WHERE id=OLD.artifact_id AND state='ready')
+BEGIN
+    SELECT RAISE(ABORT,'Saved evidence is immutable');
+END;
+
+CREATE TRIGGER trg_saved_entries_insert BEFORE INSERT ON saved_entries
+WHEN NOT EXISTS (SELECT 1 FROM saved_comparisons WHERE id=NEW.artifact_id AND state='building')
+BEGIN
+    SELECT RAISE(ABORT,'Saved evidence is immutable');
+END;
+
+CREATE TRIGGER trg_saved_entries_update BEFORE UPDATE ON saved_entries
+WHEN EXISTS (SELECT 1 FROM saved_comparisons WHERE id=OLD.artifact_id AND state='ready') OR NEW.artifact_id IS NOT OLD.artifact_id OR NEW.id IS NOT OLD.id
+BEGIN
+    SELECT RAISE(ABORT,'Saved evidence is immutable');
+END;
+
+CREATE TRIGGER trg_saved_entries_delete BEFORE DELETE ON saved_entries
+WHEN EXISTS (SELECT 1 FROM saved_comparisons WHERE id=OLD.artifact_id AND state='ready')
+BEGIN
+    SELECT RAISE(ABORT,'Saved evidence is immutable');
+END;
+
+CREATE TRIGGER trg_saved_issues_insert BEFORE INSERT ON saved_issues
+WHEN NOT EXISTS (SELECT 1 FROM saved_comparisons WHERE id=NEW.artifact_id AND state='building')
+BEGIN
+    SELECT RAISE(ABORT,'Saved evidence is immutable');
+END;
+
+CREATE TRIGGER trg_saved_issues_update BEFORE UPDATE ON saved_issues
+WHEN EXISTS (SELECT 1 FROM saved_comparisons WHERE id=OLD.artifact_id AND state='ready') OR NEW.artifact_id IS NOT OLD.artifact_id OR NEW.id IS NOT OLD.id
+BEGIN
+    SELECT RAISE(ABORT,'Saved evidence is immutable');
+END;
+
+CREATE TRIGGER trg_saved_issues_delete BEFORE DELETE ON saved_issues
+WHEN EXISTS (SELECT 1 FROM saved_comparisons WHERE id=OLD.artifact_id AND state='ready')
+BEGIN
+    SELECT RAISE(ABORT,'Saved evidence is immutable');
+END;
+
+CREATE TRIGGER trg_saved_results_insert BEFORE INSERT ON saved_results
+WHEN NOT EXISTS (SELECT 1 FROM saved_comparisons WHERE id=NEW.artifact_id AND state='building')
+BEGIN
+    SELECT RAISE(ABORT,'Saved evidence is immutable');
+END;
+
+CREATE TRIGGER trg_saved_results_update BEFORE UPDATE ON saved_results
+WHEN EXISTS (SELECT 1 FROM saved_comparisons WHERE id=OLD.artifact_id AND state='ready') OR NEW.artifact_id IS NOT OLD.artifact_id OR NEW.id IS NOT OLD.id
+BEGIN
+    SELECT RAISE(ABORT,'Saved evidence is immutable');
+END;
+
+CREATE TRIGGER trg_saved_results_delete BEFORE DELETE ON saved_results
+WHEN EXISTS (SELECT 1 FROM saved_comparisons WHERE id=OLD.artifact_id AND state='ready')
+BEGIN
+    SELECT RAISE(ABORT,'Saved evidence is immutable');
+END;
+
+CREATE TRIGGER trg_saved_collision_groups_insert BEFORE INSERT ON saved_collision_groups
+WHEN NOT EXISTS (SELECT 1 FROM saved_comparisons WHERE id=NEW.artifact_id AND state='building')
+BEGIN
+    SELECT RAISE(ABORT,'Saved evidence is immutable');
+END;
+
+CREATE TRIGGER trg_saved_collision_groups_update BEFORE UPDATE ON saved_collision_groups
+WHEN EXISTS (SELECT 1 FROM saved_comparisons WHERE id=OLD.artifact_id AND state='ready') OR NEW.artifact_id IS NOT OLD.artifact_id OR NEW.id IS NOT OLD.id
+BEGIN
+    SELECT RAISE(ABORT,'Saved evidence is immutable');
+END;
+
+CREATE TRIGGER trg_saved_collision_groups_delete BEFORE DELETE ON saved_collision_groups
+WHEN EXISTS (SELECT 1 FROM saved_comparisons WHERE id=OLD.artifact_id AND state='ready')
+BEGIN
+    SELECT RAISE(ABORT,'Saved evidence is immutable');
+END;
+
+CREATE TRIGGER trg_saved_collision_members_insert BEFORE INSERT ON saved_collision_members
+WHEN NOT EXISTS (SELECT 1 FROM saved_comparisons WHERE id=NEW.artifact_id AND state='building')
+BEGIN
+    SELECT RAISE(ABORT,'Saved evidence is immutable');
+END;
+
+CREATE TRIGGER trg_saved_collision_members_update BEFORE UPDATE ON saved_collision_members
+WHEN EXISTS (SELECT 1 FROM saved_comparisons WHERE id=OLD.artifact_id AND state='ready') OR NEW.artifact_id IS NOT OLD.artifact_id OR NEW.id IS NOT OLD.id
+BEGIN
+    SELECT RAISE(ABORT,'Saved evidence is immutable');
+END;
+
+CREATE TRIGGER trg_saved_collision_members_delete BEFORE DELETE ON saved_collision_members
+WHEN EXISTS (SELECT 1 FROM saved_comparisons WHERE id=OLD.artifact_id AND state='ready')
+BEGIN
+    SELECT RAISE(ABORT,'Saved evidence is immutable');
+END;
+
+CREATE TRIGGER trg_saved_results_side_insert BEFORE INSERT ON saved_results
+WHEN NOT EXISTS (SELECT 1 FROM saved_trees WHERE id=NEW.left_tree_id AND artifact_id=NEW.artifact_id AND side='left') OR NOT EXISTS (SELECT 1 FROM saved_trees WHERE id=NEW.right_tree_id AND artifact_id=NEW.artifact_id AND side='right')
+BEGIN
+    SELECT RAISE(ABORT,'Wrong saved side');
+END;
+
+CREATE TRIGGER trg_saved_results_side_update BEFORE UPDATE ON saved_results
+WHEN NOT EXISTS (SELECT 1 FROM saved_trees WHERE id=NEW.left_tree_id AND artifact_id=NEW.artifact_id AND side='left') OR NOT EXISTS (SELECT 1 FROM saved_trees WHERE id=NEW.right_tree_id AND artifact_id=NEW.artifact_id AND side='right')
+BEGIN
+    SELECT RAISE(ABORT,'Wrong saved side');
+END;
+
+CREATE TRIGGER trg_saved_collision_members_side_insert BEFORE INSERT ON saved_collision_members
+WHEN NOT EXISTS (SELECT 1 FROM saved_trees WHERE id=NEW.tree_id AND artifact_id=NEW.artifact_id AND side=NEW.side)
+BEGIN
+    SELECT RAISE(ABORT,'Wrong saved side');
+END;
+
+CREATE TRIGGER trg_saved_collision_members_side_update BEFORE UPDATE ON saved_collision_members
+WHEN NOT EXISTS (SELECT 1 FROM saved_trees WHERE id=NEW.tree_id AND artifact_id=NEW.artifact_id AND side=NEW.side)
+BEGIN
+    SELECT RAISE(ABORT,'Wrong saved side');
+END;

@@ -22,7 +22,7 @@ public struct SchemaMigration: Sendable {
 public enum CatalogMigrations {
     /// The version a fresh `schema.sql` records and the version every supported
     /// catalog is brought to on open.
-    public static let currentVersion: Int64 = 12
+    public static let currentVersion: Int64 = 13
 
     /// The oldest version that can be migrated forward. Versions 1 through 3
     /// never existed as a materialized database, so they have no migration and
@@ -30,7 +30,7 @@ public enum CatalogMigrations {
     public static let oldestMigratableVersion: Int64 = 4
 
     public static let all: [SchemaMigration] = [
-        migrationToVersion5, migrationToVersion6, migrationToVersion7, migrationToVersion8, migrationToVersion9, migrationToVersion10, migrationToVersion11, migrationToVersion12
+        migrationToVersion5, migrationToVersion6, migrationToVersion7, migrationToVersion8, migrationToVersion9, migrationToVersion10, migrationToVersion11, migrationToVersion12, migrationToVersion13
     ]
 
     /// Version 4 to version 5.
@@ -368,19 +368,79 @@ public enum CatalogMigrations {
         ("trg_receipted_comparison_identity", "CREATE TRIGGER trg_receipted_comparison_identity BEFORE UPDATE ON comparisons\nWHEN OLD.status = 'complete' AND EXISTS (SELECT 1 FROM comparison_completion_receipts WHERE comparison_id=OLD.id)\n AND (NEW.id IS NOT OLD.id OR NEW.profile_id IS NOT OLD.profile_id\n      OR NEW.profile_version IS NOT OLD.profile_version OR NEW.started_at IS NOT OLD.started_at\n      OR NEW.completed_at IS NOT OLD.completed_at OR NEW.created_at IS NOT OLD.created_at)\nBEGIN\n    SELECT RAISE(ABORT, 'Receipted comparison identity is immutable');\nEND;")
     ]
 
+    public static let migrationToVersion13 = SchemaMigration(version: 13, statements:
+        savedTableDefinitions.map(\.sql) + savedIndexDefinitions.map(\.sql) + savedTriggerDefinitions.map(\.sql))
+
+    public static let savedTableDefinitions: [(name: String, sql: String)] = [
+        ("saved_comparisons", "CREATE TABLE saved_comparisons (\n    id TEXT PRIMARY KEY NOT NULL CHECK (length(id)=36),\n    state TEXT NOT NULL CHECK (state IN ('building','ready')),\n    format_version INTEGER NOT NULL CHECK (format_version=1),\n    receipt BLOB NOT NULL CHECK (typeof(receipt)='blob' AND length(receipt) BETWEEN 1 AND 8388608),\n    graph_sha256 TEXT CHECK (length(graph_sha256)=64),\n    created_at TEXT NOT NULL\n);"),
+        ("saved_operations", "CREATE TABLE saved_operations (\n    id TEXT PRIMARY KEY NOT NULL CHECK (length(id)=36),\n    catalog_generation TEXT NOT NULL CHECK (length(catalog_generation)=36),\n    completion_token TEXT NOT NULL CHECK (length(completion_token)=36),\n    comparison_id INTEGER NOT NULL CHECK (comparison_id>0),\n    artifact_id TEXT NOT NULL UNIQUE CHECK (length(artifact_id)=36),\n    state TEXT NOT NULL CHECK (state IN ('ready','deleted'))\n);"),
+        ("saved_trees", "CREATE TABLE saved_trees (\n    id INTEGER PRIMARY KEY,\n    artifact_id TEXT NOT NULL REFERENCES saved_comparisons(id) ON DELETE CASCADE,\n    side TEXT NOT NULL CHECK (side IN ('left','right')),\n    origin_snapshot_id INTEGER NOT NULL CHECK (origin_snapshot_id>0),\n    UNIQUE(artifact_id,side),\n    UNIQUE(id,artifact_id)\n);"),
+        ("saved_entries", "CREATE TABLE saved_entries (\n    id INTEGER PRIMARY KEY,\n    artifact_id TEXT NOT NULL,\n    tree_id INTEGER NOT NULL,\n    origin_id INTEGER NOT NULL CHECK (origin_id>0),\n    parent_id INTEGER,\n    payload BLOB NOT NULL CHECK (typeof(payload)='blob' AND length(payload) BETWEEN 1 AND 524288),\n    UNIQUE(tree_id,origin_id),\n    UNIQUE(id,tree_id),\n    FOREIGN KEY (tree_id,artifact_id) REFERENCES saved_trees(id,artifact_id) ON DELETE CASCADE,\n    FOREIGN KEY (parent_id,tree_id) REFERENCES saved_entries(id,tree_id) DEFERRABLE INITIALLY DEFERRED\n);"),
+        ("saved_issues", "CREATE TABLE saved_issues (\n    id INTEGER PRIMARY KEY,\n    artifact_id TEXT NOT NULL,\n    tree_id INTEGER NOT NULL,\n    origin_id INTEGER NOT NULL CHECK (origin_id>0),\n    entry_id INTEGER,\n    payload BLOB NOT NULL CHECK (typeof(payload)='blob' AND length(payload) BETWEEN 1 AND 524288),\n    UNIQUE(tree_id,origin_id),\n    FOREIGN KEY (tree_id,artifact_id) REFERENCES saved_trees(id,artifact_id) ON DELETE CASCADE,\n    FOREIGN KEY (entry_id,tree_id) REFERENCES saved_entries(id,tree_id) DEFERRABLE INITIALLY DEFERRED\n);"),
+        ("saved_results", "CREATE TABLE saved_results (\n    id INTEGER PRIMARY KEY,\n    artifact_id TEXT NOT NULL REFERENCES saved_comparisons(id) ON DELETE CASCADE,\n    origin_id INTEGER NOT NULL CHECK (origin_id>0),\n    parent_id INTEGER,\n    left_tree_id INTEGER NOT NULL,\n    right_tree_id INTEGER NOT NULL,\n    left_entry_id INTEGER,\n    right_entry_id INTEGER,\n    payload BLOB NOT NULL CHECK (typeof(payload)='blob' AND length(payload) BETWEEN 1 AND 524288),\n    UNIQUE(artifact_id,origin_id),\n    UNIQUE(id,artifact_id),\n    FOREIGN KEY (parent_id,artifact_id) REFERENCES saved_results(id,artifact_id) DEFERRABLE INITIALLY DEFERRED,\n    FOREIGN KEY (left_tree_id,artifact_id) REFERENCES saved_trees(id,artifact_id),\n    FOREIGN KEY (right_tree_id,artifact_id) REFERENCES saved_trees(id,artifact_id),\n    FOREIGN KEY (left_entry_id,left_tree_id) REFERENCES saved_entries(id,tree_id) DEFERRABLE INITIALLY DEFERRED,\n    FOREIGN KEY (right_entry_id,right_tree_id) REFERENCES saved_entries(id,tree_id) DEFERRABLE INITIALLY DEFERRED\n);"),
+        ("saved_collision_groups", "CREATE TABLE saved_collision_groups (\n    id INTEGER PRIMARY KEY,\n    artifact_id TEXT NOT NULL REFERENCES saved_comparisons(id) ON DELETE CASCADE,\n    origin_id INTEGER NOT NULL CHECK (origin_id>0),\n    payload BLOB NOT NULL CHECK (typeof(payload)='blob' AND length(payload) BETWEEN 1 AND 524288),\n    UNIQUE(artifact_id,origin_id),\n    UNIQUE(id,artifact_id)\n);"),
+        ("saved_collision_members", "CREATE TABLE saved_collision_members (\n    id INTEGER PRIMARY KEY,\n    artifact_id TEXT NOT NULL,\n    origin_id INTEGER NOT NULL CHECK (origin_id>0),\n    group_id INTEGER NOT NULL,\n    side TEXT NOT NULL CHECK (side IN ('left','right')),\n    tree_id INTEGER NOT NULL,\n    entry_id INTEGER NOT NULL,\n    payload BLOB NOT NULL CHECK (typeof(payload)='blob' AND length(payload) BETWEEN 1 AND 524288),\n    UNIQUE(artifact_id,origin_id),\n    UNIQUE(group_id,side,entry_id),\n    FOREIGN KEY (group_id,artifact_id) REFERENCES saved_collision_groups(id,artifact_id) ON DELETE CASCADE,\n    FOREIGN KEY (tree_id,artifact_id) REFERENCES saved_trees(id,artifact_id),\n    FOREIGN KEY (entry_id,tree_id) REFERENCES saved_entries(id,tree_id)\n);")
+    ]
+
+    public static let savedIndexDefinitions: [(name: String, sql: String)] = [
+        ("idx_saved_entries_parent", "CREATE INDEX idx_saved_entries_parent ON saved_entries(tree_id,parent_id);"),
+        ("idx_saved_issues_entry", "CREATE INDEX idx_saved_issues_entry ON saved_issues(tree_id,entry_id);"),
+        ("idx_saved_results_order", "CREATE INDEX idx_saved_results_order ON saved_results(artifact_id,id);"),
+        ("idx_saved_collision_groups_order", "CREATE INDEX idx_saved_collision_groups_order ON saved_collision_groups(artifact_id,id);"),
+        ("idx_saved_collision_members_order", "CREATE INDEX idx_saved_collision_members_order ON saved_collision_members(artifact_id,id);"),
+        ("idx_saved_entries_order", "CREATE INDEX idx_saved_entries_order ON saved_entries(artifact_id,id);"),
+        ("idx_saved_issues_order", "CREATE INDEX idx_saved_issues_order ON saved_issues(artifact_id,id);"),
+        ("idx_saved_results_left", "CREATE INDEX idx_saved_results_left ON saved_results(left_entry_id,left_tree_id) WHERE left_entry_id IS NOT NULL;"),
+        ("idx_saved_results_right", "CREATE INDEX idx_saved_results_right ON saved_results(right_entry_id,right_tree_id) WHERE right_entry_id IS NOT NULL;"),
+        ("idx_saved_results_parent", "CREATE INDEX idx_saved_results_parent ON saved_results(artifact_id,parent_id);"),
+        ("idx_saved_members_entry", "CREATE INDEX idx_saved_members_entry ON saved_collision_members(tree_id,entry_id);"),
+        ("idx_saved_members_group", "CREATE INDEX idx_saved_members_group ON saved_collision_members(group_id,origin_id);")
+    ]
+
+    public static let savedTriggerDefinitions: [(name: String, sql: String)] = [
+        ("trg_saved_artifact_insert", "CREATE TRIGGER trg_saved_artifact_insert BEFORE INSERT ON saved_comparisons\nWHEN NEW.state!='building' OR NEW.graph_sha256 IS NOT NULL OR EXISTS (SELECT 1 FROM saved_comparisons WHERE id=NEW.id) OR EXISTS (SELECT 1 FROM saved_operations WHERE artifact_id=NEW.id)\nBEGIN\n    SELECT RAISE(ABORT,'Saved artifact requires new explicit build');\nEND;"),
+        ("trg_saved_artifact_update", "CREATE TRIGGER trg_saved_artifact_update BEFORE UPDATE ON saved_comparisons\nWHEN OLD.state!='building' OR NEW.state!='ready' OR NEW.id IS NOT OLD.id OR NEW.format_version IS NOT OLD.format_version OR NEW.receipt IS NOT OLD.receipt OR NEW.created_at IS NOT OLD.created_at OR NEW.graph_sha256 IS NULL\nBEGIN\n    SELECT RAISE(ABORT,'Saved artifact is immutable');\nEND;"),
+        ("trg_saved_artifact_delete", "CREATE TRIGGER trg_saved_artifact_delete BEFORE DELETE ON saved_comparisons\nBEGIN\n    SELECT CASE WHEN OLD.state!='ready' OR NOT EXISTS (SELECT 1 FROM saved_operations WHERE artifact_id=OLD.id AND state='ready') THEN RAISE(ABORT,'Saved deletion requires operation receipt') END;\n    UPDATE saved_operations SET state='deleted' WHERE artifact_id=OLD.id;\nEND;"),
+        ("trg_saved_operation_insert", "CREATE TRIGGER trg_saved_operation_insert BEFORE INSERT ON saved_operations\nWHEN NEW.state!='ready' OR NOT EXISTS (SELECT 1 FROM saved_comparisons WHERE id=NEW.artifact_id AND state='ready') OR EXISTS (SELECT 1 FROM saved_operations WHERE id=NEW.id)\nBEGIN\n    SELECT RAISE(ABORT,'Invalid saved operation publication');\nEND;"),
+        ("trg_saved_operation_update", "CREATE TRIGGER trg_saved_operation_update BEFORE UPDATE ON saved_operations\nWHEN OLD.state!='ready' OR NEW.state!='deleted' OR NEW.id IS NOT OLD.id OR NEW.catalog_generation IS NOT OLD.catalog_generation OR NEW.completion_token IS NOT OLD.completion_token OR NEW.comparison_id IS NOT OLD.comparison_id OR NEW.artifact_id IS NOT OLD.artifact_id\nBEGIN\n    SELECT RAISE(ABORT,'Saved operation identity is immutable');\nEND;"),
+        ("trg_saved_operation_delete", "CREATE TRIGGER trg_saved_operation_delete BEFORE DELETE ON saved_operations\nBEGIN\n    SELECT RAISE(ABORT,'Saved operation tombstones are permanent');\nEND;"),
+        ("trg_saved_trees_insert", "CREATE TRIGGER trg_saved_trees_insert BEFORE INSERT ON saved_trees\nWHEN NOT EXISTS (SELECT 1 FROM saved_comparisons WHERE id=NEW.artifact_id AND state='building')\nBEGIN\n    SELECT RAISE(ABORT,'Saved evidence is immutable');\nEND;"),
+        ("trg_saved_trees_update", "CREATE TRIGGER trg_saved_trees_update BEFORE UPDATE ON saved_trees\nWHEN EXISTS (SELECT 1 FROM saved_comparisons WHERE id=OLD.artifact_id AND state='ready') OR NEW.artifact_id IS NOT OLD.artifact_id OR NEW.id IS NOT OLD.id\nBEGIN\n    SELECT RAISE(ABORT,'Saved evidence is immutable');\nEND;"),
+        ("trg_saved_trees_delete", "CREATE TRIGGER trg_saved_trees_delete BEFORE DELETE ON saved_trees\nWHEN EXISTS (SELECT 1 FROM saved_comparisons WHERE id=OLD.artifact_id AND state='ready')\nBEGIN\n    SELECT RAISE(ABORT,'Saved evidence is immutable');\nEND;"),
+        ("trg_saved_entries_insert", "CREATE TRIGGER trg_saved_entries_insert BEFORE INSERT ON saved_entries\nWHEN NOT EXISTS (SELECT 1 FROM saved_comparisons WHERE id=NEW.artifact_id AND state='building')\nBEGIN\n    SELECT RAISE(ABORT,'Saved evidence is immutable');\nEND;"),
+        ("trg_saved_entries_update", "CREATE TRIGGER trg_saved_entries_update BEFORE UPDATE ON saved_entries\nWHEN EXISTS (SELECT 1 FROM saved_comparisons WHERE id=OLD.artifact_id AND state='ready') OR NEW.artifact_id IS NOT OLD.artifact_id OR NEW.id IS NOT OLD.id\nBEGIN\n    SELECT RAISE(ABORT,'Saved evidence is immutable');\nEND;"),
+        ("trg_saved_entries_delete", "CREATE TRIGGER trg_saved_entries_delete BEFORE DELETE ON saved_entries\nWHEN EXISTS (SELECT 1 FROM saved_comparisons WHERE id=OLD.artifact_id AND state='ready')\nBEGIN\n    SELECT RAISE(ABORT,'Saved evidence is immutable');\nEND;"),
+        ("trg_saved_issues_insert", "CREATE TRIGGER trg_saved_issues_insert BEFORE INSERT ON saved_issues\nWHEN NOT EXISTS (SELECT 1 FROM saved_comparisons WHERE id=NEW.artifact_id AND state='building')\nBEGIN\n    SELECT RAISE(ABORT,'Saved evidence is immutable');\nEND;"),
+        ("trg_saved_issues_update", "CREATE TRIGGER trg_saved_issues_update BEFORE UPDATE ON saved_issues\nWHEN EXISTS (SELECT 1 FROM saved_comparisons WHERE id=OLD.artifact_id AND state='ready') OR NEW.artifact_id IS NOT OLD.artifact_id OR NEW.id IS NOT OLD.id\nBEGIN\n    SELECT RAISE(ABORT,'Saved evidence is immutable');\nEND;"),
+        ("trg_saved_issues_delete", "CREATE TRIGGER trg_saved_issues_delete BEFORE DELETE ON saved_issues\nWHEN EXISTS (SELECT 1 FROM saved_comparisons WHERE id=OLD.artifact_id AND state='ready')\nBEGIN\n    SELECT RAISE(ABORT,'Saved evidence is immutable');\nEND;"),
+        ("trg_saved_results_insert", "CREATE TRIGGER trg_saved_results_insert BEFORE INSERT ON saved_results\nWHEN NOT EXISTS (SELECT 1 FROM saved_comparisons WHERE id=NEW.artifact_id AND state='building')\nBEGIN\n    SELECT RAISE(ABORT,'Saved evidence is immutable');\nEND;"),
+        ("trg_saved_results_update", "CREATE TRIGGER trg_saved_results_update BEFORE UPDATE ON saved_results\nWHEN EXISTS (SELECT 1 FROM saved_comparisons WHERE id=OLD.artifact_id AND state='ready') OR NEW.artifact_id IS NOT OLD.artifact_id OR NEW.id IS NOT OLD.id\nBEGIN\n    SELECT RAISE(ABORT,'Saved evidence is immutable');\nEND;"),
+        ("trg_saved_results_delete", "CREATE TRIGGER trg_saved_results_delete BEFORE DELETE ON saved_results\nWHEN EXISTS (SELECT 1 FROM saved_comparisons WHERE id=OLD.artifact_id AND state='ready')\nBEGIN\n    SELECT RAISE(ABORT,'Saved evidence is immutable');\nEND;"),
+        ("trg_saved_collision_groups_insert", "CREATE TRIGGER trg_saved_collision_groups_insert BEFORE INSERT ON saved_collision_groups\nWHEN NOT EXISTS (SELECT 1 FROM saved_comparisons WHERE id=NEW.artifact_id AND state='building')\nBEGIN\n    SELECT RAISE(ABORT,'Saved evidence is immutable');\nEND;"),
+        ("trg_saved_collision_groups_update", "CREATE TRIGGER trg_saved_collision_groups_update BEFORE UPDATE ON saved_collision_groups\nWHEN EXISTS (SELECT 1 FROM saved_comparisons WHERE id=OLD.artifact_id AND state='ready') OR NEW.artifact_id IS NOT OLD.artifact_id OR NEW.id IS NOT OLD.id\nBEGIN\n    SELECT RAISE(ABORT,'Saved evidence is immutable');\nEND;"),
+        ("trg_saved_collision_groups_delete", "CREATE TRIGGER trg_saved_collision_groups_delete BEFORE DELETE ON saved_collision_groups\nWHEN EXISTS (SELECT 1 FROM saved_comparisons WHERE id=OLD.artifact_id AND state='ready')\nBEGIN\n    SELECT RAISE(ABORT,'Saved evidence is immutable');\nEND;"),
+        ("trg_saved_collision_members_insert", "CREATE TRIGGER trg_saved_collision_members_insert BEFORE INSERT ON saved_collision_members\nWHEN NOT EXISTS (SELECT 1 FROM saved_comparisons WHERE id=NEW.artifact_id AND state='building')\nBEGIN\n    SELECT RAISE(ABORT,'Saved evidence is immutable');\nEND;"),
+        ("trg_saved_collision_members_update", "CREATE TRIGGER trg_saved_collision_members_update BEFORE UPDATE ON saved_collision_members\nWHEN EXISTS (SELECT 1 FROM saved_comparisons WHERE id=OLD.artifact_id AND state='ready') OR NEW.artifact_id IS NOT OLD.artifact_id OR NEW.id IS NOT OLD.id\nBEGIN\n    SELECT RAISE(ABORT,'Saved evidence is immutable');\nEND;"),
+        ("trg_saved_collision_members_delete", "CREATE TRIGGER trg_saved_collision_members_delete BEFORE DELETE ON saved_collision_members\nWHEN EXISTS (SELECT 1 FROM saved_comparisons WHERE id=OLD.artifact_id AND state='ready')\nBEGIN\n    SELECT RAISE(ABORT,'Saved evidence is immutable');\nEND;"),
+        ("trg_saved_results_side_insert", "CREATE TRIGGER trg_saved_results_side_insert BEFORE INSERT ON saved_results\nWHEN NOT EXISTS (SELECT 1 FROM saved_trees WHERE id=NEW.left_tree_id AND artifact_id=NEW.artifact_id AND side='left') OR NOT EXISTS (SELECT 1 FROM saved_trees WHERE id=NEW.right_tree_id AND artifact_id=NEW.artifact_id AND side='right')\nBEGIN\n    SELECT RAISE(ABORT,'Wrong saved side');\nEND;"),
+        ("trg_saved_results_side_update", "CREATE TRIGGER trg_saved_results_side_update BEFORE UPDATE ON saved_results\nWHEN NOT EXISTS (SELECT 1 FROM saved_trees WHERE id=NEW.left_tree_id AND artifact_id=NEW.artifact_id AND side='left') OR NOT EXISTS (SELECT 1 FROM saved_trees WHERE id=NEW.right_tree_id AND artifact_id=NEW.artifact_id AND side='right')\nBEGIN\n    SELECT RAISE(ABORT,'Wrong saved side');\nEND;"),
+        ("trg_saved_collision_members_side_insert", "CREATE TRIGGER trg_saved_collision_members_side_insert BEFORE INSERT ON saved_collision_members\nWHEN NOT EXISTS (SELECT 1 FROM saved_trees WHERE id=NEW.tree_id AND artifact_id=NEW.artifact_id AND side=NEW.side)\nBEGIN\n    SELECT RAISE(ABORT,'Wrong saved side');\nEND;"),
+        ("trg_saved_collision_members_side_update", "CREATE TRIGGER trg_saved_collision_members_side_update BEFORE UPDATE ON saved_collision_members\nWHEN NOT EXISTS (SELECT 1 FROM saved_trees WHERE id=NEW.tree_id AND artifact_id=NEW.artifact_id AND side=NEW.side)\nBEGIN\n    SELECT RAISE(ABORT,'Wrong saved side');\nEND;")
+    ]
+
     public enum ExpectedState {
         public static let tables = [
             "schema_migrations", "volumes", "collections", "source_collection_defaults",
             "snapshots", "entries", "scan_issues", "comparison_profiles", "comparisons",
             "comparison_collision_groups", "comparison_collision_members",
             "comparison_results", "entry_classifications"
-        ] + identityTableDefinitions.map(\.name) + driveSetTableDefinitions.map(\.name) + receiptTableDefinitions.map(\.name)
+        ] + identityTableDefinitions.map(\.name) + driveSetTableDefinitions.map(\.name) + receiptTableDefinitions.map(\.name) + savedTableDefinitions.map(\.name)
 
         /// Every canonical trigger, name and DDL. The DDL text is the
         /// `CREATE TRIGGER ... END;` statement as written in
         /// `docs/database/schema.sql`; `normalizedObjectSQL` removes the
         /// textual differences SQLite itself applies when storing it.
-        public static let triggerDefinitions: [(name: String, sql: String)] = identityTriggerDefinitions + driveSetTriggerDefinitions + receiptTriggerDefinitions + [
+        public static let triggerDefinitions: [(name: String, sql: String)] = identityTriggerDefinitions + driveSetTriggerDefinitions + receiptTriggerDefinitions + savedTriggerDefinitions + [
             ("trg_snapshots_complete_root_check",
              "CREATE TRIGGER IF NOT EXISTS trg_snapshots_complete_root_check\nBEFORE UPDATE OF status ON snapshots\nWHEN NEW.status IN ('complete', 'complete_with_warnings')\nBEGIN\n    SELECT CASE\n        WHEN (SELECT COUNT(*) FROM entries WHERE snapshot_id = NEW.id AND parent_id IS NULL AND relative_path = '') != 1 THEN\n            RAISE(ABORT, 'Snapshot must have exactly one root entry to complete')\n        WHEN NEW.normalization_version != 'fsd-normalizer-v1_app-1.0_os-1' THEN\n            RAISE(ABORT, 'Snapshot normalization_version is not supported for completion')\n    END;\nEND;"),
             ("trg_snapshots_insert_scanning_only",
@@ -445,7 +505,7 @@ public enum CatalogMigrations {
 
         /// Every canonical index, name and DDL, with the same definition
         /// guarantee as the trigger list.
-        public static let indexDefinitions: [(name: String, sql: String)] = identityIndexDefinitions + driveSetIndexDefinitions + receiptIndexDefinitions + [
+        public static let indexDefinitions: [(name: String, sql: String)] = identityIndexDefinitions + driveSetIndexDefinitions + receiptIndexDefinitions + savedIndexDefinitions + [
             ("idx_volumes_persistent_uuid",
              "CREATE INDEX IF NOT EXISTS idx_volumes_persistent_uuid\nON volumes(persistent_uuid)\nWHERE persistent_uuid IS NOT NULL;"),
             ("idx_volumes_fallback_fingerprint",

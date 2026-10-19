@@ -8,13 +8,18 @@ public final class ComparisonCompletionReceiptRepository {
     public init(database: CatalogDatabase) { self.database = database }
 
     public func receipt(comparisonID: ComparisonID) throws -> ComparisonCompletionReceipt? {
-        try database.transaction {
-            guard let row = try database.query("SELECT * FROM comparison_completion_receipts WHERE comparison_id=?", bindings:[.integer(comparisonID.rawValue)]).first else { return nil }
-            guard case .blob(let data) = row["payload"] else { throw CompletionReceiptError.invalidEvidence("Missing receipt encoding") }
-            let receipt = try ComparisonCompletionReceipt.decode(data)
-            try validateBinding(receipt, row: row)
-            return receipt
-        }
+        try database.transaction { try validatedReceipt(comparisonID: comparisonID) }
+    }
+
+    /// Internal Save seam: caller already owns one BEGIN IMMEDIATE transaction.
+    /// Checkpoints include receipt closure validation in the operation budget.
+    func validatedReceipt(comparisonID: ComparisonID, checkpoint: () throws -> Void = {}) throws -> ComparisonCompletionReceipt? {
+        try checkpoint()
+        guard let row = try database.query("SELECT * FROM comparison_completion_receipts WHERE comparison_id=?", bindings:[.integer(comparisonID.rawValue)]).first else { return nil }
+        guard case .blob(let data) = row["payload"] else { throw CompletionReceiptError.invalidEvidence("Missing receipt encoding") }
+        let receipt = try ComparisonCompletionReceipt.decode(data)
+        try validateBinding(receipt, row: row, checkpoint: checkpoint)
+        return receipt
     }
     public func isEligibleForExactSave(comparisonID: ComparisonID) throws -> Bool {
         try receipt(comparisonID: comparisonID) != nil
@@ -64,7 +69,7 @@ public final class ComparisonCompletionReceiptRepository {
         }
     }
 
-    private func validateBinding(_ receipt: ComparisonCompletionReceipt, row: DatabaseRow) throws {
+    private func validateBinding(_ receipt: ComparisonCompletionReceipt, row: DatabaseRow, checkpoint: () throws -> Void = {}) throws {
         guard receipt.comparisonID == row["comparison_id"]?.int64Value,
               receipt.catalogGeneration == row["catalog_generation"]?.stringValue.flatMap(UUID.init(uuidString:)),
               receipt.completionToken == row["completion_token"]?.stringValue.flatMap(UUID.init(uuidString:)),
@@ -82,7 +87,7 @@ public final class ComparisonCompletionReceiptRepository {
         }
         // Compare only immutable terminal rows. Mutable current side/profile
         // annotations/issues never participate in this future-Save eligibility.
-        guard try closure(comparisonID:receipt.comparisonID, leftID:receipt.left.header["id"]!.integer!, rightID:receipt.right.header["id"]!.integer!) == receipt.closure else { throw CompletionReceiptError.invalidEvidence("Persisted terminal closure differs") }
+        guard try closure(comparisonID:receipt.comparisonID, leftID:receipt.left.header["id"]!.integer!, rightID:receipt.right.header["id"]!.integer!, checkpoint: checkpoint) == receipt.closure else { throw CompletionReceiptError.invalidEvidence("Persisted terminal closure differs") }
     }
 
     private func side(id: Int64) throws -> CompletionSnapshotEvidence {
@@ -145,13 +150,15 @@ public final class ComparisonCompletionReceiptRepository {
     /// Bounded Swift memory: stream canonical metadata pages into a framed
     /// digest. SQL ownership/coverage checks reject missing, duplicate, foreign
     /// and orphaned links rather than guessing a complete result universe.
-    private func closure(comparisonID: Int64, leftID: Int64, rightID: Int64) throws -> CompletionResultClosure {
+    private func closure(comparisonID: Int64, leftID: Int64, rightID: Int64, checkpoint: () throws -> Void = {}) throws -> CompletionResultClosure {
+        try checkpoint()
         let binding: [DatabaseValue] = [.integer(comparisonID)]
         var counts = Dictionary(uniqueKeysWithValues:ComparisonResultType.allCases.map { ($0.rawValue,Int64(0)) })
         for row in try database.query("SELECT result_type,COUNT(*) n FROM comparison_results WHERE comparison_id=? GROUP BY result_type",bindings:binding) {
             guard let type = row["result_type"]?.stringValue, counts[type] != nil, let n = row["n"]?.int64Value else { throw CompletionReceiptError.invalidEvidence("Unknown result kind") }; counts[type] = n
         }
         for (side,snapshot) in [(CompletionSide.left,leftID),(CompletionSide.right,rightID)] {
+            try checkpoint()
             guard try database.scalar(Self.coverageSQL(side:side),bindings:[.integer(snapshot),.integer(comparisonID),.integer(comparisonID)]) == nil else {
                 throw CompletionReceiptError.invalidEvidence("Missing or duplicate result entry")
             }
@@ -193,6 +200,7 @@ public final class ComparisonCompletionReceiptRepository {
         func stream(table: String, columns: [String:String], predicate: String, bindings: [DatabaseValue]) throws -> Int64 {
             var cursor: Int64 = 0; var total: Int64 = 0
             while true {
+                try checkpoint()
                 let page = try metadataRows(table:table,columns:columns,predicate:"(\(predicate)) AND id>?",bindings:bindings+[.integer(cursor)],limit:256)
                 if page.isEmpty { break }
                 for row in page {
@@ -213,6 +221,7 @@ public final class ComparisonCompletionReceiptRepository {
         frame(Data("comparison_collision_members".utf8))
         var groupCursor: Int64 = 0; var memberCount: Int64 = 0
         while true {
+            try checkpoint()
             let groups = try database.query("SELECT id FROM comparison_collision_groups WHERE comparison_id=? AND id>? ORDER BY id LIMIT 256",bindings:binding+[.integer(groupCursor)])
             if groups.isEmpty { break }
             for group in groups {

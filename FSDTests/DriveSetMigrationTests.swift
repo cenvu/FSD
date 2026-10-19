@@ -32,7 +32,7 @@ final class DriveSetMigrationTests: XCTestCase {
     }
     private func legacy(_ url: URL) throws -> [String:[String]] {
         var result: [String:[String]] = [:]
-        for table in CatalogMigrations.ExpectedState.tables where table != "schema_migrations" && !CatalogMigrations.driveSetTableDefinitions.map(\.name).contains(table) && !CatalogMigrations.receiptTableDefinitions.map(\.name).contains(table) {
+        for table in CatalogMigrations.ExpectedState.tables where table != "schema_migrations" && !CatalogMigrations.driveSetTableDefinitions.map(\.name).contains(table) && !CatalogMigrations.receiptTableDefinitions.map(\.name).contains(table) && !CatalogMigrations.savedTableDefinitions.map(\.name).contains(table) {
             result[table] = try raw(url,"SELECT * FROM \(table) ORDER BY rowid")
         }
         return result

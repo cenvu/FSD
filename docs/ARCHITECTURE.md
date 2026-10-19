@@ -1539,3 +1539,68 @@ ADR-038 remains Proposed / Owner Direction Approved / Technical Proof Pending.
 Actual crash/power-loss/storage durability and Owner catalog migration are not
 proved by generated XCTest rollback/reopen evidence. No hardware proof, mount
 observer, Auto Capture, source payload/hash or Task062 is introduced.
+
+## 18. Task062 explicit saved comparison backend — schema v13
+
+Production `SavedComparisonRepository.save` is an intentional caller action;
+comparison completion and workspace close never invoke it. New exact Save requires
+Task061's genuine validated receipt and remaining immutable terminal graph.
+Receiptless legacy comparisons are ineligible: no reconstruction, current profile
+substitution, rescan or backfill. ADR-038 status remains unchanged.
+
+Eight dedicated `saved_*` tables own artifacts, persistent operation receipts,
+two independent side trees, entries, issues, results and collision groups/members.
+There are no outgoing FKs to original comparisons, snapshots, volumes, profiles,
+Collections, Drive Sets or hardware. Header/profile/orientation/warnings/summary
+and full receipt encoding are copied by value. Entry/result/member payloads use
+canonical tagged SQLite NULL/Int64/TEXT/BLOB metadata with fixed field inventories;
+unknown columns, unsupported types, malformed UTF8 and oversized fields reject.
+Original IDs in payloads are provenance only. Navigation uses new saved-local IDs
+and composite ownership FKs, with database-backed unique origin mappings and
+indexed parent/entry/group references. Both sides are independently copied even
+when the original snapshot is the same. No ordinary user snapshot is created.
+
+One BEGIN IMMEDIATE transaction validates receipt identity/closure, copies bounded
+pages, remaps parent/result/member/issue links, verifies copied entry bytes against
+the guarded original graph, checks all saved ownership/count/reference closure,
+reproduces the original receipt result digest and seals the complete saved graph.
+READY plus the operation receipt publish in that same commit. Source rows are
+never changed. Any copy, validation, cancellation or COMMIT failure rolls back the
+whole operation. The public receipt method retains its transaction; the narrow
+internal Save seam validates inside the caller's existing transaction.
+
+Operation UUID binds catalog generation, completion token and comparison ID.
+Replay validates and returns the same artifact after original disposal. Explicit
+delete removes only its dedicated graph and atomically marks the permanent
+operation row deleted. A repeated delete succeeds; old Save replay cannot
+resurrect it. Different operations create independent copies; there is no sharing,
+name matching, deduplication or INSERT OR REPLACE.
+
+`open` verifies the archived receipt, operation binding, all typed payloads,
+remapped references/counts and metadata seal using catalog data only. Its read-only
+handle provides entries, issues, results and collision group/member keyset pages,
+with exact original metadata and separate saved-local navigation IDs. Each page
+requires READY, so deleted handles fail clearly. It never reads current source
+headers/profile/registry or accesses source files. Saved evidence survives the
+unchanged production workspace/transient cleanup, including removal of both
+original sides and their volumes/profiles.
+
+Production ceilings are 100,000 accounted copied rows (receipt plus entries,
+issues, results, groups and members), 256 MiB encoded metadata, 512 MiB logical
+SQLite page growth and 60 seconds cooperative elapsed time. Callers may reduce
+ceilings only. Pages contain at most256 rows; source raw pages at most4 MiB,
+encoded saved pages at most8 MiB, individual source fields64 KiB/raw rows256 KiB,
+saved payloads512 KiB and receipt8 MiB. Preflight length/type checks precede page
+materialization. Checkpoints cover admission, receipt validation, copy/remapping,
+saved validation and precommit. These are cooperative application bounds, not a
+hard OS memory/timeout limit, WAL/disk reservation or fsync-duration guarantee.
+Initial generated 100K-entry/50K-result work reached the60s limit and rolled back;
+the conservative100K accounted-row admission cap now rejects that150K-row graph
+before copying. No multi-transaction staging fallback exists. Exact measured
+10K success/100K rejection receipts belong to the Task062 handoff.
+
+Fresh and supported v4 variants through v12 migrate additively to v13; precise
+saved object inventory is verified before recording the version and on reopen.
+Injected DDL/version/COMMIT failures and file-backed reopen are synthetic recovery
+evidence. They do not prove real power loss, disk full, Owner migration, hardware,
+UI acceptance, public release or signing. Save UI/export remain outside this slice.

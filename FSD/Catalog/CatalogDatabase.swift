@@ -344,7 +344,7 @@ public final class CatalogDatabase: @unchecked Sendable {
             // Validate the final inventory before recording or committing the
             // current version. Successful but incomplete DDL must roll back too.
             if migration.version >= 10 && migration.version <= Self.currentSchemaVersion {
-                try verifyCurrentSchemaState(includeDriveSets: migration.version >= 11, includeReceipts: migration.version >= 12)
+                try verifyCurrentSchemaState(includeDriveSets: migration.version >= 11, includeReceipts: migration.version >= 12, includeSaved: migration.version >= 13)
             }
             try executeUnlocked(
                 "INSERT INTO schema_migrations(version, applied_at) VALUES (?, CURRENT_TIMESTAMP)",
@@ -365,17 +365,17 @@ public final class CatalogDatabase: @unchecked Sendable {
     /// Triggers and indexes are compared against their canonical definitions,
     /// not just their names, so a substituted or materially altered
     /// safety-critical object is rejected the same way a missing one is.
-    private func verifyCurrentSchemaState(includeDriveSets: Bool = true, includeReceipts: Bool = true) throws {
-        for table in CatalogMigrations.ExpectedState.tables where (includeDriveSets || !CatalogMigrations.driveSetTableDefinitions.map(\.name).contains(table)) && (includeReceipts || !CatalogMigrations.receiptTableDefinitions.map(\.name).contains(table)) {
+    private func verifyCurrentSchemaState(includeDriveSets: Bool = true, includeReceipts: Bool = true, includeSaved: Bool = true) throws {
+        for table in CatalogMigrations.ExpectedState.tables where (includeSaved || !CatalogMigrations.savedTableDefinitions.map(\.name).contains(table)) && (includeDriveSets || !CatalogMigrations.driveSetTableDefinitions.map(\.name).contains(table)) && (includeReceipts || !CatalogMigrations.receiptTableDefinitions.map(\.name).contains(table)) {
             try requireSchemaObject(type: "table", name: table)
         }
-        for entry in CatalogMigrations.identityTableDefinitions + (includeDriveSets ? CatalogMigrations.driveSetTableDefinitions : []) + (includeReceipts ? CatalogMigrations.receiptTableDefinitions : []) {
+        for entry in CatalogMigrations.identityTableDefinitions + (includeDriveSets ? CatalogMigrations.driveSetTableDefinitions : []) + (includeReceipts ? CatalogMigrations.receiptTableDefinitions : []) + (includeSaved ? CatalogMigrations.savedTableDefinitions : []) {
             try requireSchemaObject(type: "table", name: entry.name, canonicalSQL: entry.sql)
         }
-        for entry in CatalogMigrations.ExpectedState.triggerDefinitions where (includeDriveSets || !CatalogMigrations.driveSetTriggerDefinitions.map(\.name).contains(entry.name)) && (includeReceipts || !CatalogMigrations.receiptTriggerDefinitions.map(\.name).contains(entry.name)) {
+        for entry in CatalogMigrations.ExpectedState.triggerDefinitions where (includeSaved || !CatalogMigrations.savedTriggerDefinitions.map(\.name).contains(entry.name)) && (includeDriveSets || !CatalogMigrations.driveSetTriggerDefinitions.map(\.name).contains(entry.name)) && (includeReceipts || !CatalogMigrations.receiptTriggerDefinitions.map(\.name).contains(entry.name)) {
             try requireSchemaObject(type: "trigger", name: entry.name, canonicalSQL: entry.sql)
         }
-        for entry in CatalogMigrations.ExpectedState.indexDefinitions where (includeDriveSets || !CatalogMigrations.driveSetIndexDefinitions.map(\.name).contains(entry.name)) && (includeReceipts || !CatalogMigrations.receiptIndexDefinitions.map(\.name).contains(entry.name)) {
+        for entry in CatalogMigrations.ExpectedState.indexDefinitions where (includeSaved || !CatalogMigrations.savedIndexDefinitions.map(\.name).contains(entry.name)) && (includeDriveSets || !CatalogMigrations.driveSetIndexDefinitions.map(\.name).contains(entry.name)) && (includeReceipts || !CatalogMigrations.receiptIndexDefinitions.map(\.name).contains(entry.name)) {
             try requireSchemaObject(type: "index", name: entry.name, canonicalSQL: entry.sql)
         }
         if includeReceipts {

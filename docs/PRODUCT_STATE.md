@@ -26,13 +26,13 @@ identity lacks an approved hardware strong profile or live observation adapter; 
 controls do not cover the full capture-organization/default flow; the dashboard
 has no bounded aggregate facade; search lacks drive/library scope; comparison
 navigation lacks ancestor projection; live-comparison retention remains
-transient unless a future explicit save is implemented.
+transient by default; Task062 adds an explicit backend Save and saved metadata reader, with no user-facing Save control yet.
 
 **Exact gaps:** observation-only mount detection; opt-in Auto Capture (default
 OFF); hardware-backed PhysicalDrive resolution and manual-association UI; paged
 per-drive history; bounded dashboard aggregates; This Drive/Library
 search; classification search; compare hierarchy/ancestor reveal; explicit
-Save Comparison with separate durable captured evidence; full capture
+Save Comparison UI over the Task062 backend; full capture
 organization/default controls; and consolidated rendered-window, accessibility,
 and manual internal acceptance.
 
@@ -45,20 +45,22 @@ states must stay separated here:
   synthetic-input observation contract and fail-closed resolver/read seam
   (BRAIN-accepted with advisory), without live observation. Task060 adds manual
   Drive Sets with a production v11 repository and Library workspace (BRAIN-accepted
-  with advisory). Task061 adds atomic comparison completion receipts in v12;
-  Worker implementation pending BRAIN review.
+  with advisory). Task061 adds atomic comparison completion receipts in v12
+  (BRAIN-accepted with advisory). Task062 adds the explicit saved evidence backend
+  and offline reader in v13, pending BRAIN review.
 - **Accepted feasibility (synthetic, not implementation):** Tasks054–056 are
   BRAIN-accepted `PASS_WITH_ADVISORY` for ADR-036 identity, ADR-037 Drive Sets and
   ADR-038 Save Comparison respectively. They are research and isolated synthetic
   SQLite/resolver prototypes only; they prove deterministic rule/relational
   behavior, not any product code, schema, hardware or migration.
 - **Future FSD2 Full work (not started):** observation-only mount status, validated
-  PhysicalDrive identity, manual-association UI, Save Comparison and the remaining UX/gaps below.
+  PhysicalDrive identity, manual-association UI, Save Comparison UI and the remaining UX/gaps below.
 
 ADR-036–038 remain Proposed / Owner Direction Approved / Technical Proof Pending;
 the identity evidence threshold/strong-profile set and durable saved-comparison
-backing remain `TECHNICAL_PROOF_PENDING`. Task061 supplies synthetic production
-completion-receipt/migration evidence for BRAIN review; it
+full acceptance remain `TECHNICAL_PROOF_PENDING`. Task061 supplies completion
+receipt evidence; Task062 adds synthetic production saved-graph/migration proof
+for BRAIN review. This work
 does not promote ADR status or prove physical-device identity.
 See [DECISIONS.md](DECISIONS.md), [MVP_PLAN.md](MVP_PLAN.md) and
 [UX_UI_SPEC.md](UX_UI_SPEC.md). This status record authorizes no implementation.
@@ -66,8 +68,8 @@ See [DECISIONS.md](DECISIONS.md), [MVP_PLAN.md](MVP_PLAN.md) and
 ## Implemented capabilities
 
 - Native macOS 15+ arm64 SwiftUI app and XCTest target in `FSD.xcodeproj`.
-- SQLite catalog schema **v12**; explicit transactional v4→v5 (both known v4
-  variants), v5→v6, v6→v7, v7→v8, v8→v9 and additive v9→v10→v11→v12 migrations. The v9 change appends nullable/no-default `provider_identifier`; legacy rows retain NULL without backfill. Fresh and migrated catalogs
+- SQLite catalog schema **v13**; explicit transactional v4→v5 (both known v4
+  variants), v5→v6, v6→v7, v7→v8, v8→v9 and additive v9→v10→v11→v12→v13 migrations. The v9 change appends nullable/no-default `provider_identifier`; legacy rows retain NULL without backfill. Fresh and migrated catalogs
   converge. `schema.sql` creates fresh catalogs only; `CatalogMigrations` moves
   existing ones. Complete ExpectedState inventory detects damaged/substituted
   schemas; per-connection foreign-key enforcement, normalization completion
@@ -78,7 +80,8 @@ See [DECISIONS.md](DECISIONS.md), [MVP_PLAN.md](MVP_PLAN.md) and
   metadata encoding, new completion token, fail-closed SQL validator, rollback and
   cancellation guards; legacy receiptless comparisons remain readable but
   ineligible for exact Save. No historical backfill or transient retention change.
-  Save Comparison UI/durable archive remains absent. See [ARCHITECTURE.md §17](ARCHITECTURE.md#17-atomic-comparison-completion-receipts--task061).
+  Task062 adds dedicated durable saved metadata backing and offline reopening;
+  Save Comparison UI remains absent. See [ARCHITECTURE.md §17](ARCHITECTURE.md#17-atomic-comparison-completion-receipts--task061).
 - Task058 local PhysicalDrive repository/model: opaque catalog-local UUIDs,
   explicit-local admission, duplicate labels, revision-protected retirement,
   immutable typed observations/evidence and append-only manual association,
@@ -139,7 +142,7 @@ See [DECISIONS.md](DECISIONS.md), [MVP_PLAN.md](MVP_PLAN.md) and
   Full intended semantics remain in [SNAPSHOT_COLLECTIONS.md](SNAPSHOT_COLLECTIONS.md).
 - Observation-only mount detection, validated physical-drive identity,
   Auto Capture (which must default OFF), per-drive history, and
-  explicit Save Comparison with separate durable live-side evidence.
+  explicit Save Comparison UI over the Task062 separate durable evidence backend.
 - HTML export, catalog backup/restore, login-item support,
   EmbeddedRawProvider/reader-helper production integration, physical raw-device
   access, stock-macOS NTFS support proof, and multi-Library/cloud behavior.
@@ -193,7 +196,7 @@ This section is implementation baseline, not a parallel control issue ledger.
 | KI-012 | Remembered Collection defaults are volume-only. Folder/image/raw-partition sources fall through to active Collection then Unsorted; never invent path-based identity. [SNAPSHOT_COLLECTIONS.md](SNAPSHOT_COLLECTIONS.md) §9.3 owns this contract. |
 | KI-013 | Milestone-2 snapshots captured before 2026-08-04 may silently lack a sibling subtree due to the fixed skipDescendants/symlink defect. The snapshot cannot reveal this residue; recapture important old data before trusting removed-entry conclusions. The owner's flat 45-entry A006C84S capture has not been source-reverified. |
 | KI-016, KI-019, KI-023 | Aggregate-signature skipping and matched-subtree visual collapse are unimplemented. Per-entry matched evidence is correct. Public collision-member detail query is still absent. Over-cap equal-key groups fail typed and bounded; they cannot complete. |
-| KI-017 | Current default: live-side comparisons are workspace-scoped and transient evidence is disposed on close; only snapshot/snapshot records persist. ADR-038 now records the Owner-approved explicit Save Comparison direction using separate durable captured evidence. Its backing, reference-remapping, schema, migration, recovery, and large-tree mechanics remain `TECHNICAL_PROOF_PENDING`; never update a completed transient `snapshot_kind` in place. |
+| KI-017 | Current default: live-side comparisons are workspace-scoped and transient evidence is disposed on close; only snapshot/snapshot records persist. ADR-038 now records the Owner-approved explicit Save Comparison direction using separate durable captured evidence. Task062 now implements separate copied backing, exact remapping, v13 migration, transactional rollback and offline reader using generated production-stack tests; UI and real storage durability remain `TECHNICAL_PROOF_PENDING`; never update a completed transient `snapshot_kind` in place. |
 | KI-020 | Rendered-window appearance, VoiceOver and focus traversal await owner observation; no XCUITest target exists. Manual requirements/backlog are owned by [TEST_PLAN.md](TEST_PLAN.md) §8. |
 | KI-025 | Implementation gap CLOSED by Task035 physical verification and final Task036/BRAIN acceptance: runtime implemented; schema-v9 provider identity and filetype helper integration are independently audited and accepted. This disposition satisfies the three existing absence conditions without redefining them. Manual acceptance remains deferred and separate. Evidence: [FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md](../handoffs/FSD_P15_WHOLE_RUNTIME_VERIFICATION_D_20261007-015634.md) and the Task036 handoff above. |
 
@@ -246,3 +249,26 @@ stale retry must refresh. No tombstone/import/merge or live-availability service
 is introduced. This is a local manual grouping slice, not the full ADR-037 future
 identity/mount integration. Strong hardware profiles remain zero. Owner visual,
 manual VoiceOver and real hardware acceptance are not claimed.
+
+
+## Task062 — explicit saved comparison backend (pending BRAIN review)
+
+Schema v13 and `SavedComparisonRepository` provide intentional metadata-only Save
+and an offline reader over two independently copied evidence trees. Task061's
+validated immutable receipt is required; legacy receiptless complete comparisons
+remain ineligible. Profile/header/issues/orientation/warnings/summary archive by
+value; entry/result/collision/parent IDs remap into a separate owned graph. No
+original snapshot/comparison/source facts or normal transient cleanup change.
+
+Single-transaction READY publication and permanent operation receipts provide
+idempotent replay after original cleanup and non-resurrection after explicit
+delete. Reader pages require sealed valid evidence and use no source media or
+current profile/volume joins. Save is a backend API only: completion never saves
+automatically, and Save button/full browsing UI/export are unimplemented.
+
+Conservative production ceilings are100K accounted rows,256 MiB encoded metadata,
+512 MiB logical SQLite growth and60s cooperative elapsed time, with256-row pages
+and strict byte preflights. Generated10K-entry work is supported;100K entries plus
+50K results is explicitly rejected before copy. Hardware, real power loss/disk
+full, Owner catalog migration, UI/manual/VoiceOver and full FSD2 acceptance remain
+unproved. ADR036/037/038 statuses and existing privacy advisories are unchanged.

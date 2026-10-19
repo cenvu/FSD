@@ -1291,3 +1291,37 @@ Debug/Release builds and separate read-only source/migration/cancellation review
 are recorded in the Task061 handoff with exact executed counts and receipts.
 These are synthetic production-stack facts, not real hardware, crash/power-loss,
 Owner catalog migration, explicit Save or full FSD2 acceptance evidence.
+
+## 18. Task062 saved comparison backend tests — generated catalogs only
+
+`SavedComparisonTests` exercises explicit Save through production Swift/SQLite:
+all three user/transient side combinations; frozen receipt vs mutable current
+profile/header/issues/registry; all six result kinds; nested parent and side
+remapping; collisions crossing page boundaries; exact NULL/BLOB/Int64/path truth;
+full original-row preservation with populated Collection/Drive Set/PhysicalDrive
+and manual history; offline file reopen after actual workspace close and complete
+original evidence/volume/profile deletion; bounded reader pages and indexed plans;
+replay, conflicting operation identity, durable delete tombstones and independent
+artifact ownership. It exercises cancellation, every build/publication boundary,
+copy insertion failure, deferred-FK COMMIT and deletion-COMMIT rollback, peer
+visibility, missing/stale rows, unsupported fields, corrupted saved payload,
+reduced row/byte/time/growth budgets and immutable READY guards.
+
+`SavedComparisonMigrationTests` proves fresh/all-supported v4 variants→v12→v13
+object/column parity, every additive DDL/version rollback boundary and safe retry,
+malformed inventory/reopen rejection, populated legacy typed-byte preservation,
+actual production receipt preservation and legacy completed receiptless Save
+rejection. Existing Task058–061 migration fixtures remove the v13 additions when
+reconstructing older versions; mechanical current-version assertions advance to13.
+No accepted source/terminal/capture guard is weakened.
+
+10K/100K generated file-backed trees measure Save timing, bounded pages, SQLite
+logical growth and process high-water RSS (Darwin byte units, process-wide rather
+than isolated allocations).10K is supported within the production envelope;
+100K entries plus50K results exceeds100K accounted rows and must reject atomically
+before copy, preserving originals. The earlier measured60s timeout motivated the
+conservative row cap; it is not reported as100K Save support. Runtime ceilings and
+page byte preflights are separately exercised. Required affected regressions,
+clean arm64 Debug/Release and independent read-only review use exact receipts in
+the Task062 handoff. Real mount-image execution is excluded; no hardware, power
+loss, physical disk exhaustion, source content, Owner catalog or UI/manual proof.

@@ -32,7 +32,7 @@ final class CompletionReceiptMigrationTests: XCTestCase {
     }
     private func legacy(_ url: URL) throws -> [String:[String]] {
         var result: [String:[String]] = [:]
-        for table in CatalogMigrations.ExpectedState.tables where table != "schema_migrations" && !CatalogMigrations.receiptTableDefinitions.map(\.name).contains(table) {
+        for table in CatalogMigrations.ExpectedState.tables where table != "schema_migrations" && !CatalogMigrations.savedTableDefinitions.map(\.name).contains(table) && !CatalogMigrations.receiptTableDefinitions.map(\.name).contains(table) {
             result[table] = try raw(url,"SELECT * FROM \(table) ORDER BY rowid")
         }
         return result
@@ -42,7 +42,7 @@ final class CompletionReceiptMigrationTests: XCTestCase {
         let url = try fixture("populated")
         let before = try legacy(url)
         let db = try CatalogDatabase(url: url); defer { db.close() }
-        XCTAssertEqual(try db.schemaVersion,12)
+        XCTAssertEqual(try db.schemaVersion,13)
         XCTAssertEqual(try legacy(url),before)
         XCTAssertEqual(try db.scalar("SELECT COUNT(*) FROM comparison_completion_receipts")?.int64Value,0)
         let receipts = ComparisonCompletionReceiptRepository(database:db)
@@ -67,7 +67,7 @@ final class CompletionReceiptMigrationTests: XCTestCase {
             let url = directory.appendingPathComponent("chain-\(i).sqlite")
             try CatalogSchemaFixture.createDatabase(at:url,sql:sql)
             let migrated = try CatalogDatabase(url:url); defer { migrated.close() }
-            XCTAssertEqual(try migrated.schemaVersion,12)
+            XCTAssertEqual(try migrated.schemaVersion,13)
             for type in ["table","index","trigger"] {
                 let query = "SELECT name,sql FROM sqlite_master WHERE type=? AND name NOT LIKE 'sqlite_%' ORDER BY name"
                 let a = try fresh.query(query,bindings:[.text(type)]); let b = try migrated.query(query,bindings:[.text(type)])
@@ -104,7 +104,7 @@ final class CompletionReceiptMigrationTests: XCTestCase {
             let migrated = try CatalogDatabase(url:url); migrated.close()
             let after = try raw(url,"SELECT * FROM schema_migrations ORDER BY version")
             let reopened = try CatalogDatabase(url:url,migrations:[SchemaMigration(version:12,statements:["CREATE TABLE invalid("])])
-            XCTAssertEqual(try reopened.schemaVersion,12); reopened.close()
+            XCTAssertEqual(try reopened.schemaVersion,13); reopened.close()
             XCTAssertEqual(try raw(url,"SELECT * FROM schema_migrations ORDER BY version"),after)
             XCTAssertEqual(try legacy(url),before)
         }
@@ -139,7 +139,7 @@ final class CompletionReceiptMigrationTests: XCTestCase {
             XCTAssertEqual(try raw(url,"SELECT * FROM schema_migrations ORDER BY version"),versions)
         }
     }
-    private static let legacyFacts = """
+    static let legacyFacts = """
         INSERT INTO collections(id,name,normalized_name,created_at,updated_at) VALUES (1,'Synthetic','synthetic','then','then');
         INSERT INTO volumes (id,display_name,persistent_uuid,first_seen_at,last_seen_at,created_at,updated_at)
         VALUES (1,'same','duplicate','then','then','then','then'),(2,'same','duplicate','then','then','then','then');
