@@ -67,10 +67,9 @@ public final class ComparisonEngine: @unchecked Sendable {
             throw ComparisonError.profileNotFound(profileID)
         }
 
-        // The compatibility warnings (ADR-010) are re-derived deterministically
-        // by the result repository when the record is read back, so the engine
-        // only needs the selected key column here.
-        let (keyColumn, _) = Self.selectedKey(left: left.record, right: right.record)
+        // Freeze the actually executed key and deterministic warnings in the
+        // completion receipt; existing result presentation remains compatible.
+        let (keyColumn, warnings) = Self.selectedKey(left: left.record, right: right.record)
         let comparisonID: ComparisonID
         do {
             comparisonID = try createComparison(
@@ -93,7 +92,12 @@ public final class ComparisonEngine: @unchecked Sendable {
                 token: token,
                 onProgress: onProgress
             )
-            try terminalize(comparisonID: comparisonID, status: .complete, token: token)
+            try token.withFinalizationLock { cancelled in
+                if cancelled { throw ComparisonError.cancelled }
+                try ComparisonCompletionReceiptRepository(database: database).complete(
+                    comparisonID: comparisonID, profile: profile, key: keyColumn, warnings: warnings,
+                    leftUsed: left.record, rightUsed: right.record)
+            }
         } catch let error as ComparisonError where error == .cancelled {
             try? terminalize(comparisonID: comparisonID, status: .cancelled, token: token)
             throw error
@@ -484,16 +488,16 @@ public final class ComparisonEngine: @unchecked Sendable {
     private func terminalize(comparisonID: ComparisonID, status: ComparisonStatus, token: CaptureCancellationToken) throws {
         try token.withFinalizationLock { cancelled in
             let finalStatus = cancelled ? ComparisonStatus.cancelled : status
-            let rows = try database.query(
-                "SELECT result_type, COUNT(*) AS count FROM comparison_results WHERE comparison_id = ? GROUP BY result_type",
-                bindings: [.integer(comparisonID.rawValue)]
-            )
-            var counts: [ComparisonResultType: Int64] = [:]
-            for row in rows {
-                guard let raw = row["result_type"]?.stringValue, let type = ComparisonResultType(rawValue: raw) else { continue }
-                counts[type] = row["count"]?.int64Value ?? 0
-            }
             try database.transaction {
+                let rows = try database.query(
+                    "SELECT result_type, COUNT(*) AS count FROM comparison_results WHERE comparison_id = ? GROUP BY result_type",
+                    bindings: [.integer(comparisonID.rawValue)]
+                )
+                var counts: [ComparisonResultType: Int64] = [:]
+                for row in rows {
+                    guard let raw = row["result_type"]?.stringValue, let type = ComparisonResultType(rawValue: raw) else { continue }
+                    counts[type] = row["count"]?.int64Value ?? 0
+                }
                 try database.execute(
                     """
                     UPDATE comparisons SET

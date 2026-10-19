@@ -1,3 +1,4 @@
+-- Schema version 12 (Task061): atomic immutable comparison completion receipts.
 -- Schema version 11 (Task060): explicit local Drive Sets; no historical backfill.
 --
 -- Schema version 10 (Task058): additive local/manual identity only; no hardware
@@ -798,7 +799,7 @@ INSERT OR IGNORE INTO comparison_profiles (
 );
 
 INSERT OR IGNORE INTO schema_migrations(version, applied_at)
-VALUES (11, CURRENT_TIMESTAMP);
+VALUES (12, CURRENT_TIMESTAMP);
 
 CREATE TRIGGER IF NOT EXISTS trg_collections_last_used_at_insert
 AFTER INSERT ON snapshots
@@ -1044,3 +1045,121 @@ BEGIN
     SELECT RAISE(ABORT, 'Membership must be explicitly removed and added');
 END;
 -- Task060 Drive Sets END
+
+-- Task061 completion receipts BEGIN
+CREATE TABLE comparison_receipt_catalog (
+    singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
+    generation TEXT NOT NULL UNIQUE CHECK (length(generation) = 36)
+);
+
+CREATE TABLE comparison_completion_receipts (
+    comparison_id INTEGER PRIMARY KEY REFERENCES comparisons(id) ON DELETE CASCADE,
+    catalog_generation TEXT NOT NULL REFERENCES comparison_receipt_catalog(generation) ON DELETE RESTRICT,
+    completion_token TEXT NOT NULL UNIQUE CHECK (length(completion_token) = 36),
+    receipt_version INTEGER NOT NULL CHECK (receipt_version = 1),
+    encoding TEXT NOT NULL CHECK (encoding = 'fsd-receipt-json-utf8-v1'),
+    completed_at TEXT NOT NULL,
+    left_snapshot_id INTEGER NOT NULL,
+    right_snapshot_id INTEGER NOT NULL,
+    profile_id INTEGER NOT NULL,
+    profile_revision INTEGER NOT NULL,
+    matched_count INTEGER NOT NULL CHECK (matched_count >= 0),
+    added_count INTEGER NOT NULL CHECK (added_count >= 0),
+    removed_count INTEGER NOT NULL CHECK (removed_count >= 0),
+    changed_count INTEGER NOT NULL CHECK (changed_count >= 0),
+    uncertain_count INTEGER NOT NULL CHECK (uncertain_count >= 0),
+    payload BLOB NOT NULL CHECK (typeof(payload) = 'blob' AND length(payload) BETWEEN 1 AND 8388608)
+);
+
+CREATE INDEX idx_comparison_results_receipt ON comparison_results(comparison_id, id);
+
+CREATE INDEX idx_collision_members_receipt ON comparison_collision_members(group_id, id);
+
+CREATE TRIGGER trg_receipt_catalog_no_update BEFORE UPDATE ON comparison_receipt_catalog
+BEGIN
+    SELECT RAISE(ABORT, 'Receipt catalog generation is immutable');
+END;
+
+CREATE TRIGGER trg_receipt_catalog_no_delete BEFORE DELETE ON comparison_receipt_catalog
+BEGIN
+    SELECT RAISE(ABORT, 'Receipt catalog generation is immutable');
+END;
+
+CREATE TRIGGER trg_comparisons_insert_not_complete BEFORE INSERT ON comparisons
+WHEN NEW.status = 'complete'
+BEGIN
+    SELECT RAISE(ABORT, 'Completion requires an atomic receipt');
+END;
+
+CREATE TRIGGER trg_comparisons_receipt_required BEFORE UPDATE OF status ON comparisons
+WHEN NEW.status = 'complete' AND NOT EXISTS (
+    SELECT 1 FROM comparison_completion_receipts r WHERE r.comparison_id = NEW.id
+      AND r.completed_at IS NEW.completed_at
+      AND r.left_snapshot_id IS NEW.left_snapshot_id AND r.right_snapshot_id IS NEW.right_snapshot_id
+      AND r.profile_id IS NEW.profile_id AND r.profile_revision IS NEW.profile_version
+      AND r.matched_count = NEW.matched_count AND r.added_count = NEW.added_count
+      AND r.removed_count = NEW.removed_count AND r.changed_count = NEW.changed_count
+      AND r.uncertain_count = NEW.uncertain_count
+)
+BEGIN
+    SELECT RAISE(ABORT, 'Missing or inconsistent completion receipt');
+END;
+
+CREATE TRIGGER trg_receipts_insert_guard BEFORE INSERT ON comparison_completion_receipts
+BEGIN
+    SELECT CASE WHEN fsd_completion_receipt_valid(NEW.payload,NEW.comparison_id,NEW.catalog_generation,NEW.completion_token,
+      NEW.receipt_version,NEW.encoding,NEW.completed_at,NEW.left_snapshot_id,NEW.right_snapshot_id,NEW.profile_id,NEW.profile_revision,
+      NEW.matched_count,NEW.added_count,NEW.removed_count,NEW.changed_count,NEW.uncertain_count) != 1
+      THEN RAISE(ABORT, 'Invalid typed completion receipt') END;
+    SELECT CASE WHEN NOT EXISTS (
+        SELECT 1 FROM comparisons c WHERE c.id = NEW.comparison_id AND c.status = 'running'
+          AND c.left_snapshot_id IS NEW.left_snapshot_id AND c.right_snapshot_id IS NEW.right_snapshot_id
+          AND c.profile_id IS NEW.profile_id AND c.profile_version IS NEW.profile_revision
+    ) THEN RAISE(ABORT, 'Receipt requires its running comparison') END;
+    SELECT CASE WHEN NEW.matched_count != (SELECT COUNT(*) FROM comparison_results WHERE comparison_id=NEW.comparison_id AND result_type='matched')
+      OR NEW.added_count != (SELECT COUNT(*) FROM comparison_results WHERE comparison_id=NEW.comparison_id AND result_type='added')
+      OR NEW.removed_count != (SELECT COUNT(*) FROM comparison_results WHERE comparison_id=NEW.comparison_id AND result_type='removed')
+      OR NEW.changed_count != (SELECT COUNT(*) FROM comparison_results WHERE comparison_id=NEW.comparison_id AND result_type='changed')
+      OR NEW.uncertain_count != (SELECT COUNT(*) FROM comparison_results WHERE comparison_id=NEW.comparison_id AND result_type='uncertain')
+      THEN RAISE(ABORT, 'Receipt result counts differ') END;
+END;
+
+CREATE TRIGGER trg_receipts_complete_comparison AFTER INSERT ON comparison_completion_receipts
+BEGIN
+    UPDATE comparisons SET status='complete', completed_at=NEW.completed_at,
+      matched_count=NEW.matched_count, added_count=NEW.added_count, removed_count=NEW.removed_count,
+      changed_count=NEW.changed_count, uncertain_count=NEW.uncertain_count
+    WHERE id=NEW.comparison_id AND status='running';
+END;
+
+CREATE TRIGGER trg_receipts_no_update BEFORE UPDATE ON comparison_completion_receipts
+BEGIN
+    SELECT RAISE(ABORT, 'Completion receipts are immutable');
+END;
+
+CREATE TRIGGER trg_receipts_no_delete BEFORE DELETE ON comparison_completion_receipts
+WHEN EXISTS (SELECT 1 FROM comparisons WHERE id=OLD.comparison_id)
+BEGIN
+    SELECT RAISE(ABORT, 'Dispose the whole comparison');
+END;
+
+CREATE TRIGGER trg_receipted_comparison_identity BEFORE UPDATE ON comparisons
+WHEN OLD.status = 'complete' AND EXISTS (SELECT 1 FROM comparison_completion_receipts WHERE comparison_id=OLD.id)
+ AND (NEW.id IS NOT OLD.id OR NEW.profile_id IS NOT OLD.profile_id
+      OR NEW.profile_version IS NOT OLD.profile_version OR NEW.started_at IS NOT OLD.started_at
+      OR NEW.completed_at IS NOT OLD.completed_at OR NEW.created_at IS NOT OLD.created_at)
+BEGIN
+    SELECT RAISE(ABORT, 'Receipted comparison identity is immutable');
+END;
+
+INSERT INTO comparison_receipt_catalog(singleton,generation) VALUES (1, lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6))));
+CREATE TRIGGER trg_receipt_catalog_no_replace BEFORE INSERT ON comparison_receipt_catalog
+WHEN EXISTS (SELECT 1 FROM comparison_receipt_catalog)
+BEGIN
+    SELECT RAISE(ABORT, 'Receipt catalog generation already exists');
+END;
+CREATE INDEX idx_receipt_results_left ON comparison_results(comparison_id, left_entry_id) WHERE left_entry_id IS NOT NULL;
+CREATE INDEX idx_receipt_results_right ON comparison_results(comparison_id, right_entry_id) WHERE right_entry_id IS NOT NULL;
+CREATE INDEX idx_receipt_member_entry ON comparison_collision_members(entry_id, side, group_id);
+CREATE INDEX idx_receipt_groups_order ON comparison_collision_groups(comparison_id, id);
+-- Task061 completion receipts END

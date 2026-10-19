@@ -18,10 +18,10 @@ public final class ComparisonProfileRepository {
     public func profile(id: Int64) throws -> ComparisonProfile? {
         let rows = try database.query(
             """
-            SELECT id, version, name, compare_item_type, compare_logical_size,
+            SELECT id, version, CASE WHEN typeof(name)='text' AND length(CAST(name AS BLOB))<=4096 THEN name END AS name, compare_item_type, compare_logical_size,
                    compare_allocated_size, compare_modified_at, compare_created_at,
-                   timestamp_tolerance_seconds, include_hidden_items, ignore_rules_json,
-                   is_builtin
+                   timestamp_tolerance_seconds, include_hidden_items, CASE WHEN typeof(ignore_rules_json)='text' AND length(CAST(ignore_rules_json AS BLOB))<=1048576 THEN ignore_rules_json END AS ignore_rules_json,
+                   is_builtin, CASE WHEN length(CAST(name AS BLOB))<=4096 THEN hex(CAST(name AS BLOB)) END AS receipt_raw_name, CASE WHEN length(CAST(ignore_rules_json AS BLOB))<=1048576 THEN hex(CAST(ignore_rules_json AS BLOB)) END AS receipt_raw_rules
             FROM comparison_profiles WHERE id = ?
             """,
             bindings: [.integer(id)]
@@ -32,10 +32,10 @@ public final class ComparisonProfileRepository {
     public func allProfiles() throws -> [ComparisonProfile] {
         let rows = try database.query(
             """
-            SELECT id, version, name, compare_item_type, compare_logical_size,
+            SELECT id, version, CASE WHEN typeof(name)='text' AND length(CAST(name AS BLOB))<=4096 THEN name END AS name, compare_item_type, compare_logical_size,
                    compare_allocated_size, compare_modified_at, compare_created_at,
-                   timestamp_tolerance_seconds, include_hidden_items, ignore_rules_json,
-                   is_builtin
+                   timestamp_tolerance_seconds, include_hidden_items, CASE WHEN typeof(ignore_rules_json)='text' AND length(CAST(ignore_rules_json AS BLOB))<=1048576 THEN ignore_rules_json END AS ignore_rules_json,
+                   is_builtin, CASE WHEN length(CAST(name AS BLOB))<=4096 THEN hex(CAST(name AS BLOB)) END AS receipt_raw_name, CASE WHEN length(CAST(ignore_rules_json AS BLOB))<=1048576 THEN hex(CAST(ignore_rules_json AS BLOB)) END AS receipt_raw_rules
             FROM comparison_profiles ORDER BY id
             """
         )
@@ -51,7 +51,19 @@ public final class ComparisonProfileRepository {
         else {
             throw ComparisonError.database(.schemaStateInvalid("comparison profile row is incomplete"))
         }
-        return ComparisonProfile(
+        for (value, column) in [(name,"receipt_raw_name"),(ignoreRulesRaw,"receipt_raw_rules")] {
+            guard row[column]?.stringValue == CompletionEvidenceContract.hexUTF8(value) else { throw CompletionReceiptError.invalidEvidence("Invalid UTF8 profile") }
+        }
+        guard let data = ignoreRulesRaw.data(using: .utf8),
+              let rules = try? JSONDecoder().decode([String].self, from: data),
+              ignoreRulesRaw.utf8.count <= 1048576 else {
+            throw CompletionReceiptError.invalidEvidence("Malformed profile ignore rules")
+        }
+        for name in ["compare_item_type","compare_logical_size","compare_allocated_size","compare_modified_at","compare_created_at","include_hidden_items","is_builtin"] {
+            guard let flag = row[name]?.int64Value, [0,1].contains(flag) else { throw CompletionReceiptError.invalidEvidence("Invalid profile field") }
+        }
+        guard let tolerance = row["timestamp_tolerance_seconds"]?.int64Value else { throw CompletionReceiptError.invalidEvidence("Invalid profile tolerance") }
+        let profile = ComparisonProfile(
             id: id,
             version: version,
             name: name,
@@ -60,20 +72,13 @@ public final class ComparisonProfileRepository {
             compareAllocatedSize: (row["compare_allocated_size"]?.int64Value ?? 0) == 1,
             compareModifiedAt: (row["compare_modified_at"]?.int64Value ?? 0) == 1,
             compareCreatedAt: (row["compare_created_at"]?.int64Value ?? 0) == 1,
-            timestampToleranceSeconds: row["timestamp_tolerance_seconds"]?.int64Value ?? 0,
+            timestampToleranceSeconds: tolerance,
             includeHiddenItems: (row["include_hidden_items"]?.int64Value ?? 0) == 1,
-            ignoreRules: Self.decodeIgnoreRules(ignoreRulesRaw),
+            ignoreRules: rules,
             isBuiltin: (row["is_builtin"]?.int64Value ?? 0) == 1
         )
+        try CompletionProfileDefinition(profile).validate()
+        return profile
     }
 
-    /// The rule list is stored as a JSON string array by the schema seed.
-    /// Decoded deterministically; an unparseable value yields no rules rather
-    /// than a silently different comparison universe.
-    static func decodeIgnoreRules(_ raw: String) -> [String] {
-        guard let data = raw.data(using: .utf8),
-              let decoded = try? JSONSerialization.jsonObject(with: data) as? [String]
-        else { return [] }
-        return decoded
-    }
 }

@@ -50,7 +50,8 @@ final class TerminalCollisionEvidenceTests: XCTestCase {
         let leftID = try SyntheticSnapshot.createSnapshot(database: database, volumeID: volumeID, session: 1, sensitivity: .sensitive)
         let rightID = try SyntheticSnapshot.createSnapshot(database: database, volumeID: volumeID, session: 2, sensitivity: .sensitive)
         try SyntheticSnapshot.insertEntries(database: database, snapshotID: leftID, entries: [
-            SyntheticSnapshot.root(id: leftRootID, name: "Root")
+            SyntheticSnapshot.root(id: leftRootID, name: "Root"),
+            SyntheticSnapshot.SeedEntry(id:100000+seed,parentID:leftRootID,relativePath:"collision",name:"collision")
         ])
         try SyntheticSnapshot.insertEntries(database: database, snapshotID: rightID, entries: [
             SyntheticSnapshot.root(id: rightRootID, name: "Root")
@@ -79,14 +80,28 @@ final class TerminalCollisionEvidenceTests: XCTestCase {
             "INSERT INTO comparison_collision_members (id, group_id, side, entry_id, created_at) VALUES (?, ?, 'right', ?, CURRENT_TIMESTAMP)",
             bindings: [.integer(groupID * 10 + 2), .integer(groupID), .integer(rightRootID)]
         )
+        try database.execute("INSERT INTO comparison_collision_members(group_id,side,entry_id,created_at) VALUES (?,'left',?,CURRENT_TIMESTAMP)",bindings:[.integer(groupID),.integer(100000+seed)])
         return (comparisonID, groupID, leftRootID, rightRootID)
     }
 
     private func terminalize(_ comparisonID: Int64, status: String) throws {
-        try database.execute(
-            "UPDATE comparisons SET status = ? WHERE id = ?",
-            bindings: [.text(status), .integer(comparisonID)]
-        )
+        if status == "complete" {
+            // New successful completions require a closed three-member collision
+            // graph and its actual production receipt, not a bare status UPDATE.
+            let c = try XCTUnwrap(database.query("SELECT * FROM comparisons WHERE id=?",bindings:[.integer(comparisonID)]).first)
+            let left = try XCTUnwrap(SnapshotHistoryRepository(database:database).summary(id:SnapshotID(rawValue:c["left_snapshot_id"]!.int64Value!)))
+            let right = try XCTUnwrap(SnapshotHistoryRepository(database:database).summary(id:SnapshotID(rawValue:c["right_snapshot_id"]!.int64Value!)))
+            if try database.scalar("SELECT COUNT(*) FROM comparison_results WHERE comparison_id=?",bindings:[.integer(comparisonID)])?.int64Value == 0 {
+                try database.execute("INSERT INTO comparison_results(comparison_id,result_path,display_name,result_type,created_at) VALUES (?,'/collide','uncertain','uncertain',CURRENT_TIMESTAMP)",bindings:[.integer(comparisonID)])
+            } else {
+                try database.execute("UPDATE comparison_results SET result_path='/collide' WHERE comparison_id=?",bindings:[.integer(comparisonID)])
+            }
+            let profile = try XCTUnwrap(ComparisonProfileRepository(database:database).profile(id:1))
+            let policy = ComparisonEngine.selectedKey(left:left,right:right)
+            try ComparisonCompletionReceiptRepository(database:database).complete(comparisonID:ComparisonID(rawValue:comparisonID),profile:profile,key:policy.column,warnings:policy.warnings,leftUsed:left,rightUsed:right)
+        } else {
+            try database.execute("UPDATE comparisons SET status=? WHERE id=?",bindings:[.text(status),.integer(comparisonID)])
+        }
     }
 
     // MARK: - Writes stay allowed while running
@@ -99,7 +114,7 @@ final class TerminalCollisionEvidenceTests: XCTestCase {
         )
         XCTAssertEqual(
             try database.scalar("SELECT COUNT(*) FROM comparison_collision_members WHERE group_id = ?", bindings: [.integer(groupID)])?.int64Value,
-            2
+            3
         )
     }
 
@@ -186,7 +201,7 @@ final class TerminalCollisionEvidenceTests: XCTestCase {
             )
             XCTAssertEqual(
                 try database.scalar("SELECT COUNT(*) FROM comparison_collision_members WHERE group_id = ?", bindings: [.integer(groupID)])?.int64Value,
-                2
+                3
             )
         }
     }

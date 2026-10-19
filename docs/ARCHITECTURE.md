@@ -1450,3 +1450,92 @@ there is no live service; this slice cannot assert offline/connected hardware.
 Bounded user errors expose no raw SQL/path. Existing startup catalog ownership,
 source/capture/comparison APIs, observation resolver and real strong profile
 count (zero) are unchanged. No source/hardware listener or automatic capture.
+
+## 17. Atomic comparison completion receipts — Task061
+
+Schema v12 adds `comparison_receipt_catalog` (one immutable random catalog
+creation/generation token) and `comparison_completion_receipts` (one row per
+new successful comparison, with its own opaque completion token). They are
+catalog references, unrelated to physical hardware identity. No historical
+comparison is backfilled. A legacy receiptless terminal comparison remains
+readable through existing APIs and permanently ineligible for exact Save.
+
+The engine passes its **actual retained ComparisonProfile value**, loaded before
+matching, and its selected key/warnings to receipt finalization. It never
+reloads the current profile to reconstruct execution. Profile loading now rejects
+malformed ignore-rule JSON, invalid flags/tolerance, UTF8/NUL and bounded-size
+violations instead of treating malformed rules as an empty list. A selected
+profile is validated independently of unrelated rows.
+
+Successful finalization holds the existing cancellation finalization lock and
+one `BEGIN IMMEDIATE` transaction. It verifies the running comparison's IDs and
+revision, freezes both completion-time snapshot headers and all current scan
+issues, validates terminal result closure, and inserts the receipt. An AFTER
+INSERT trigger transitions the comparison to complete using the receipt's exact
+counts/time. A complete transition without its matching receipt is rejected;
+direct insertion as complete is rejected. A deterministic, per-connection SQLite
+function validates the canonical typed payload and all scalar identity/count
+bindings before insertion. It reads only bounded arguments, never a database,
+profile, device or source. External SQLite without that function fails closed
+on receipt insertion. Any validation, DDL/statement, trigger or COMMIT failure
+rolls back success; the engine then attempts its existing failed/cancelled
+terminalization with counts of retained results. No result evidence is erased.
+Stale/deleted/terminal comparison targets reject. Cancellation that wins the
+existing lock prevents success; a cancellation arriving after committed success
+does not rewrite it.
+
+Receipt **v1**, `fsd-receipt-json-utf8-v1`, uses sorted-key UTF8 JSON with explicit
+Codable tags for SQL NULL, Int64, TEXT and base64 BLOB. It pins every allowed
+snapshot/issue column and its storage type. Missing fields (even nullable ones),
+unknown fields, noncanonical/invalid encoding, unsupported versions, NUL, invalid
+UTF8 and type mismatch reject. Integers never round through Double. Each metadata
+field is at most 64 KiB; executed profile name 4 KiB, at most1000 ignore rules,
+each4 KiB and total256 KiB (raw JSON at most1 MiB before decoding). Each side
+has at most10000 issues; side accumulation and complete encoded receipt each
+have an8 MiB ceiling. Exceeding a bound fails comparison completion without
+truncating evidence. SQL byte-length checks precede loading metadata values.
+
+The immutable receipt freezes:
+
+- Catalog generation, comparison/completion identity, left-reference/right-changed
+  orientation, start/create/completion times and terminal complete status.
+- Executed profile ID/revision/name, every field flag, tolerance, hidden policy,
+  ordered ignore rules and builtin annotation.
+- Engine `fsd-metadata-engine-v1`, identity selection `adr010-v1`, glob
+  `fsd-ignore-glob-v1`, exact selected key, recorded normalization version,
+  deterministic ordered warnings and `adr010-warning-text-v1` interpretation.
+- Both full snapshot headers and scan issues at **completion**. Recorded capture
+  columns retain their values and NULLs. Mutable labels/notes/Collection IDs,
+  features, totals and issue rows are completion-time annotations, not newly
+  invented capture-time truth. No current volume registry fields are substituted.
+  Issue entry links are validated within their own snapshot; NULL stays NULL.
+- `fsd-result-closure-v1`: all six result counts (including ignored), row/group/
+  member and side-entry counts, plus SHA256 of length-framed canonical typed
+  persisted result/group/member metadata in table order; results and groups use
+  ascending row ID, members use ascending group ID then member ID.
+  This hashes catalog metadata, never file contents. Paged validation checks
+  every entry has exactly one owned result/member reference, group uncertainty,
+  parent closure/order and result shape/flags. Swift materializes at most256
+  result metadata rows per page. Coverage uses indexed per-entry reference counts
+  with no whole-reference GROUP BY/sort; members stream per group without a
+  materialized group-ID list.
+
+Receipt reads revalidate immutable terminal linkage/closure and use frozen
+profile/headers/issues, without querying their mutable current counterparts.
+Existing presentation APIs remain compatible and may still show current labels.
+New receipt/header identity is guarded against update; receipt direct DELETE is
+blocked while its comparison exists. Whole-comparison deletion cascades receipts
+exactly like its other evidence. Workspace close/startup/transient disposal,
+Snapshot Collections, Drive Sets, identity evidence and capture facts are not
+retained, converted or rewritten by this foundation. A reused numeric comparison
+ID receives a different completion token. Tokens do not claim cross-catalog
+hardware or content equivalence.
+
+v10/v11 inventory checkpoints remain before their respective version writes;
+v12 adds exact table/trigger/index inventory and singleton-generation validation
+before its version row. Fresh and all supported migrated catalogs converge.
+This is not Save Comparison, durable tree copying, an archive reader or UI.
+ADR-038 remains Proposed / Owner Direction Approved / Technical Proof Pending.
+Actual crash/power-loss/storage durability and Owner catalog migration are not
+proved by generated XCTest rollback/reopen evidence. No hardware proof, mount
+observer, Auto Capture, source payload/hash or Task062 is introduced.

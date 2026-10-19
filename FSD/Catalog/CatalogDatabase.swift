@@ -242,7 +242,45 @@ public final class CatalogDatabase: @unchecked Sendable {
             .appendingPathComponent(defaultDatabaseFileName, isDirectory: false)
     }
 
+    /// Receipt v1 has one deterministic SQL validation seam. It reads only its
+    /// bounded arguments, never this connection, a profile registry or a source.
+    /// Without registration, external SQLite receipt writes fail closed.
+    private func registerCompletionReceiptValidation() throws {
+        guard let handle else { throw CatalogDatabaseError.sqlite(SQLITE_MISUSE, "Database is closed") }
+        let result = sqlite3_create_function_v2(handle, "fsd_completion_receipt_valid", 16, SQLITE_UTF8 | SQLITE_DETERMINISTIC, nil, { context, count, arguments in
+            guard count == 16, let arguments, let payload = arguments[0], sqlite3_value_type(payload) == SQLITE_BLOB else { sqlite3_result_int(context,0); return }
+            let size = Int(sqlite3_value_bytes(payload))
+            guard size > 0, size <= ComparisonCompletionReceipt.maximumBytes, let bytes = sqlite3_value_blob(payload) else { sqlite3_result_int(context,0); return }
+            func integer(_ index: Int) -> Int64? {
+                guard let value = arguments[index], sqlite3_value_type(value) == SQLITE_INTEGER else { return nil }
+                return sqlite3_value_int64(value)
+            }
+            func text(_ index: Int) -> String? {
+                guard let value = arguments[index], sqlite3_value_type(value) == SQLITE_TEXT else { return nil }
+                let length = Int(sqlite3_value_bytes(value))
+                guard length <= 65536, let pointer = sqlite3_value_text(value) else { return nil }
+                return String(data:Data(bytes:pointer,count:length),encoding:.utf8)
+            }
+            do {
+                let receipt = try ComparisonCompletionReceipt.decode(Data(bytes:bytes,count:size))
+                guard integer(1) == receipt.comparisonID,
+                      text(2).flatMap(UUID.init(uuidString:)) == receipt.catalogGeneration,
+                      text(3).flatMap(UUID.init(uuidString:)) == receipt.completionToken,
+                      integer(4) == 1, text(5) == receipt.encoding, text(6) == receipt.completedAt,
+                      integer(7) == receipt.left.header["id"]?.integer,
+                      integer(8) == receipt.right.header["id"]?.integer,
+                      integer(9) == receipt.profile.id, integer(10) == receipt.profile.revision else { sqlite3_result_int(context,0); return }
+                for (offset,key) in ["matched","added","removed","changed","uncertain"].enumerated() {
+                    guard integer(11+offset) == receipt.closure.counts[key] else { sqlite3_result_int(context,0); return }
+                }
+                sqlite3_result_int(context,1)
+            } catch { sqlite3_result_int(context,0) }
+        }, nil, nil, nil)
+        guard result == SQLITE_OK else { throw sqliteError(code:result,handle:handle) }
+    }
+
     private func configureConnection() throws {
+        try registerCompletionReceiptValidation()
         try executeUnlocked("PRAGMA foreign_keys = ON")
         guard try scalarUnlocked("PRAGMA foreign_keys")?.int64Value == 1 else {
             throw CatalogDatabaseError.foreignKeysNotEnabled
@@ -305,8 +343,8 @@ public final class CatalogDatabase: @unchecked Sendable {
             }
             // Validate the final inventory before recording or committing the
             // current version. Successful but incomplete DDL must roll back too.
-            if migration.version == 10 || migration.version == Self.currentSchemaVersion {
-                try verifyCurrentSchemaState(includeDriveSets: migration.version >= 11)
+            if migration.version >= 10 && migration.version <= Self.currentSchemaVersion {
+                try verifyCurrentSchemaState(includeDriveSets: migration.version >= 11, includeReceipts: migration.version >= 12)
             }
             try executeUnlocked(
                 "INSERT INTO schema_migrations(version, applied_at) VALUES (?, CURRENT_TIMESTAMP)",
@@ -327,18 +365,25 @@ public final class CatalogDatabase: @unchecked Sendable {
     /// Triggers and indexes are compared against their canonical definitions,
     /// not just their names, so a substituted or materially altered
     /// safety-critical object is rejected the same way a missing one is.
-    private func verifyCurrentSchemaState(includeDriveSets: Bool = true) throws {
-        for table in CatalogMigrations.ExpectedState.tables where includeDriveSets || !CatalogMigrations.driveSetTableDefinitions.map(\.name).contains(table) {
+    private func verifyCurrentSchemaState(includeDriveSets: Bool = true, includeReceipts: Bool = true) throws {
+        for table in CatalogMigrations.ExpectedState.tables where (includeDriveSets || !CatalogMigrations.driveSetTableDefinitions.map(\.name).contains(table)) && (includeReceipts || !CatalogMigrations.receiptTableDefinitions.map(\.name).contains(table)) {
             try requireSchemaObject(type: "table", name: table)
         }
-        for entry in CatalogMigrations.identityTableDefinitions + (includeDriveSets ? CatalogMigrations.driveSetTableDefinitions : []) {
+        for entry in CatalogMigrations.identityTableDefinitions + (includeDriveSets ? CatalogMigrations.driveSetTableDefinitions : []) + (includeReceipts ? CatalogMigrations.receiptTableDefinitions : []) {
             try requireSchemaObject(type: "table", name: entry.name, canonicalSQL: entry.sql)
         }
-        for entry in CatalogMigrations.ExpectedState.triggerDefinitions where includeDriveSets || !CatalogMigrations.driveSetTriggerDefinitions.map(\.name).contains(entry.name) {
+        for entry in CatalogMigrations.ExpectedState.triggerDefinitions where (includeDriveSets || !CatalogMigrations.driveSetTriggerDefinitions.map(\.name).contains(entry.name)) && (includeReceipts || !CatalogMigrations.receiptTriggerDefinitions.map(\.name).contains(entry.name)) {
             try requireSchemaObject(type: "trigger", name: entry.name, canonicalSQL: entry.sql)
         }
-        for entry in CatalogMigrations.ExpectedState.indexDefinitions where includeDriveSets || !CatalogMigrations.driveSetIndexDefinitions.map(\.name).contains(entry.name) {
+        for entry in CatalogMigrations.ExpectedState.indexDefinitions where (includeDriveSets || !CatalogMigrations.driveSetIndexDefinitions.map(\.name).contains(entry.name)) && (includeReceipts || !CatalogMigrations.receiptIndexDefinitions.map(\.name).contains(entry.name)) {
             try requireSchemaObject(type: "index", name: entry.name, canonicalSQL: entry.sql)
+        }
+        if includeReceipts {
+            let rows = try query("SELECT singleton,generation FROM comparison_receipt_catalog")
+            guard rows.count == 1, rows[0]["singleton"]?.int64Value == 1,
+                  let generation = rows[0]["generation"]?.stringValue, UUID(uuidString:generation) != nil else {
+                throw CatalogDatabaseError.schemaStateInvalid("missing receipt catalog generation")
+            }
         }
         for (table, columns) in [
             ("snapshots", CatalogMigrations.ExpectedState.snapshotColumns),

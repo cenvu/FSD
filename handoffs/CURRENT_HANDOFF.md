@@ -1,329 +1,374 @@
-UPDATED_AT: 2026-10-19T02:42:40+07:00
+UPDATED_AT: 2026-10-19T09:49:10+07:00
 
-# Task060 — Usable Manual Drive Sets — Worker return
+# Task061 Atomic Comparison Completion Receipt Foundation — Worker return
 
 ## HOT
 
 HMD_SCHEMA=FSD_HANDOFF_MARKDOWN
 HMD_VERSION=1.0.0
 PROJECT=FSD
-WORKSTREAM_ID=FSD2_RUSH_SPRINT_PRODUCT_VERTICAL_SLICES
-HANDOFF_ID=handoffs/FSD_FSD2_DRIVE_SETS_USABLE_VERTICAL_SLICE_060_D_20261019-023009.md
+WORKSTREAM_ID=FSD2_COMPARISON_COMPLETION_RECEIPT_FOUNDATION
+HANDOFF_ID=handoffs/FSD_FSD2_COMPARISON_COMPLETION_RECEIPT_FOUNDATION_061_D_20261019-094910.md
 REPO=/Users/cenvu/DEV/FSD
 BRANCH=main
-LOCAL_HEAD=4337bc60723df246338a037de34a29af967a9b2c
-REMOTE_HEAD=4337bc60723df246338a037de34a29af967a9b2c
-LAST_VERIFIED_AT=2026-10-19T02:30:09+07:00
-AUTHORITY_PTRS=AGENTS.md|docs/BRAIN_OPERATOR.md|docs/AGENT.md|STATE/PROJECT_STATE.md|STATE/EVENTS.jsonl|STATE/TASK_LEDGER.tsv|handoffs/CURRENT_HANDOFF.md|.agents/skills/fsd-task-execution/SKILL.md|.agents/skills/fsd-independent-review/SKILL.md|.agents/skills/fsd-handoff-finalizer/SKILL.md|docs/DECISIONS.md|docs/ARCHITECTURE.md|docs/UX_UI_SPEC.md|docs/TEST_PLAN.md|docs/PRODUCT_STATE.md|docs/database/schema.sql|FSD/Catalog/CatalogMigrations.swift|FSD/Catalog/CatalogDatabase.swift|FSD/Catalog/DriveSetRepository.swift|FSD/Model/DriveSetModels.swift|FSD/UI/DriveSetsView.swift|FSDTests/DriveSetsTests.swift|FSDTests/DriveSetMigrationTests.swift
+LOCAL_HEAD=8722d29278d574b4962331af05d945677710c71f
+REMOTE_HEAD=8722d29278d574b4962331af05d945677710c71f
+LAST_VERIFIED_AT=2026-10-19T09:49:10+07:00
+AUTHORITY_PTRS=AGENTS.md|docs/BRAIN_OPERATOR.md|docs/AGENT.md|STATE/PROJECT_STATE.md|STATE/TASK_LEDGER.tsv|STATE/EVENTS.jsonl|handoffs/CURRENT_HANDOFF.md|.agents/skills/fsd-task-execution/SKILL.md|.agents/skills/fsd-independent-review/SKILL.md|.agents/skills/fsd-handoff-finalizer/SKILL.md|docs/DECISIONS.md|docs/ARCHITECTURE.md|docs/TEST_PLAN.md|docs/PRODUCT_STATE.md|docs/database/schema.sql|FSD/Diff/ComparisonEngine.swift|FSD/Diff/ComparisonCompletionReceipt.swift|FSD/Diff/ComparisonCompletionReceiptRepository.swift|FSD/Catalog/CatalogDatabase.swift|FSD/Catalog/CatalogMigrations.swift|FSDTests/ComparisonCompletionReceiptTests.swift|FSDTests/CompletionReceiptMigrationTests.swift
 CURRENT_PHASE=POST_V0_1_FSD2_FOUNDATION
-CURRENT_GATE=FSD2_DRIVE_SETS_USABLE_VERTICAL_SLICE_060
+CURRENT_GATE=FSD2_COMPARISON_COMPLETION_RECEIPT_FOUNDATION_061
 STATUS=WORKER_COMPLETE_PENDING_BRAIN
-BLOCKER=NONE_FOR_LOCAL_MANUAL_GROUPING;HARDWARE_LIVE_OBSERVATION_FULL_INTEGRATION_PENDING
-PROPOSED_NEXT=WAIT(BRAIN_REVIEW_TASK060_DRIVE_SETS)
+BLOCKER=NONE_FOR_SCOPED_FOUNDATION;DURABLE_SAVE_UI_ARCHIVE_AND_REAL_DURABILITY_PENDING
+PROPOSED_NEXT=WAIT(BRAIN_REVIEW_TASK061_ATOMIC_COMPLETION_RECEIPT)
 NO_AUTO_NEXT=YES
 
-## Task lock and authority
+## Execution lock and authority
 
 PROJECT=FSD
-TASK_ID=FSD2_DRIVE_SETS_USABLE_VERTICAL_SLICE_060
+TASK_ID=FSD2_COMPARISON_COMPLETION_RECEIPT_FOUNDATION_061
 ROLE=WORKER
-BASE_HEAD=4337bc60723df246338a037de34a29af967a9b2c
-UPSTREAM_HEAD=4337bc60723df246338a037de34a29af967a9b2c
+BASE_HEAD=8722d29278d574b4962331af05d945677710c71f
+UPSTREAM_HEAD=8722d29278d574b4962331af05d945677710c71f
 ACCEPTED_STATE=STATE/PROJECT_STATE.md
-SCOPE=MANUAL_DRIVE_SETS_USABLE_APP_VERTICAL_SLICE_WITH_ADDITIVE_V11
-ALLOWED_PATHS=19_SUBSTANTIVE_EXACT_PATHS_BELOW|ONE_NEW_HISTORY|CURRENT|WORKER_LEDGER_EVENT|DESKTOP_TRANSPORT
-FORBIDDEN_PATHS=ACCEPTED_STATE|RULE_PROMOTION_LEDGER|PRIOR_HISTORY|ADR_STATUS|UNRELATED_FUNCTIONS|OWNER_CATALOG_DATA_MEDIA|SOURCE_PAYLOAD_OR_DEVICE_IO|LIVE_OBSERVER|AUTO_CAPTURE|SAVE_COMPARISON|RELEASE|NEXT_TASK
-SUCCESS_CRITERIA=WORKING_MANUAL_UI|DURABLE_EXPLICIT_GROUPING|UNICODE_REVISION_FK_SAFETY|SYNTHETIC_MIGRATION_REGRESSIONS|BUILDS_REVIEW_PUBLICATION
-VALIDATIONS=PRODUCTION_XCTEST_UI_REPOSITORY_MIGRATION|AFFECTED_REGRESSIONS|CLEAN_ARM64_DEBUG_RELEASE|SQLITE_FK_INTEGRITY|EXACT_DIFF_HASHES|INDEPENDENT_REVIEW|CANONICAL_PRE_POST
+SCOPE=ATOMIC_COMPARISON_COMPLETION_RECEIPT_FOUNDATION_ADDITIVE_V12_SYNTHETIC_ONLY
+ALLOWED_PATHS=19_EXACT_SUBSTANTIVE_PATHS_LISTED_BELOW_PLUS_ONE_NEW_HISTORY_CURRENT_WORKER_LEDGER_EVENT_DESKTOP
+FORBIDDEN_PATHS=ACCEPTED_STATE_RULE_LEDGER_PRIOR_HISTORY_ADR_STATUS_OWNER_DATA_SOURCE_MEDIA_HARDWARE_SAVE_UI_ARCHIVE_AUTO_CAPTURE_RELEASE_TASK062
+SUCCESS_CRITERIA=ACTUAL_PROFILE_COMPLETION_TRUTH_ATOMIC_RECEIPT_BOUNDED_TYPED_METADATA_SAFE_MIGRATION_SYNTHETIC_TESTS_BUILDS_REVIEW_PUBLICATION
+VALIDATIONS=XCTEST_SQLITE_FK_INTEGRITY_EXPECTED_STATE_PARITY_ROLLBACK_REOPEN_CLEAN_ARM64_BUILDS_INDEPENDENT_REVIEW_EXACT_DIFF_CANONICAL_FINALIZER
 NEXT_BOUNDARY=RETURN_TO_BRAIN_ONLY
 
-FACT: initial local main was f1b66d8e98b16aea118c28bfbb3e9d1814c5485b,
-clean, behind origin/main by three BRAIN commits. Non-destructive fetch exposed
-4337bc60723df246338a037de34a29af967a9b2c, exactly the authorized baseline.
-Inspected all three commits; only BRAIN/control-policy projections changed.
-Safe fast-forward reached baseline, main/origin main 0/0 and clean before edits.
-Canonical State has exactly ACTION(FSD2_DRIVE_SETS_USABLE_VERTICAL_SLICE_060),
-Task059 accepted pointer f1b66d8e98b16aea118c28bfbb3e9d1814c5485b and Owner
-continuous scoped sprint authority. Owner policy, Compact, applicable FULL,
-CURRENT HOT, execution/finalizer/review skills and direct product/code authority
-were read. No reset, stash, clean, force, unrelated work or BRAIN State mutation.
-The later fetch before finalization still matched baseline 0/0.
+FACT: initial physical main was clean at c6a67a733fa8a6f3e60e55c8dc3cca4ff25833f6.
+Non-destructive fetch found exactly one BRAIN-only commit, 8722d29278d574b4962331af05d945677710c71f,
+accepting Task060 and authorizing exactly ACTION(FSD2_COMPARISON_COMPLETION_RECEIPT_FOUNDATION_061).
+The complete three-State-file delta was inspected before safe ff-only advancement.
+The exact expected baseline then matched local/upstream, 0/0 and clean. State
+accepts Task060 at c6a67a733fa8a6f3e60e55c8dc3cca4ff25833f6; its blockers and
+standing bounded sprint authority remain intact. Finalizer-entry fetch again
+confirmed baseline 0/0. No reset/stash/clean/force or unknown-work overwrite.
 
-## Result and concrete product delta
+Read canonical AGENTS/local Owner policy, Compact, applicable FULL governance,
+accepted State/recent events/ledger, CURRENT HOT and Task056–060 evidence,
+ADR-012/028/038, Architecture §13, Test Plan §§12–13, Product State, schema v11,
+actual comparison engine/profile/result/service/model stack, catalog/migrations,
+SnapshotWriter and transient lifecycle. Loaded execution, independent-review and
+finalizer skills. The installed Apple SDK sqlite3.h supplied the local official
+scalar-function callback contract; no dependency installation or network provider.
 
 WORKER_RESULT=PASS_WITH_ADVISORY
 
-- Library sidebar → **Drive Sets** opens a real workspace. Create and rename
-  sheets, set selection, add-local-record sheet, Remove confirmation and Delete
-  Set confirmation call production catalog actions. Empty sets persist. No
-  diagnostic/preflight/timeline screen is added to the normal product flow.
-- The picker shows bounded pages of explicitly selected local PhysicalDrive
-  records and their opaque IDs, including equal labels. One record may belong
-  to multiple sets. Add is separate from creating a local record. Retired
-  records remain visible as members and may be removed; new admission rejects
-  retirement. No automatic matching, membership, source admission or capture.
-- If there are no local records, the add sheet's **New Unverified Local Record**
-  disclosure offers label + Create Local Record. It reuses Task058 explicit-local
-  admission and provenance. This creates an organization record, not a detected
-  device or observation. The user must separately click Add afterward.
-- Labels say **Unverified local record • connection unknown** (or Retired).
-  No service exists to prove connected/offline state, so none is fabricated.
-  Records and memberships persist across close/reopen. Errors are bounded and
-  offer Refresh; no raw SQLite/path diagnostic is exposed in this workspace.
-- `DriveSetID` is a UUID catalog reference independent of names and hardware.
-  `DriveSetRepository` provides atomic create/rename/delete/explicit membership,
-  stable IDs, expected set/target revisions, exact create retry by ID, identical
-  current rename/pair no-op, and absent delete/remove behavior. Stale operations
-  reject; they do not override newer organization. This is not an operation
-  receipt registry or cross-catalog import/merge system. Intentional reuse of
-  a deleted ID is not guarded by a new tombstone/receipt framework.
-- Names trim, then use existing Swift/Foundation `PathIdentity.caseFold` (NFC
-  and locale-independent case fold), with `fsd-drive-set-name-v1`. Blank/NUL and
-  >256 UTF-8-byte names reject (raw input capped1024; normalized key capped1024).
-  Duplicate normalized names reject within Drive Sets, independently of
-  Collections. SQLite NOCASE is not treated as Unicode normalization.
-- Lists clamp to1–200 and expose continuation/truncation. Set ordering is
-  normalized name + ID, membership ordering ID. UI pages are100, with explicit
-  First/Next controls. Reads use indexed bounded JOIN/IN queries. Cursors are
-  live organization ordering, not frozen history; UI refresh resets them after
-  applicable mutations. No whole-library source/capture scan or N+1 loop.
+This is Worker implementation evidence, pending BRAIN review. No accepted State,
+ADR status, existing history or next-task authority is authored here.
 
-## Schema and migration integrity
+## Concrete production delta
 
-FACT: schema v11 adds exactly `drive_sets`, `drive_set_memberships`, two explicit
-indexes and three triggers. No old table, capture fact, evidence row or trigger
-is altered. The fresh schema's preexisting SQL remains exact except its current
-version row. `drive_sets` stores ID, name/key/version, integer revision≥1 and
-creation/update time; IDs/creation/version and revision increments are guarded.
-Integer type checking also rejects revision overflow. Membership has composite
-pair PK, added time and explicit-local-selection provenance, with no pair UPDATE.
+- Schema v12 adds exactly two tables, six indexes and ten triggers. One immutable
+  random catalog generation is created, with no links attributed to legacy
+  comparisons. A completion token distinguishes each successful completion,
+  including reuse of a disposed highest SQLite comparison integer ID.
+- `ComparisonCompletionReceipt` v1 is an immutable typed contract. Its canonical
+  sorted-key UTF8 JSON uses tagged SQL NULL/Int64/TEXT/base64-BLOB values; every
+  snapshot and scan-issue column/type is pinned. Missing nullable fields are
+  rejected rather than silently replaced with NULL. Unknown/noncanonical fields,
+  unsupported contracts, invalid UTF8/NUL, malformed types and count overflow fail.
+- The frozen profile is the **ComparisonProfile value actually used by merge**:
+  ID/revision/name, all field flags, timestamp tolerance, hidden policy, ordered
+  ignore rules and builtin annotation. The engine never reloads a profile after
+  calculation to manufacture history. Exact left-reference/right-changed
+  orientation, start/create/completion times, selected path-key mode and ordered
+  compatibility warnings are retained.
+- Engine `fsd-metadata-engine-v1`, selection `adr010-v1`, glob `fsd-ignore-glob-v1`,
+  recorded normalization, warnings `adr010-warning-text-v1` and validation
+  `fsd-result-closure-v1` explicitly pin interpretation. All strong hardware
+  profiles remain absent; none of these identities is hardware or content proof.
+- Both full snapshot headers and scan issues are frozen **at completion**.
+  Existing *_at_capture facts and their NULLs remain recorded facts; labels,
+  notes, Collection IDs, totals/features and issues are completion-time annotations.
+  No current volume registry values substitute for missing capture facts. Optional
+  issue entry IDs must belong to that side; NULL remains NULL. Existing BLOB
+  signatures are recorded metadata, never newly read or calculated content hashes.
+- The result closure includes all six kinds, including ignored (excluded from
+  the existing five display summary counts), result/group/member and side-entry
+  counts, and SHA256 of length-framed canonical typed persisted metadata. Table
+  order is results, groups, members; result/group IDs ascend, member group ID then
+  member ID ascend. This is a metadata digest, not a file-content hash.
+- Closure validation checks exact one-reference coverage per side entry, total
+  reference ownership, collision/uncertain closure, parent closure/order and
+  result shape/flags. Indexed correlated per-entry counts avoid whole-reference
+  GROUP BY or materialized group-ID lists. Result/group/member traversal is
+  bounded to256 rows; coverage query-plan tests reject temporary sorting and
+  unindexed result/member scans. No complete tree/result array is constructed.
+- Metadata fields are at most64 KiB; name4 KiB; at most1000 ignore rules,4 KiB
+  each and256 KiB combined (raw JSON at most1 MiB before decoding); at most10000
+  issues per side. Each side accumulation and whole encoded receipt are capped
+  at8 MiB. SQL length checks precede selecting large values. Bounds fail closed
+  without truncation. Swift paging does not claim SQLite/storage-wide hard memory,
+  time or power-loss limits; those remain separate performance/durability work.
 
-Only set→membership has DELETE CASCADE. Drive FK uses DELETE/UPDATE RESTRICT;
-existing PhysicalDrive hard-delete and evidence immutability guards remain.
-No relationship enters volumes, snapshots, entries, Collections or comparisons.
-No historical set, drive or membership backfill and no inference from labels,
-UUIDs, paths, BSD nodes or existing Collection names.
+### Atomic terminalization and lifecycle
 
-Production `CatalogMigrations` records v11 only after successful DDL + full exact
-ExpectedState validation, in the existing transaction. Catalog startup checks
-new exact table/index/trigger definitions. The prior v10 precommit inventory
-validation is retained explicitly before the v11 checkpoint, preserving Task058
-malformed/incomplete-DDL rollback behavior. Foreign keys and process locking
-remain intact. Existing supported v4 (both variants), v5, v6, v7, v8, v9 and v10
-chains converge to v11 with fresh/migrated new DDL and semantic legacy column
-parity. Unsupported newer catalogs fail without rewriting bytes.
+The engine's existing cancellation finalization lock surrounds receipt completion.
+One `BEGIN IMMEDIATE` transaction verifies the target is still running, matches
+its sides/profile revision, freezes headers/issues, validates closure, serializes
+and inserts the receipt. AFTER INSERT transitions that comparison to complete
+with exactly the receipt's counts/time. The schema rejects completion without a
+matching receipt and direct insertion as complete. A per-connection deterministic
+`fsd_completion_receipt_valid` scalar validates bounded typed payload and all16
+arguments. It reads only its arguments, never the database, source,
+registry or filesystem; an external raw SQLite connection lacking the function
+fails closed on receipt writes. Swift validates actual persisted graph linkage
+before commit and again on receipt reads; no arbitrary SQL writer is granted an
+archive/admission API.
 
-Generated populated v10 fixture contains snapshots, entries, Collections/defaults,
-scan issues, classification rows, a completed comparison/result/collision graph,
-PhysicalDrive, typed observation/evidence and associate/revoke history. Every
-legacy row is compared before/after migration, grouping, rename and set deletion;
-the other set's membership survives. Captured source values remain historical.
-Existing completed snapshot, entry, evidence and terminal comparison mutations
-still reject. Eight injected migration runs cover each of seven DDL boundaries
-and version-write failure: original schema/version/data restored, then real
-production retry succeeds and reopen does not replay. Incomplete/altered DDL
-rejects before committing v11. Set mutation failure rolls back pair and revision.
-FK checks are separate from integrity checks; both pass.
+Any statement/trigger/serialization/validation/COMMIT failure rolls back the
+receipt and successful transition together. The engine retains its result rows
+and attempts the existing failed/cancelled terminalization, recomputing counts
+inside that transaction. A stale/missing/terminal success target rejects rather
+than accepting a zero-row UPDATE. Duplicate completion cannot add another receipt.
+Cancellation that wins the lock prevents success; a request after successful
+commit cannot rewrite terminal truth. If non-success terminalization itself
+cannot persist, the operation throws and existing startup recovery remains the
+safe fallback; no successful UI result is returned.
 
-## Executed tests, builds and causal repairs
+Receipt update/direct delete is guarded. New receipted comparison ID/profile/
+revision/start/create/completion identity is immutable. Whole-comparison deletion
+still cascades receipts; transient close/recovery is unchanged. No snapshots are
+retained, converted or auto-saved. Legacy completed comparisons have zero invented
+receipts and remain readable under existing APIs, permanently ineligible for
+exact Save. Old mutable profile/header/issue rows cannot reconstruct a receipt.
+`receipt(comparisonID:)` returns frozen evidence after terminal binding validation;
+`isEligibleForExactSave` is a backend seam, not Save UI or an archive operation.
+Existing presentation APIs may still show current labels under their prior behavior.
 
-All new facts/catalogs/windows are generated and isolated. XCTest host logs name
-`FSD-TestHost-<pid>` temporary catalogs; no normal Owner location is opened.
-New tests use unique temporary task060 paths; GUI captures contain generated
-labels/IDs only. Existing selected scanner/classification regressions use their
-isolated synthetic fixtures, not Owner media.
+### Causally necessary adjacent correction
 
-Commands use repo root, scheme FSD, destination `platform=macOS,arch=arm64`.
-Raw receipts remain ignored in `.ai-scratch/task060/`.
+`ComparisonProfileRepository.swift` is the sole additional production path beyond
+those enumerated in the prompt. Actual source used a malformed-ignore-JSON → []
+fallback and unchecked field defaults, which would turn missing/invalid definition
+facts into a different successful comparison universe. The narrow correction
+bounds the selected profile projection, checks UTF8/NUL/typed flags/tolerance and
+requires valid ordered String rules. It performs no profile write and does not
+let an unrelated invalid profile poison a selected valid one. This demonstrated
+receipt-boundary cause and exact diff were independently reviewed. No checker
+allowlist was widened to hide an unreviewed change.
 
-1. Causal RED: `xcodebuild test -project FSD.xcodeproj -scheme FSD -configuration
-   Debug -destination 'platform=macOS,arch=arm64' -derivedDataPath
-   .ai-scratch/task060/Debug
-   -only-testing:FSDTests/DriveSetsTests/testCreateEmptySet`.
-   `red.log`: one test, one intended invalidName error from create scaffold.
-   The initial zsh wrapper incorrectly assigned read-only `status`, so its echo
-   is not an xcodebuild exit receipt. The actual XCTest failure is observed.
-   Production create subsequently passes in the final complete run.
-2. Intermediate focused1:21 tests/1 failure was an over-specific index-name
-   expectation; SQLite validly used another index. Inspecting indexed query
-   semantics led to a index-use property test, not a forced planner name.
-   Focused2:55/3 and focused3:58/3 identified a stale migration count, malformed
-   current-version fixture missing the v11 objects, and the new UI harness.
-   Current-version assertions/fixtures were updated narrowly; historical v9/v10
-   capture facts and explicit v10 rollback failure expectations stay unchanged.
-3. UI harness debugging is recorded in ui-1 through ui-11 logs (ui-3 and ui-10
-   are diagnostics). Apple NSHostingView/NSAccessibility documentation and local
-   AppKit headers were inspected after repeated failures. Typed full-protocol
-   casts excluded SwiftUI nodes; typed NSArray row bridging trapped in ui-8.
-   The final bounded traversal inspects only its own NSWindow/sheets/NSView
-   subtree with dynamic Objective-C accessors and raw rows. It never queries
-   global AX or a native picker. Editing the owned NSTextField notifies its
-   delegate to commit the SwiftUI Binding. Boolean AX return alone is not proof:
-   destructive confirmation calls may return false despite executing; final
-   assertions verify actual persisted effects and retained records.
-4. `ui-11.log`: real New Drive Set → Save → Rename → Save → Add Local Records →
-   New Unverified Local Record → Create Local Record → Add → Done → Remove →
-   Remove from Set → Delete Set → Delete Drive Set, with all backend assertions
-   passing. The final regression reruns this complete workflow and captures its
-   generated empty/member1120/member1330/add-sheet states. Root inspected the
-   generated member1120 image; Reviewer independently inspected the workspace.
-5. Final exact regression command is `regression-command.json`: xcodebuild test
-   with the above arguments and explicit38-suite selection. `regressions-1.log`
-   and `regressions-exit.json`: exit0, **552 executed /552 passed /0 failed /0
-   skipped**,65.699 seconds. New DriveSetsTests19 + DriveSetMigrationTests6 =25;
-   existing527 includes Task058/059 identity/resolver/migration, complete catalog/
-   schema/ExpectedState, snapshot/history/Collections/capture/recovery/locking,
-   comparison semantics/identity/lifecycle/persistence/browser/GUI boundaries,
-   browse/search/export/classification/read-only isolation. These overlap prior
-   focused runs and are not additive counts.
-6. `MilestoneConditionTests/testNestedMountBoundaryAgainstAGeneratedDiskImage`
-   is explicitly excluded because Task060 forbids mounting/device operations.
-   No real-device, Owner data, H01–H14 or release test is run or claimed. This is
-   the required affected regression selection, not every repository test.
-7. Final `xcodebuild clean build -project FSD.xcodeproj -scheme FSD
-   -configuration Debug -destination 'platform=macOS,arch=arm64'
-   -derivedDataPath .ai-scratch/task060/FinalDebug`: exit0, BUILD SUCCEEDED in
-   build-debug.log. Same command Release/FinalRelease: exit0, BUILD SUCCEEDED in
-   build-release.log. Both final receipts follow the last production change.
-8. Production-stack tests verify `PRAGMA foreign_keys=1`, integrity_check=ok,
-   foreign_key_check empty; exact ExpectedState and fresh/migrated parity pass.
-   git diff --check passes. `verify_scope.py` checks every protected baseline
-   file/link, old SQL bytes, prior112 historical handoffs and narrow imports/SQL.
-   Pre-report protected1515 unchanged; final reporting excludes only the three
-   authorized existing projections. No protected State or ADR status changed.
+## Migration, preservation and integrity
 
-Official research references (API contracts, not hardware proof):
-- https://developer.apple.com/documentation/swiftui/nshostingview
-- https://developer.apple.com/documentation/appkit/nsaccessibilityprotocol
-- Installed macOS SDK AppKit `NSAccessibilityProtocols.h` and `NSAccessibility.h`.
+FACT: fresh schema v12 and explicit production v4 (both variants), v5, v6, v7,
+v8, v9, v10 and v11 chains converge. Existing SQL objects and every legacy SQL
+byte (apart from the current version row and additive top comment) are exact.
+ExpectedState covers exact new table/index/trigger definitions. v10 and v11
+precommit inventory checks remain, excluding future receipt objects until v12;
+v12 validates the singleton generation and complete inventory before its version
+row. Existing catalog connection locking, process isolation, foreign keys,
+normalization and terminal/capture guards remain effective.
 
-## Independent read-only review and exact candidate
+`CompletionReceiptMigrationTests` builds a populated v11 catalog with snapshots,
+entries, Collection/defaults, scan issues, classification, completed comparison/
+results/collision graph, PhysicalDrive, observation/evidence/manual association
+history and a Drive Set/membership. Every legacy row is equal after migration.
+No receipt is synthesized for old complete rows. Nineteen new DDL/seed statements
+plus version-write failure yield20 injected rollback boundaries, with original
+schema/version/data intact, production retry and idempotent reopen. Incomplete/
+altered inventory and damaged reopen fail closed without further schema/version
+mutation; newer999 is rejected without changing database bytes. Relevant legacy
+v10/v11 migration failure tests still pass. FK enforcement=1, foreign_key_check
+empty and integrity_check=ok are separately executed in generated catalogs.
 
-FACT: separate Reviewer task `/root/task060_review`, fresh context, loaded Owner
-policy/State/execution/independent-review skills and reviewed all19 substantive
-paths. No reviewer mutation, Owner access, test execution or separate handoff.
-Observed final raw552/552/exit0 and clean build receipts; source/diff review,
-protected-file hash check and generated workspace inspection. Reviewer result
-PASS_WITH_ADVISORY, no unresolved material findings. Early stale unavailable
-label and N+1-query findings were repaired and reviewed. Reviewer's10 requirements
-accounted9 evidenced/1 not applicable/0 unproven. No model-family diversity claim.
+Receipt generation, successful comparison and disposal tests preserve unrelated
+snapshot/entry/Collection/Drive Set/physical-evidence and prior result facts. New
+receipt ownership adds no cascade into those legacy relations. Existing completed
+snapshot/result/collision immutability and source-boundary regressions pass.
 
-Root and Reviewer exact aggregate SHA256 (sorted path + NUL + per-file SHAhex + LF):
-`d3d78c408ab4a65ebd79777bfa10e09a24260a95d0bd3a7d6158a37e1c2bffba`.
-The final candidate has unchanged bytes from that review.
+## Executed validation and debugging evidence
 
-## Exact substantive tracked paths
+All catalogs, paths, source trees and test windows were generated in unique
+XCTest-managed temporary locations; startup identifies a separate FSD-TestHost
+catalog. No normal Owner catalog path, real source/media/device or global AX
+scan was used. Tests cannot establish empirical physical-drive identity.
 
-- `FSD.xcodeproj/project.pbxproj`
-- `FSD/Catalog/CatalogDatabase.swift`
-- `FSD/Catalog/CatalogMigrations.swift`
-- `FSD/Catalog/PhysicalDriveRepository.swift`
-- `FSD/Catalog/DriveSetRepository.swift`
-- `FSD/Model/DriveSetModels.swift`
-- `FSD/UI/ComparisonSharedViews.swift`
-- `FSD/UI/DriveSetsView.swift`
-- `FSDTests/DriveSetsTests.swift`
-- `FSDTests/DriveSetMigrationTests.swift`
-- `FSDTests/CatalogDatabaseTests.swift`
-- `FSDTests/PhysicalDriveIdentityTests.swift`
-- `FSDTests/PhysicalDriveMigrationTests.swift`
-- `FSDTests/SchemaMigrationTests.swift`
-- `FSDTests/SyntheticSourceResolutionRepositoryTests.swift`
-- `docs/database/schema.sql`
-- `docs/ARCHITECTURE.md`
-- `docs/TEST_PLAN.md`
-- `docs/PRODUCT_STATE.md`
+| Receipt | Actual result / meaning |
+|---|---|
+| `.ai-scratch/task061/red.log`, `red-exit.json` | Intended causal RED:1 test/1 failure, exit65; baseline engine completes but durable receipt table is absent. Setup/build succeeded. |
+| `focused-1.log` |1 failure: new identity trigger initially rejected its first completion timestamp. Reproduced, restricted guard to already-complete OLD status; successful completion exercised afterward. |
+| `focused-2.log` |12 tests/1 fixture failure: attempted capture-fact UPDATE is correctly prohibited even while scanning. Retained guard; test uses mutable duration annotation for Int64 extreme and preserves capture NULL. |
+| `focused-3.log` |57 tests/3 fixture/expectation failures: unique profile rename needed one selected row, legacy absent-table list needed receipt exclusion, malformed-current fixture needed current version. Narrow source-evidenced fixes. |
+| `regressions-1.log` |578 tests/8 failures: the remaining old bare-completion fixtures, standalone-END parser formatting and current-version expectation were corrected; no safety assertion removed. |
+| `regressions-2.log`, exit JSON |578/578, exit0; earlier candidate. |
+| `regressions-3.log`, exit JSON |583/583, exit0; expanded receipt tests before final indexed coverage repair. |
+| `regressions-final.log`, `regressions-final-exit.json` |**584/584,0 failures,0 skips, exit0;133.821s test body. Final reviewed source.** |
+| `build-debug.log`, `build-debug-exit.json` |Clean macOS arm64 Debug BUILD SUCCEEDED, exit0. |
+| `build-release.log`, `build-release-exit.json` |Clean macOS arm64 Release BUILD SUCCEEDED, exit0. |
+| `scope-validation.json`, `review-packet.json`, `git diff --check` |Exact19-path candidate/protected hashes/legacy DDL parity/whitespace PASS. |
 
-Reporting adds only this one immutable history, CURRENT full mirror, one Worker
-ledger row and one appended Worker return event. No separate report, accepted
-State edit, old-handoff rewrite or classification/ADR promotion.
+Final23 new tests =17 receipt +6 migration. Existing561 = the prior Task060
+selected552 regressions +8 CancellationRaceStress +1 million-row disposal case.
+The exact full command is `.ai-scratch/task061/regression-command.json`;
+regressions-final-exit.json also retains argv and actual exit status.
 
-## Execution requirement/evidence map
+It invokes `xcodebuild test -project FSD.xcodeproj -scheme FSD -configuration Debug
+-destination 'platform=macOS,arch=arm64' -derivedDataPath .ai-scratch/task061/Debug`
+with explicit affected suites. Comparison semantics/identity/state/mode/persistence,
+workspace/browser/GUI source/validation/end-to-end, terminal evidence/inventory,
+identity/resolver, Drive Sets, Snapshot Collections/history/lifecycle, catalog and
+SchemaMigration suites are included, along with generated scanner/classification/
+source-read-only regressions. The complete eight cancellation/recovery stress tests
+pass. Both clean builds use `xcodebuild clean build` with the same project/scheme/
+destination and `.ai-scratch/task061/FinalDebug` / `FinalRelease` derived data.
 
-All rows below are FACT/EVIDENCED execution requirements. Publication and recovery
-transport are the finalizer closure below, verified afterward without rewriting
-this self-containing historical record.
+**Explicit exclusion:**
+`MilestoneConditionTests/testNestedMountBoundaryAgainstAGeneratedDiskImage`
+is excluded by `-skip-testing` because a live mount operation is prohibited.
+This is a selection exclusion, not an executed skip. Other unselected full-scale,
+real-media and manual/VoiceOver/Owner-installation suites are not claimed passed.
 
-| ID | Requirement | Evidence |
+The one-million disposal test intentionally repeats root references in its
+synthetic graph. That is not valid successful engine closure. Its fixture now
+terminalizes as **failed**, exercising the exact same terminal evidence/cascade
+branch while retaining all million-row count/residue/source/FK/integrity and
+latency assertions. Observed Debug disposal13.429s; test31.093s. This proves
+terminal failed-fixture disposal, not million-entry successful receipt throughput.
+New successful-completion and transient disposal tests cover real receipts.
+
+Failure injection covers BEFORE/AFTER receipt insert, BEFORE/AFTER status update,
+and a deferred-FK COMMIT failure. No receipt/complete status survives rollback;
+retained results match failed counts. Tests also cover peer committed visibility,
+SQL malformed payload and each of16 mismatched bindings, duplicate/stale/missing
+completion, Int64/NULL/empty-BLOB round trips, malformed UTF8/NUL/profile/headers/
+issue ownership, missing metadata fields, counts and limit failures, key/warnings,
+all six kinds and collision closure, post-completion mutable annotation/issue
+changes, reopen and reused integer ID with distinct token. No content read/hash.
+
+### Independent read-only review
+
+Separate context `/root/task061_review`, ROLE=REVIEWER, loaded Owner policy,
+execution and independent-review skills and actual canonical authority. Reviewed
+all19 substantive paths, actual source/diff/tests/docs and final execution receipts.
+It ran only an isolated generated in-memory SQLite query-plan diagnostic; it did
+not change product, fixtures, control plane or Owner data and did not rerun Xcode.
+No model-family diversity is claimed. Final result PASS_WITH_ADVISORY, **no
+unresolved material findings**. Reviewer accounting:13 evidenced,1 nonapplicable
+(separate publication intentionally consolidated into this one handoff).
+
+Earlier findings were repaired and reviewed: initial completion-trigger timing,
+page-bounded preflight, nested-transaction/early-return false-positive test paths,
+unrelated profile poisoning, timestamp-bearing digest retry assertion, and global
+coverage GROUP BY memory growth. Final EQP checks exercise production coverageSQL;
+member/group streams use explicit indexes and bounded pages. No accepted guard was
+weakened. Scope, transaction/ownership/error handling, callback purity, terminal
+races, frozen profile truth, source boundaries and schema parity were reviewed.
+
+Reviewed aggregate SHA256 (sorted path + NUL + file SHA256 hex + LF):
+`e8429c10468ab49ed93d6d3af70a51e0b09f6485db4ed65f10de5c97bc1b6375`.
+All1520 non-substantive baseline tracked paths, including113 prior historical
+handoffs, matched before reporting; finalizer reporting changes only CURRENT,
+the new history and Worker-owned ledger/event projection. Accepted State,
+RULE_PROMOTION_LEDGER, ADR status, helper/provider/runtime and unrelated app files
+are unchanged. Essential evidence is here; ignored scratch is supplemental.
+
+## Requirement-to-evidence postflight
+
+All rows below are FACT/EVIDENCED for this execution candidate. Publication and
+Desktop closure are performed afterward by the canonical finalizer, not asserted
+as future facts inside this immutable self-containing source.
+
+| # | Execution requirement | Evidence |
 |---|---|---|
-| R01 | Canonical Task060 authority and expected baseline | State ACTION, verified4337bc6, safe fetch/fast-forward0/0 |
-| R02 | Preserve unknown work and protected accepted authority | clean preflight; baseline hash inventory; no protected mutation |
-| R03 | Create Drive Sets with stable local IDs | testCreateEmptySet/create retry; real UI Save |
-| R04 | Rename without changing ID | testRenameRevisionAndDuplicateRollback; UI Rename/Save |
-| R05 | Discoverable Library workspace | shell route/sidebar + rendered shell and direct workspace |
-| R06 | Explicit selected-ID add/remove | pair API and real Add/Remove confirmation workflow |
-| R07 | Many-to-many membership | testManyToManyExplicitMembershipAndIdempotency |
-| R08 | Empty set retention | testCreateEmptySet and UI empty workflow |
-| R09 | Safe set deletion | FK graph, populated deletion preservation + confirmation |
-| R10 | Relaunch persistence | testRelaunchRetainsSetAndMembers; migration reopen |
-| R11 | Truthful labels and empty states | UI source/render: unverified/retired/connection unknown |
-| R12 | Essential manual local record creation | real New Unverified Local Record/Create + separate Add |
-| R13 | No hardware-derived IDs | UUID model and existing explicit-local creation API |
-| R14 | Foundation normalization/duplicate namespace | Unicode composed/decomposed/ß/Σ; independent Collection name test |
-| R15 | Atomic mutation and error rollback | injected pair/revision failure + migration boundaries |
-| R16 | Concurrency protection | expected set/drive revisions; stale/missing/retired tests |
-| R17 | Idempotent retry behavior | same-ID create; current rename/pair no-op; absent removal/deletion |
-| R18 | Bounded deterministic reads | 205 set/member paging +100 UI pages + index properties |
-| R19 | Small additive current schema | v11 only; two tables/two explicit indexes/three triggers |
-| R20 | Fresh/migrated parity | all columns/names/index/trigger + exact new table DDL |
-| R21 | Supported historical chains | v4 both variants andv5–v10 converge to11 |
-| R22 | Migration rollback before DDL/version commit | seven DDL injections plus version-write failure; original rows/schema/version |
-| R23 | Successful reopen does not replay | injected invalid replay not executed after success |
-| R24 | Newer unsupported catalog remains safe | byte comparison after rejected version999 |
-| R25 | FK enforcement and deletion graph | PRAGMA foreign_keys1/foreign_key_check empty; pair targets validated |
-| R26 | SQLite structural integrity | integrity_check ok on generated migrated/current catalogs |
-| R27 | Every legacy evidence row preserved | populated snapshots/entries/Collections/comparisons/identity history equality |
-| R28 | Accepted immutability/normalization guards retained | legacy SQL bytes preserved; negative completed/evidence mutations |
-| R29 | No implicit membership or historical backfill | new tables empty after migration; equal-label/Collection-name independent |
-| R30 | No source/hardware/Owner-data/capture expansion | exact imports/call/SQL review + existing boundary regressions + synthetic host |
-| R31 | Focused production-stack UI/repository/migration checks | new25/25 within final run; real controls/asserted backend effects |
-| R32 | Affected regression coverage | existing527/527, complete relevant suite selection, prohibited mount case excluded |
-| R33 | Clean arm64 Debug and Release builds | final build-debug/build-release receipts exit0 |
-| R34 | Separate read-only risk review | task060_review, all19paths, no material unresolved finding, exact digest |
-| R35 | Exact final source/diff/scope review | root+Reviewer digest, diffcheck, protected hashes/112 prior histories |
-| R36 | Truthful docs and acceptance limits | narrow implementation docs; statuses/strong0/Owner acceptance gaps retained |
+|01|Correct repo/main/baseline/upstream, preserved work|Clean initial identity; inspected single BRAIN commit; safe ff; fresh0/0|
+|02|Exactly authorized Task061; skills and direct bootstrap|Canonical ACTION; policy/State/refs/skills read; lock above|
+|03|Synthetic-only source/privacy boundary|Generated paths/catalogs; unchanged source providers; independent source review|
+|04|Actual production Swift engine integration|Final17 receipt tests and comparison regressions|
+|05|Profile object actually used, all fields frozen|Concurrent registry edit; changed result still follows retained definition|
+|06|Missing/malformed profile fails closed|Strict bounded projection/JSON/types; negative and unrelated-row tests|
+|07|Typed versioned canonical encoding|Fixed schemas; decoder/type/unknown/invalid cases|
+|08|Completion/catalog identity and orientation|Receipt test plus reused ID/distinct token|
+|09|Exact key/warnings/version interpretation|All-kind fold/unknown policy and existing identity tests|
+|10|Full completion headers, recorded capture NULL|Header/NULL/BLOB/extreme roundtrip and frozen later mutations|
+|11|All current issues with exact optional link|Generated linked/NULL issues, own-side check, malformed/missing negatives|
+|12|Lossless NULL/BLOB/Int64/TEXT|Roundtrip tests including empty BLOB/string and min/max integers|
+|13|Explicit field/profile/issue/receipt bounds|65536 success, oversize/cardinality/total rejection without truncation|
+|14|Bounded traversal/index use|Production coverageSQL EQP; keyset/group/member implementation and review|
+|15|Actual result counts including ignored|All-six-kinds closure and existing detailed summary regressions|
+|16|Coverage/ownership/parent/collision closure|Missing result rejection, all-kind collision graph, indexed validation|
+|17|Bind frozen summary to terminal evidence|Immutable metadata digest, read revalidation and terminal invariants|
+|18|Atomic receipt plus successful terminal state|Single transaction/insert trigger/complete-required guard; peer visibility|
+|19|Invalid typed/scalar SQL receipts reject|Registered validator; all16 binding negatives and no bare completion|
+|20|No cancelled/failed/running success receipt|Matching/finalizing cancellation;8 race/recovery regressions|
+|21|Write/terminal/COMMIT failure rollback|Four trigger boundaries plus deferred-FK COMMIT injection|
+|22|Stale/missing/duplicate operations fail safely|Expected target validation, duplicate completion, unchanged receipt|
+|23|Stable completion identity across reopen/reused integer|Frozen reopen equality; stable generation/distinct completion token|
+|24|Legacy no backfill and exact-Save ineligibility|Populated v11 migration, unchanged rows and nil receipt|
+|25|Later mutable annotations cannot rewrite receipt|Profile/header/issue/volume mutation after completion, frozen equality|
+|26|Transient lifecycle and terminal cleanup unchanged|Production close/disposal, comparison modes and recovery stress|
+|27|Capture/Collection/Drive Set/identity/result facts preserved|Every populated legacy table equality, unrelated-row and regression checks|
+|28|Fresh v12 and supported upgrade parity|v4 both variants throughv11, exact objects/new tables/all columns|
+|29|Atomic DDL/seed/version and inventory repair|20 rollback boundaries; incomplete/altered DDL; successful real retry|
+|30|Reopen/idempotency/newer rejection|Version rows stable, damaged reopen nonmutation, future999 unchanged bytes|
+|31|FK and integrity guards|FK=1; foreign_key_check=[]; integrity_check=ok; immutability negatives|
+|32|Affected regression execution|584 final combined; explicit prohibited mount exclusion|
+|33|Clean arm64 Debug/Release|Both clean build receipts exit0|
+|34|Independent source/schema/race review|Separate19-path verdict; no unresolved material findings|
+|35|Exact diff/scope/protected paths and fresh postflight|Locked digest, legacy SQL equality, protected hashes, diffcheck, current task only|
 
 WORKER_EXECUTION_GUARD=FSD_WORKER_EXECUTION_V1
 WORKER_PREFLIGHT=PASS
-WORKER_REQUIREMENTS_TOTAL=36
-WORKER_REQUIREMENTS_EVIDENCED=36
+WORKER_REQUIREMENTS_TOTAL=35
+WORKER_REQUIREMENTS_EVIDENCED=35
 WORKER_REQUIREMENTS_NOT_APPLICABLE=0
 WORKER_REQUIREMENTS_UNPROVEN=0
 WORKER_POSTFLIGHT=PASS
 NEXT_TASK_STARTED=NO
 
-## Finalizer closure and ownership
+## Remaining limits, ownership and proposal
 
-This history records actual prepublication HEAD/time and cannot contain its own
-future publication SHA. At creation, canonical pre/post checks and normal Git
-publication are the remaining finalizer actions, not falsely claimed receipts.
-Run canonical checker against the captured base and exact23 authorized paths;
-commit/push normally, fetch actual remote and require clean main/upstream0/0.
-Resolve the actual publication using `git log -1 --format=%H -- <this handoff>`.
-Record final receipt and pre/post checker results in Desktop transport/terminal
-return; do not rewrite this history or add a bookkeeping commit for a self-SHA.
-CURRENT mirrors this complete source after its UPDATED_AT prefix. Desktop embeds
-exact current Operator and full CURRENT, preserving dated prior BRAIN fields.
+No Save Comparison button, saved-evidence tree copy, archive reader/export/delete/
+deduplication, automatic Save/retention or Task062 exists in this slice. No real
+hardware, live observer, mount watcher, Auto Capture, source media or Owner catalog
+was accessed. Approved strong hardware profiles remain0; hardware proof NONE.
+H01–H14, Owner catalog migration, actual crash/power-loss/disk durability, manual
+Capture/Compare/VoiceOver/install acceptance and the existing privacy advisories
+remain unproved. ADR-036/037/038 stay Proposed / Owner Direction Approved /
+Technical Proof Pending. FSD2 Full and Internal Acceptance are not claimed.
 
-Worker ledger uses captured baseline as TECHNICAL_SHA basis; publication resolves
-from the handoff Git history. Worker event commit=null is intentional before
-publication. BRAIN classification remains PENDING_BRAIN. Accepted Task059 pointer,
-all blockers, ADR-036/037/038 statuses and BRAIN-only control State are unchanged.
+Worker proposes BRAIN review this bounded receipt foundation and reconcile product
+acceptance using actual publication/receipts. Only BRAIN classifies accepted State
+and decides a later scoped ACTION. The single proposal is in HOT. Worker stops
+here after canonical publication and return; no next task starts.
 
-## Limits and return to BRAIN
+## Canonical publication closure boundary
 
-STRONG_PROFILES=0
-HARDWARE_PROOF=NONE
+This source is authored at the prepublication HEAD/time in HOT, so it cannot
+contain its own future publication SHA. Source content and guard were validated
+before first creation; there is no Worker-authored classification assignment.
+Finalizer will create its exact CURRENT mirror, append one pending Worker ledger
+row and return event, preserve prior Desktop/BRAIN bytes and embed/reuse exact
+canonical Operator bytes. The exact23-path allowlist is checked prepublication,
+then a normal commit/push/fetch is verified with clean0/0 and postpublication
+checker/transport parity. Those final actual receipts belong in Desktop and the
+terminal return, not retroactive edits to this immutable historical source.
+Resolve publication via `git log -1 --format=%H -- <this handoff path>`.
 
-This ships local, manually usable grouping, not physical-drive proof, H01–H14,
-real mount detection, reconnect, per-drive capture history or Auto Capture.
-No observation resolution/manual assertion is created by set membership. Drive
-Sets never silently reattribute a snapshot or migrate members after association
-correction. Save Comparison and full FSD2/internal acceptance remain incomplete.
-Owner visual/manual VoiceOver acceptance is NOT PERFORMED — DEFERRED BY OWNER;
-synthetic control execution/render inspection is not Owner acceptance. No public
-release/signing/notarization or migration/inspection of the Owner catalog.
+## Exact changed tracked scope
 
-Proposed State delta: BRAIN reviews this exact implementation/evidence and may
-adjudicate Task060; Worker grants no acceptance or next ACTION. No next task was
-started. Return only to BRAIN through `/Users/cenvu/Desktop/04_FSD_BRAIN.md`.
+- `FSD.xcodeproj/project.pbxproj`
+- `FSD/Catalog/CatalogDatabase.swift`
+- `FSD/Catalog/CatalogMigrations.swift`
+- `FSD/Diff/ComparisonCompletionReceipt.swift`
+- `FSD/Diff/ComparisonCompletionReceiptRepository.swift`
+- `FSD/Diff/ComparisonEngine.swift`
+- `FSD/Diff/ComparisonProfileRepository.swift`
+- `FSDTests/ComparisonCompletionReceiptTests.swift`
+- `FSDTests/CompletionReceiptMigrationTests.swift`
+- `FSDTests/DriveSetMigrationTests.swift`
+- `FSDTests/FinalScaleComparisonTests.swift`
+- `FSDTests/PhysicalDriveMigrationTests.swift`
+- `FSDTests/SchemaMigrationTests.swift`
+- `FSDTests/SchemaSafetyCorrectionTests.swift`
+- `FSDTests/SyntheticSourceResolutionRepositoryTests.swift`
+- `docs/ARCHITECTURE.md`
+- `docs/PRODUCT_STATE.md`
+- `docs/TEST_PLAN.md`
+- `docs/database/schema.sql`
+- `handoffs/FSD_FSD2_COMPARISON_COMPLETION_RECEIPT_FOUNDATION_061_D_20261019-094910.md`
+- `handoffs/CURRENT_HANDOFF.md`
+- `STATE/TASK_LEDGER.tsv`
+- `STATE/EVENTS.jsonl`

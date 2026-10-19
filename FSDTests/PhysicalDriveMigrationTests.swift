@@ -38,7 +38,7 @@ final class PhysicalDriveMigrationTests: XCTestCase {
     func testV9MigrationPreservesEveryLegacyRowAndInventsNoIdentity() throws {
         let url = try v9("legacy")
         try CatalogSchemaFixture.createDatabase(at: url,sql: Self.legacyFacts)
-        let legacyTables = CatalogMigrations.ExpectedState.tables.filter { !(CatalogMigrations.identityTableDefinitions + CatalogMigrations.driveSetTableDefinitions).map(\.name).contains($0) && $0 != "schema_migrations" }
+        let legacyTables = CatalogMigrations.ExpectedState.tables.filter { !(CatalogMigrations.identityTableDefinitions + CatalogMigrations.driveSetTableDefinitions + CatalogMigrations.receiptTableDefinitions).map(\.name).contains($0) && $0 != "schema_migrations" }
         var before: [String: [String]] = [:]
         for table in legacyTables { before[table] = try raw(url,"SELECT * FROM \(table) ORDER BY rowid") }
         let db = try CatalogDatabase(url: url)

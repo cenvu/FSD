@@ -444,8 +444,11 @@ final class FinalScaleComparisonTests: XCTestCase {
 
     func testOneMillionExplicitDisposalCompletesWithCleanCascade() throws {
         let fixture = try seedMillionResultDisposalFixture(comparisonID: 8_001, leftKind: .user, rightKind: .user)
+        // This intentionally repeated-reference stress graph is not a valid
+        // engine completion. Failed is terminal under the same cascade guards;
+        // successful receipted disposal is covered by Task061 production tests.
         try database.execute(
-            "UPDATE comparisons SET status = 'complete', matched_count = ?, completed_at = CURRENT_TIMESTAMP WHERE id = ?",
+            "UPDATE comparisons SET status = 'failed', matched_count = ?, completed_at = CURRENT_TIMESTAMP WHERE id = ?",
             bindings: [.integer(Self.oneMillionResultCount), .integer(8_001)]
         )
         let leftFingerprint = try EntrySnapshotProbe.contentFingerprint(database: database, snapshotID: fixture.left)

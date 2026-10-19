@@ -44,21 +44,21 @@ states must stay separated here:
   foundation (BRAIN-accepted with advisory); no hardware proof. Task059 adds a
   synthetic-input observation contract and fail-closed resolver/read seam
   (BRAIN-accepted with advisory), without live observation. Task060 adds manual
-  Drive Sets with a production v11 repository and Library workspace; Worker
-  implementation pending BRAIN review.
+  Drive Sets with a production v11 repository and Library workspace (BRAIN-accepted
+  with advisory). Task061 adds atomic comparison completion receipts in v12;
+  Worker implementation pending BRAIN review.
 - **Accepted feasibility (synthetic, not implementation):** Tasks054–056 are
   BRAIN-accepted `PASS_WITH_ADVISORY` for ADR-036 identity, ADR-037 Drive Sets and
   ADR-038 Save Comparison respectively. They are research and isolated synthetic
   SQLite/resolver prototypes only; they prove deterministic rule/relational
   behavior, not any product code, schema, hardware or migration.
 - **Future FSD2 Full work (not started):** observation-only mount status, validated
-  PhysicalDrive identity, manual-association UI, completion
-  receipts, Save Comparison and the remaining UX/gaps below.
+  PhysicalDrive identity, manual-association UI, Save Comparison and the remaining UX/gaps below.
 
 ADR-036–038 remain Proposed / Owner Direction Approved / Technical Proof Pending;
-the identity evidence threshold and strong-profile set and completion-receipt/durable
-comparison backing remain `TECHNICAL_PROOF_PENDING`. Task060 supplies synthetic
-production schema/migration and manual grouping evidence for BRAIN review; it
+the identity evidence threshold/strong-profile set and durable saved-comparison
+backing remain `TECHNICAL_PROOF_PENDING`. Task061 supplies synthetic production
+completion-receipt/migration evidence for BRAIN review; it
 does not promote ADR status or prove physical-device identity.
 See [DECISIONS.md](DECISIONS.md), [MVP_PLAN.md](MVP_PLAN.md) and
 [UX_UI_SPEC.md](UX_UI_SPEC.md). This status record authorizes no implementation.
@@ -66,12 +66,19 @@ See [DECISIONS.md](DECISIONS.md), [MVP_PLAN.md](MVP_PLAN.md) and
 ## Implemented capabilities
 
 - Native macOS 15+ arm64 SwiftUI app and XCTest target in `FSD.xcodeproj`.
-- SQLite catalog schema **v11**; explicit transactional v4→v5 (both known v4
-  variants), v5→v6, v6→v7, v7→v8, v8→v9 and additive v9→v10→v11 migrations. The v9 change appends nullable/no-default `provider_identifier`; legacy rows retain NULL without backfill. Fresh and migrated catalogs
+- SQLite catalog schema **v12**; explicit transactional v4→v5 (both known v4
+  variants), v5→v6, v6→v7, v7→v8, v8→v9 and additive v9→v10→v11→v12 migrations. The v9 change appends nullable/no-default `provider_identifier`; legacy rows retain NULL without backfill. Fresh and migrated catalogs
   converge. `schema.sql` creates fresh catalogs only; `CatalogMigrations` moves
   existing ones. Complete ExpectedState inventory detects damaged/substituted
   schemas; per-connection foreign-key enforcement, normalization completion
   guards and integrity checks protect catalog data.
+- Task061 immutable versioned comparison completion receipt: actual executed
+  profile, exact orientation/key/warning contracts, completion-time headers/issues
+  and terminal result closure commit atomically with success. Bounded typed
+  metadata encoding, new completion token, fail-closed SQL validator, rollback and
+  cancellation guards; legacy receiptless comparisons remain readable but
+  ineligible for exact Save. No historical backfill or transient retention change.
+  Save Comparison UI/durable archive remains absent. See [ARCHITECTURE.md §17](ARCHITECTURE.md#17-atomic-comparison-completion-receipts--task061).
 - Task058 local PhysicalDrive repository/model: opaque catalog-local UUIDs,
   explicit-local admission, duplicate labels, revision-protected retirement,
   immutable typed observations/evidence and append-only manual association,

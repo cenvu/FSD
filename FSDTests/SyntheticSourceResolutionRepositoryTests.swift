@@ -141,9 +141,16 @@ final class SyntheticSourceResolutionRepositoryTests: XCTestCase {
         try healthy()
     }
     func testSnapshotCollectionEntryAndTerminalComparisonFactsStayIdentical() throws {
-        for statement in Self.syntheticHistory.split(separator: ";") {
-            try db.execute(String(statement))
-        }
+        // This fixture represents legacy completion without a trustworthy
+        // receipt. Materialize as v11 before running the real v12 migration.
+        db.close()
+        try FileManager.default.removeItem(at:directory)
+        try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+        let url = directory.appendingPathComponent("generated.sqlite")
+        try CatalogSchemaFixture.createDatabase(at:url,sql:CatalogSchemaFixture.version11SQL()+"\n"+Self.syntheticHistory)
+        db = try CatalogDatabase(url:url)
+        identities = PhysicalDriveRepository(database:db)
+        resolver = SyntheticSourceResolutionRepository(database:db)
         let before = try rows()
         let e = try observe(); let a = try identities.createDrive(provenance: "synthetic A")
         let b = try identities.createDrive(provenance: "synthetic B")

@@ -32,7 +32,7 @@ final class DriveSetMigrationTests: XCTestCase {
     }
     private func legacy(_ url: URL) throws -> [String:[String]] {
         var result: [String:[String]] = [:]
-        for table in CatalogMigrations.ExpectedState.tables where table != "schema_migrations" && !CatalogMigrations.driveSetTableDefinitions.map(\.name).contains(table) {
+        for table in CatalogMigrations.ExpectedState.tables where table != "schema_migrations" && !CatalogMigrations.driveSetTableDefinitions.map(\.name).contains(table) && !CatalogMigrations.receiptTableDefinitions.map(\.name).contains(table) {
             result[table] = try raw(url,"SELECT * FROM \(table) ORDER BY rowid")
         }
         return result
@@ -42,7 +42,7 @@ final class DriveSetMigrationTests: XCTestCase {
         let url = try fixture("populated")
         let before = try legacy(url)
         let db = try CatalogDatabase(url: url); defer { db.close() }
-        XCTAssertEqual(try db.schemaVersion,11)
+        XCTAssertEqual(try db.schemaVersion,CatalogDatabase.currentSchemaVersion)
         XCTAssertEqual(try legacy(url),before)
         for table in CatalogMigrations.driveSetTableDefinitions { XCTAssertEqual(try db.scalar("SELECT COUNT(*) FROM \(table.name)")?.int64Value,0) }
         let repo = DriveSetRepository(database:db)
@@ -70,7 +70,7 @@ final class DriveSetMigrationTests: XCTestCase {
             let url = directory.appendingPathComponent("chain-\(i).sqlite")
             try CatalogSchemaFixture.createDatabase(at:url,sql:sql)
             let migrated = try CatalogDatabase(url:url); defer { migrated.close() }
-            XCTAssertEqual(try migrated.schemaVersion,11)
+            XCTAssertEqual(try migrated.schemaVersion,CatalogDatabase.currentSchemaVersion)
             for type in ["table","index","trigger"] {
                 let query = "SELECT name,sql FROM sqlite_master WHERE type=? AND name NOT LIKE 'sqlite_%' ORDER BY name"
                 let a = try fresh.query(query,bindings:[.text(type)]); let b = try migrated.query(query,bindings:[.text(type)])
@@ -107,7 +107,7 @@ final class DriveSetMigrationTests: XCTestCase {
             let migrated = try CatalogDatabase(url:url); migrated.close()
             let after = try raw(url,"SELECT * FROM schema_migrations ORDER BY version")
             let reopened = try CatalogDatabase(url:url,migrations:[SchemaMigration(version:11,statements:["CREATE TABLE invalid("])])
-            XCTAssertEqual(try reopened.schemaVersion,11); reopened.close()
+            XCTAssertEqual(try reopened.schemaVersion,CatalogDatabase.currentSchemaVersion); reopened.close()
             XCTAssertEqual(try raw(url,"SELECT * FROM schema_migrations ORDER BY version"),after)
             XCTAssertEqual(try legacy(url),before)
         }

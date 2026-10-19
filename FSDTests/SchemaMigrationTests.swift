@@ -83,9 +83,18 @@ enum CatalogSchemaFixture {
         return sql
     }
 
+    static func version11SQL() throws -> String {
+        var sql = try String(contentsOf: canonicalSchemaURL, encoding: .utf8)
+        guard let start = sql.range(of: "-- Task061 completion receipts BEGIN"),
+              let end = sql.range(of: "-- Task061 completion receipts END\n") else { throw NSError(domain:"CatalogSchemaFixture",code:61) }
+        sql.removeSubrange(start.lowerBound..<end.upperBound)
+        try remove(exactly:"VALUES (12, CURRENT_TIMESTAMP);",from:&sql,replacement:"VALUES (11, CURRENT_TIMESTAMP);")
+        return sql
+    }
+
     /// Reconstruct v10 exactly; Task060 has no identity/history backfill.
     static func version10SQL() throws -> String {
-        var sql = try String(contentsOf: canonicalSchemaURL, encoding: .utf8)
+        var sql = try version11SQL()
         guard let start = sql.range(of: "-- Task060 Drive Sets BEGIN"),
               let end = sql.range(of: "-- Task060 Drive Sets END\n") else {
             throw NSError(domain: "CatalogSchemaFixture", code: 60)
@@ -223,7 +232,7 @@ final class SchemaMigrationTests: XCTestCase {
         let database = try open(named: "fresh")
 
         XCTAssertEqual(try database.schemaVersion, CatalogDatabase.currentSchemaVersion)
-        XCTAssertEqual(CatalogDatabase.currentSchemaVersion, 11)
+        XCTAssertEqual(CatalogDatabase.currentSchemaVersion, 12)
         XCTAssertEqual(try database.scalar("PRAGMA integrity_check")?.stringValue, "ok")
         XCTAssertTrue(try database.query("PRAGMA foreign_key_check").isEmpty)
         XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM schema_migrations")?.int64Value, 1)
@@ -422,7 +431,7 @@ final class SchemaMigrationTests: XCTestCase {
         }
         XCTAssertEqual(try migrated.schemaVersion, CatalogDatabase.currentSchemaVersion)
         let versions = try migrated.query("SELECT version, applied_at FROM schema_migrations ORDER BY version")
-        XCTAssertEqual(versions.map { $0["version"]?.int64Value }, [8, 9, 10, 11])
+        XCTAssertEqual(versions.map { $0["version"]?.int64Value }, [8, 9, 10, 11, 12])
         let fresh = try open(named: "fresh-v9-order")
         let freshColumns = try fresh.query("PRAGMA table_info(entry_classifications)")
         let migratedColumns = try migrated.query("PRAGMA table_info(entry_classifications)")
@@ -468,7 +477,7 @@ final class SchemaMigrationTests: XCTestCase {
             FROM schema_migrations
             """
         ])
-        let database = try CatalogDatabase(url: url, migrations: [migration, CatalogMigrations.migrationToVersion10, CatalogMigrations.migrationToVersion11])
+        let database = try CatalogDatabase(url: url, migrations: [migration, CatalogMigrations.migrationToVersion10, CatalogMigrations.migrationToVersion11, CatalogMigrations.migrationToVersion12])
         XCTAssertEqual(try database.schemaVersion, CatalogDatabase.currentSchemaVersion)
         XCTAssertEqual(try database.scalar("SELECT prior_version FROM fixture_version_order")?.int64Value, 8)
         XCTAssertEqual(try database.scalar("SELECT column_exists FROM fixture_version_order")?.int64Value, 1)
@@ -524,9 +533,9 @@ final class SchemaMigrationTests: XCTestCase {
     func testVersionNineWithoutProviderIdentifierIsRejected() throws {
         let url = directory.appendingPathComponent("damaged-v9.sqlite3")
         let sql = try CatalogSchemaFixture.version8SQL().replacingOccurrences(
-            of: "VALUES (8, CURRENT_TIMESTAMP);", with: "VALUES (11, CURRENT_TIMESTAMP);"
+            of: "VALUES (8, CURRENT_TIMESTAMP);", with: "VALUES (12, CURRENT_TIMESTAMP);"
         )
-        try CatalogSchemaFixture.createDatabase(at: url, sql: sql + "\n" + CatalogMigrations.migrationToVersion10.statements.joined(separator: ";\n") + "\n" + CatalogMigrations.migrationToVersion11.statements.joined(separator: ";\n"))
+        try CatalogSchemaFixture.createDatabase(at: url, sql: sql + "\n" + CatalogMigrations.migrationToVersion10.statements.joined(separator: ";\n") + "\n" + CatalogMigrations.migrationToVersion11.statements.joined(separator: ";\n") + "\n" + CatalogMigrations.migrationToVersion12.statements.joined(separator: ";\n"))
         XCTAssertThrowsError(try CatalogDatabase(url: url)) { error in
             guard case let CatalogDatabaseError.schemaStateInvalid(detail) = error else {
                 return XCTFail("Unexpected error: \(error)")
@@ -673,12 +682,12 @@ final class SchemaMigrationTests: XCTestCase {
         let url = try makeVersion4(named: "reopen", withImmutabilityGuards: false)
         let migrated = try CatalogDatabase(url: url)
         let rowsAfterMigration = try migrated.query("SELECT version, applied_at FROM schema_migrations ORDER BY version")
-        XCTAssertEqual(rowsAfterMigration.map { $0["version"]?.int64Value }, [4, 5, 6, 7, 8, 9, 10, 11])
+        XCTAssertEqual(rowsAfterMigration.map { $0["version"]?.int64Value }, [4, 5, 6, 7, 8, 9, 10, 11, 12])
 
         let reopened = try CatalogDatabase(url: url)
         let rowsAfterReopen = try reopened.query("SELECT version, applied_at FROM schema_migrations ORDER BY version")
 
-        XCTAssertEqual(rowsAfterReopen.count, 8)
+        XCTAssertEqual(rowsAfterReopen.count, 9)
         XCTAssertEqual(
             rowsAfterMigration.map { $0["applied_at"]?.stringValue },
             rowsAfterReopen.map { $0["applied_at"]?.stringValue }

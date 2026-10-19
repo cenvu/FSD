@@ -22,7 +22,7 @@ public struct SchemaMigration: Sendable {
 public enum CatalogMigrations {
     /// The version a fresh `schema.sql` records and the version every supported
     /// catalog is brought to on open.
-    public static let currentVersion: Int64 = 11
+    public static let currentVersion: Int64 = 12
 
     /// The oldest version that can be migrated forward. Versions 1 through 3
     /// never existed as a materialized database, so they have no migration and
@@ -30,7 +30,7 @@ public enum CatalogMigrations {
     public static let oldestMigratableVersion: Int64 = 4
 
     public static let all: [SchemaMigration] = [
-        migrationToVersion5, migrationToVersion6, migrationToVersion7, migrationToVersion8, migrationToVersion9, migrationToVersion10, migrationToVersion11
+        migrationToVersion5, migrationToVersion6, migrationToVersion7, migrationToVersion8, migrationToVersion9, migrationToVersion10, migrationToVersion11, migrationToVersion12
     ]
 
     /// Version 4 to version 5.
@@ -338,19 +338,49 @@ public enum CatalogMigrations {
         ("trg_drive_set_memberships_no_update", "CREATE TRIGGER trg_drive_set_memberships_no_update\nBEFORE UPDATE ON drive_set_memberships\nBEGIN\n    SELECT RAISE(ABORT, 'Membership must be explicitly removed and added');\nEND;")
     ]
 
+    public static let migrationToVersion12 = SchemaMigration(version: 12, statements:
+        receiptTableDefinitions.map(\.sql) + receiptIndexDefinitions.map(\.sql) + receiptTriggerDefinitions.map(\.sql) + ["INSERT INTO comparison_receipt_catalog(singleton,generation) VALUES (1, lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6))));"])
+
+    public static let receiptTableDefinitions: [(name: String, sql: String)] = [
+        ("comparison_receipt_catalog", "CREATE TABLE comparison_receipt_catalog (\n    singleton INTEGER PRIMARY KEY CHECK (singleton = 1),\n    generation TEXT NOT NULL UNIQUE CHECK (length(generation) = 36)\n);"),
+        ("comparison_completion_receipts", "CREATE TABLE comparison_completion_receipts (\n    comparison_id INTEGER PRIMARY KEY REFERENCES comparisons(id) ON DELETE CASCADE,\n    catalog_generation TEXT NOT NULL REFERENCES comparison_receipt_catalog(generation) ON DELETE RESTRICT,\n    completion_token TEXT NOT NULL UNIQUE CHECK (length(completion_token) = 36),\n    receipt_version INTEGER NOT NULL CHECK (receipt_version = 1),\n    encoding TEXT NOT NULL CHECK (encoding = 'fsd-receipt-json-utf8-v1'),\n    completed_at TEXT NOT NULL,\n    left_snapshot_id INTEGER NOT NULL,\n    right_snapshot_id INTEGER NOT NULL,\n    profile_id INTEGER NOT NULL,\n    profile_revision INTEGER NOT NULL,\n    matched_count INTEGER NOT NULL CHECK (matched_count >= 0),\n    added_count INTEGER NOT NULL CHECK (added_count >= 0),\n    removed_count INTEGER NOT NULL CHECK (removed_count >= 0),\n    changed_count INTEGER NOT NULL CHECK (changed_count >= 0),\n    uncertain_count INTEGER NOT NULL CHECK (uncertain_count >= 0),\n    payload BLOB NOT NULL CHECK (typeof(payload) = 'blob' AND length(payload) BETWEEN 1 AND 8388608)\n);")
+    ]
+
+    public static let receiptIndexDefinitions: [(name: String, sql: String)] = [
+        ("idx_receipt_groups_order", "CREATE INDEX idx_receipt_groups_order ON comparison_collision_groups(comparison_id, id);"),
+        ("idx_receipt_results_left", "CREATE INDEX idx_receipt_results_left ON comparison_results(comparison_id, left_entry_id) WHERE left_entry_id IS NOT NULL;"),
+        ("idx_receipt_results_right", "CREATE INDEX idx_receipt_results_right ON comparison_results(comparison_id, right_entry_id) WHERE right_entry_id IS NOT NULL;"),
+        ("idx_receipt_member_entry", "CREATE INDEX idx_receipt_member_entry ON comparison_collision_members(entry_id, side, group_id);"),
+        ("idx_comparison_results_receipt", "CREATE INDEX idx_comparison_results_receipt ON comparison_results(comparison_id, id);"),
+        ("idx_collision_members_receipt", "CREATE INDEX idx_collision_members_receipt ON comparison_collision_members(group_id, id);")
+    ]
+
+    public static let receiptTriggerDefinitions: [(name: String, sql: String)] = [
+        ("trg_receipt_catalog_no_replace", "CREATE TRIGGER trg_receipt_catalog_no_replace BEFORE INSERT ON comparison_receipt_catalog\nWHEN EXISTS (SELECT 1 FROM comparison_receipt_catalog)\nBEGIN\n    SELECT RAISE(ABORT, 'Receipt catalog generation already exists');\nEND;"),
+        ("trg_receipt_catalog_no_update", "CREATE TRIGGER trg_receipt_catalog_no_update BEFORE UPDATE ON comparison_receipt_catalog\nBEGIN\n    SELECT RAISE(ABORT, 'Receipt catalog generation is immutable');\nEND;"),
+        ("trg_receipt_catalog_no_delete", "CREATE TRIGGER trg_receipt_catalog_no_delete BEFORE DELETE ON comparison_receipt_catalog\nBEGIN\n    SELECT RAISE(ABORT, 'Receipt catalog generation is immutable');\nEND;"),
+        ("trg_comparisons_insert_not_complete", "CREATE TRIGGER trg_comparisons_insert_not_complete BEFORE INSERT ON comparisons\nWHEN NEW.status = 'complete'\nBEGIN\n    SELECT RAISE(ABORT, 'Completion requires an atomic receipt');\nEND;"),
+        ("trg_comparisons_receipt_required", "CREATE TRIGGER trg_comparisons_receipt_required BEFORE UPDATE OF status ON comparisons\nWHEN NEW.status = 'complete' AND NOT EXISTS (\n    SELECT 1 FROM comparison_completion_receipts r WHERE r.comparison_id = NEW.id\n      AND r.completed_at IS NEW.completed_at\n      AND r.left_snapshot_id IS NEW.left_snapshot_id AND r.right_snapshot_id IS NEW.right_snapshot_id\n      AND r.profile_id IS NEW.profile_id AND r.profile_revision IS NEW.profile_version\n      AND r.matched_count = NEW.matched_count AND r.added_count = NEW.added_count\n      AND r.removed_count = NEW.removed_count AND r.changed_count = NEW.changed_count\n      AND r.uncertain_count = NEW.uncertain_count\n)\nBEGIN\n    SELECT RAISE(ABORT, 'Missing or inconsistent completion receipt');\nEND;"),
+        ("trg_receipts_insert_guard", "CREATE TRIGGER trg_receipts_insert_guard BEFORE INSERT ON comparison_completion_receipts\nBEGIN\n    SELECT CASE WHEN fsd_completion_receipt_valid(NEW.payload,NEW.comparison_id,NEW.catalog_generation,NEW.completion_token,\n      NEW.receipt_version,NEW.encoding,NEW.completed_at,NEW.left_snapshot_id,NEW.right_snapshot_id,NEW.profile_id,NEW.profile_revision,\n      NEW.matched_count,NEW.added_count,NEW.removed_count,NEW.changed_count,NEW.uncertain_count) != 1\n      THEN RAISE(ABORT, 'Invalid typed completion receipt') END;\n    SELECT CASE WHEN NOT EXISTS (\n        SELECT 1 FROM comparisons c WHERE c.id = NEW.comparison_id AND c.status = 'running'\n          AND c.left_snapshot_id IS NEW.left_snapshot_id AND c.right_snapshot_id IS NEW.right_snapshot_id\n          AND c.profile_id IS NEW.profile_id AND c.profile_version IS NEW.profile_revision\n    ) THEN RAISE(ABORT, 'Receipt requires its running comparison') END;\n    SELECT CASE WHEN NEW.matched_count != (SELECT COUNT(*) FROM comparison_results WHERE comparison_id=NEW.comparison_id AND result_type='matched')\n      OR NEW.added_count != (SELECT COUNT(*) FROM comparison_results WHERE comparison_id=NEW.comparison_id AND result_type='added')\n      OR NEW.removed_count != (SELECT COUNT(*) FROM comparison_results WHERE comparison_id=NEW.comparison_id AND result_type='removed')\n      OR NEW.changed_count != (SELECT COUNT(*) FROM comparison_results WHERE comparison_id=NEW.comparison_id AND result_type='changed')\n      OR NEW.uncertain_count != (SELECT COUNT(*) FROM comparison_results WHERE comparison_id=NEW.comparison_id AND result_type='uncertain')\n      THEN RAISE(ABORT, 'Receipt result counts differ') END;\nEND;"),
+        ("trg_receipts_complete_comparison", "CREATE TRIGGER trg_receipts_complete_comparison AFTER INSERT ON comparison_completion_receipts\nBEGIN\n    UPDATE comparisons SET status='complete', completed_at=NEW.completed_at,\n      matched_count=NEW.matched_count, added_count=NEW.added_count, removed_count=NEW.removed_count,\n      changed_count=NEW.changed_count, uncertain_count=NEW.uncertain_count\n    WHERE id=NEW.comparison_id AND status='running';\nEND;"),
+        ("trg_receipts_no_update", "CREATE TRIGGER trg_receipts_no_update BEFORE UPDATE ON comparison_completion_receipts\nBEGIN\n    SELECT RAISE(ABORT, 'Completion receipts are immutable');\nEND;"),
+        ("trg_receipts_no_delete", "CREATE TRIGGER trg_receipts_no_delete BEFORE DELETE ON comparison_completion_receipts\nWHEN EXISTS (SELECT 1 FROM comparisons WHERE id=OLD.comparison_id)\nBEGIN\n    SELECT RAISE(ABORT, 'Dispose the whole comparison');\nEND;"),
+        ("trg_receipted_comparison_identity", "CREATE TRIGGER trg_receipted_comparison_identity BEFORE UPDATE ON comparisons\nWHEN OLD.status = 'complete' AND EXISTS (SELECT 1 FROM comparison_completion_receipts WHERE comparison_id=OLD.id)\n AND (NEW.id IS NOT OLD.id OR NEW.profile_id IS NOT OLD.profile_id\n      OR NEW.profile_version IS NOT OLD.profile_version OR NEW.started_at IS NOT OLD.started_at\n      OR NEW.completed_at IS NOT OLD.completed_at OR NEW.created_at IS NOT OLD.created_at)\nBEGIN\n    SELECT RAISE(ABORT, 'Receipted comparison identity is immutable');\nEND;")
+    ]
+
     public enum ExpectedState {
         public static let tables = [
             "schema_migrations", "volumes", "collections", "source_collection_defaults",
             "snapshots", "entries", "scan_issues", "comparison_profiles", "comparisons",
             "comparison_collision_groups", "comparison_collision_members",
             "comparison_results", "entry_classifications"
-        ] + identityTableDefinitions.map(\.name) + driveSetTableDefinitions.map(\.name)
+        ] + identityTableDefinitions.map(\.name) + driveSetTableDefinitions.map(\.name) + receiptTableDefinitions.map(\.name)
 
         /// Every canonical trigger, name and DDL. The DDL text is the
         /// `CREATE TRIGGER ... END;` statement as written in
         /// `docs/database/schema.sql`; `normalizedObjectSQL` removes the
         /// textual differences SQLite itself applies when storing it.
-        public static let triggerDefinitions: [(name: String, sql: String)] = identityTriggerDefinitions + driveSetTriggerDefinitions + [
+        public static let triggerDefinitions: [(name: String, sql: String)] = identityTriggerDefinitions + driveSetTriggerDefinitions + receiptTriggerDefinitions + [
             ("trg_snapshots_complete_root_check",
              "CREATE TRIGGER IF NOT EXISTS trg_snapshots_complete_root_check\nBEFORE UPDATE OF status ON snapshots\nWHEN NEW.status IN ('complete', 'complete_with_warnings')\nBEGIN\n    SELECT CASE\n        WHEN (SELECT COUNT(*) FROM entries WHERE snapshot_id = NEW.id AND parent_id IS NULL AND relative_path = '') != 1 THEN\n            RAISE(ABORT, 'Snapshot must have exactly one root entry to complete')\n        WHEN NEW.normalization_version != 'fsd-normalizer-v1_app-1.0_os-1' THEN\n            RAISE(ABORT, 'Snapshot normalization_version is not supported for completion')\n    END;\nEND;"),
             ("trg_snapshots_insert_scanning_only",
@@ -415,7 +445,7 @@ public enum CatalogMigrations {
 
         /// Every canonical index, name and DDL, with the same definition
         /// guarantee as the trigger list.
-        public static let indexDefinitions: [(name: String, sql: String)] = identityIndexDefinitions + driveSetIndexDefinitions + [
+        public static let indexDefinitions: [(name: String, sql: String)] = identityIndexDefinitions + driveSetIndexDefinitions + receiptIndexDefinitions + [
             ("idx_volumes_persistent_uuid",
              "CREATE INDEX IF NOT EXISTS idx_volumes_persistent_uuid\nON volumes(persistent_uuid)\nWHERE persistent_uuid IS NOT NULL;"),
             ("idx_volumes_fallback_fingerprint",

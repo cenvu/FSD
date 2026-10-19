@@ -1258,3 +1258,36 @@ connection state, mount behavior, H01–H14, Owner UI/VoiceOver acceptance, Auto
 Capture or full FSD2 completion. The mount-image regression is excluded because
 Task060 forbids mount/device operations. Actual command receipts belong to the
 single Task060 handoff; test/source presence alone is not a PASS receipt.
+
+## 17. Task061 production completion receipt tests — synthetic only
+
+`ComparisonCompletionReceiptTests` exercises the actual Swift engine, repository,
+registered SQLite validator and v12 guards using generated temporary catalogs.
+Coverage includes actual executed profile despite registry mutation; orientation,
+all result kinds/collisions, selected key/warnings; frozen headers/issues with
+NULL, empty and nonempty BLOB, Int64 extremes and optional entry links; mutable
+post-completion annotation/issue changes; deterministic encoding/closure; malformed,
+missing, oversized and contradictory evidence; profile decode failures; stale,
+missing and duplicate completion; reused numeric IDs with new completion tokens;
+four receipt/terminal trigger failures and a deferred-FK COMMIT failure; peer
+committed visibility; unchanged protected rows; cancellation and transient cleanup.
+Canonical typed SQL validation rejects malformed payload and each mismatched
+scalar argument. No test opens Owner media or the normal Owner catalog.
+
+`CompletionReceiptMigrationTests` uses populated v11 history with all legacy
+capture/entry/Collection/comparison/collision/classification/identity/Drive Set
+relations, compares every legacy row, and proves zero receipt backfill/exact-Save
+ineligibility. Both v4 variants and v5–v11 converge with fresh v12 object/column
+parity. Each new DDL/seed boundary and version write is failure-injected with
+schema/version/data rollback, production retry and idempotent reopen. Missing or
+altered inventory, damaged reopen and unsupported newer catalogs fail closed.
+SQLite FK enforcement, foreign_key_check and integrity_check are separate checks.
+
+Required regressions include existing comparison semantics/identity/persistence,
+GUI source boundary, cancel/workspace/recovery race stress, transient lifecycle,
+identity/resolver, Drive Sets, Snapshot Collections, catalog and migration suites.
+The real mount-image nested-boundary case is explicitly excluded. Clean arm64
+Debug/Release builds and separate read-only source/migration/cancellation review
+are recorded in the Task061 handoff with exact executed counts and receipts.
+These are synthetic production-stack facts, not real hardware, crash/power-loss,
+Owner catalog migration, explicit Save or full FSD2 acceptance evidence.
