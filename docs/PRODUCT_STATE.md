@@ -303,3 +303,20 @@ Task063 evidence is generated local catalogs and FSD-owned-window automation onl
 Real VoiceOver operation, Owner visual/manual acceptance, physical storage failure,
 hardware/source identity acceptance and Owner catalog migration remain pending.
 ADR036/037/038 proposal statuses and existing privacy advisories are unchanged.
+
+## Task064 — original comparison ancestor reveal (Worker evidence)
+
+Completed original comparisons have accessible summary category actions that
+filter and select the first actual stored result, bounded ID-based paging/scroll,
+and validated stored ancestor breadcrumbs with ancestor/return navigation.
+Missing recorded ancestry remains explicit. Current engine results have NULL
+parent references; nested paths do not manufacture a hierarchy. The flat result
+browser and Before/After inspector remain available for all stored categories.
+
+Original catalog reads and Close disposal run off MainActor, with generation,
+Save/hidden-reader pause and close guards. The v13 saved evidence, explicit Save,
+operation/tombstone semantics and offline library remain separate and unchanged.
+Full synchronized dual hierarchies and saved-offline ancestor projection remain
+open. Evidence is generated local catalogs/FSD-owned windows; manual VoiceOver,
+Owner visual approval and all previous hardware/privacy/manual acceptance limits
+remain pending. Task064 acceptance is BRAIN-owned.

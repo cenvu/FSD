@@ -406,6 +406,23 @@ Target:
 - Before/After metadata;
 - color never only signal.
 
+Task064 original-comparison slice: summary counts are keyboard-focusable buttons
+with a checkmark and Selected accessibility value. Category action applies the
+exact existing filter and selects its first real stored `(result_path,id)` row;
+empty results clear stale selection. All summary counts preserve their existing
+ignored-entry semantics. Bounded flat pages remain explicit.
+
+A selected result shows validated stored ancestor context. Existing parent IDs
+permit ancestor selection and return to the exact target; the page is located
+before scrolling/selecting by stable result ID. Missing NULL ancestry says
+Ancestor not recorded; dangling references are separately labelled incomplete.
+The engine currently writes NULL parents, so nested path text alone creates no
+breadcrumb nodes. Invalid evidence or chains above128 stored results fail closed.
+LEFT remains Before/Reference, RIGHT After/Changed, including explicit missing
+sides and Content Not Verified. Full synchronized dual hierarchy and saved-offline
+ancestor navigation remain outside this implementation. Manual VoiceOver and
+Owner visual acceptance remain pending.
+
 ## 14. COMPARISON PERSISTENCE
 
 CURRENT IMPLEMENTATION:

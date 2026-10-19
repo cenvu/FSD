@@ -2,306 +2,207 @@ import AppKit
 import SwiftUI
 import Combine
 
-/// Bounded, view-ready browsing of one stored comparison's results.
-///
-/// Contract (Milestone 4 GUI correction):
-///
-/// * The repository is the only data boundary — no raw SQL, no schema
-///   knowledge, no `CatalogDatabase` querying in the UI layer. Metadata and
-///   field differences come from `ComparisonResultRepository.entryMetadata`
-///   and `fieldDifferences`.
-/// * Paging is bounded: the model retains exactly one page of at most
-///   `pageSize` rows. Advancing to the next or previous page replaces the
-///   current page; the retained row count can never grow with the result
-///   count, so a 100,000-result comparison never becomes 100,000 rows in UI
-///   state.
-/// * Navigation is deterministic and cross-page: `navigate` follows the
-///   repository's `(result_path, id)` anchor API, and when the adjacent row
-///   lies outside the loaded page the model materializes the bounded page
-///   containing it and selects it. Boundary availability is repository truth,
-///   never an artifact of the current page.
-/// * Stale asynchronous responses are ignored via `searchGeneration`; a
-///   filter change resets the page to offset zero.
+/// One bounded original-result page. Every catalog read (including details,
+/// position and ancestors) runs off the main actor. A request generation and
+/// cancellation token cover the entire page/selection/context publication.
 @MainActor
 final class ComparisonBrowserModel: ObservableObject {
     let record: ComparisonRecord
-
-    /// Fixed, configurable page size, clamped to the repository maximum.
     let pageSize: Int
-
     @Published private(set) var resultCounts: [ComparisonResultType: Int64] = [:]
-
-    // Filter & Paging State
     @Published var activeFilter: ComparisonResultFilter = .all {
-        didSet { loadInitialPage() }
+        didSet { if !changingFilter { loadInitialPage() } }
     }
     @Published private(set) var currentPage: ComparisonResultPage?
-    @Published private(set) var activePageOffset: Int = 0
+    @Published private(set) var activePageOffset = 0
     @Published private(set) var error: String?
     @Published private(set) var isLoading = false
-
-    // Selection & Metadata Detail State
     @Published var selectedRowID: Int64? {
-        didSet { fetchDetailsForSelection() }
+        didSet { if !publishing { loadSelection() } }
     }
     @Published private(set) var selectedRow: ComparisonResultRow?
     @Published private(set) var selectedLeftMetadata: SideMetadata?
     @Published private(set) var selectedRightMetadata: SideMetadata?
     @Published private(set) var selectedFieldDifferences: [FieldDifference] = []
-
-    // Navigation availability from repository truth
+    @Published private(set) var ancestorContext: ComparisonAncestorContext?
+    @Published private(set) var ancestorError: String?
+    @Published private(set) var returnTarget: ComparisonResultRow?
     @Published private(set) var canGoPrevious = false
     @Published private(set) var canGoNext = false
-
-    private let database: CatalogDatabase
+    /// Changes even when a category reselects the same ID, so scroll can reveal it.
+    @Published private(set) var revealGeneration: UInt64 = 0
     private let resultRepository: ComparisonResultRepository
     private var searchGeneration: UInt64 = 0
+    private var requestToken: ComparisonCancellationToken?
     private var isPausedForSave = false
+    private var isClosed = false
+    private var publishing = false
+    private var changingFilter = false
 
     init(database: CatalogDatabase, record: ComparisonRecord, pageSize: Int = 500) {
-        self.database = database
         self.record = record
-        self.pageSize = min(max(1, pageSize), ComparisonResultRepository.maximumPageSize)
-        self.resultRepository = ComparisonResultRepository(database: database)
+        self.pageSize = min(max(1,pageSize),ComparisonResultRepository.maximumPageSize)
+        resultRepository = ComparisonResultRepository(database:database)
     }
 
-    /// Save owns the connection for a bounded but potentially long transaction.
-    /// Invalidate pending page callbacks before it starts, so they cannot issue
-    /// synchronous detail/navigation queries on the main actor while it runs.
     func setSaveInProgress(_ active: Bool) {
-        guard active != isPausedForSave else { return }
+        guard !isClosed, active != isPausedForSave else { return }
         isPausedForSave = active
-        if active {
-            searchGeneration += 1
-            isLoading = false
-        } else {
-            loadPage(at:activePageOffset)
-        }
+        if active { invalidate() }
+        else { request(.page(activePageOffset,selectedRowID,false)) }
     }
 
-    func open() {
-        guard !isPausedForSave else { return }
-        do {
-            resultCounts = try resultRepository.resultCounts(comparisonID: record.id)
-            loadInitialPage()
-        } catch {
-            self.error = ComparisonUIErrorDescription.message(for: error)
-        }
+    /// A detached browser can never publish again, even if a read was already
+    /// waiting behind Save or disposal when its workspace closed/switched.
+    func close() { isClosed = true; invalidate(); clearSelection(); currentPage = nil; returnTarget = nil }
+    private func invalidate() {
+        searchGeneration += 1; requestToken?.cancel(); requestToken = nil
+        isLoading = false; canGoNext = false; canGoPrevious = false
     }
-
-    // MARK: - Bounded paging
-
-    /// First page at offset zero; also the filter-change reset path.
+    func open() { loadInitialPage() }
     func loadInitialPage() {
-        loadPage(at: 0)
+        returnTarget = nil; currentPage = nil; activePageOffset = 0; clearSelection()
+        request(.page(0,nil,false))
     }
-
-    /// Advances to the page after the current one. The page replaces the
-    /// current page — rows are never accumulated.
+    /// Exact summary→backend filter mapping is supplied by the button itself.
+    /// Counts preserve the existing summary semantics (All excludes ignored).
+    func selectCategory(_ filter: ComparisonResultFilter) {
+        guard !isClosed, !isPausedForSave else { return }
+        changingFilter = true; activeFilter = filter; changingFilter = false
+        currentPage = nil; activePageOffset = 0; returnTarget = nil; clearSelection()
+        request(.page(0,nil,true))
+    }
     func showNextPage() {
-        guard let current = currentPage, current.isTruncated, !isLoading else { return }
-        loadPage(at: current.offset + current.limit)
+        guard canShowNextPage, let page = currentPage else { return }
+        request(.page(page.offset+page.limit,nil,false))
     }
-
-    /// Moves back one full page. The page replaces the current page.
     func showPreviousPage() {
-        guard let current = currentPage, current.offset > 0, !isLoading else { return }
-        loadPage(at: max(0, current.offset - current.limit))
+        guard canShowPreviousPage, let page = currentPage else { return }
+        request(.page(max(0,page.offset-page.limit),nil,false))
     }
+    var canShowNextPage: Bool { !isClosed && !isPausedForSave && !isLoading && currentPage?.isTruncated == true }
+    var canShowPreviousPage: Bool { !isClosed && !isPausedForSave && !isLoading && (currentPage?.offset ?? 0)>0 }
 
-    var canShowNextPage: Bool { currentPage?.isTruncated == true && !isLoading }
-    var canShowPreviousPage: Bool { (currentPage?.offset ?? 0) > 0 && !isLoading }
-
-    /// Loads one deterministic page at `offset`, replacing the current page.
-    /// A response is applied only when no newer request superseded it.
-    private func loadPage(at offset: Int) {
-        guard !isPausedForSave else { return }
-        searchGeneration += 1
-        let generation = searchGeneration
-        let filter = activeFilter
-        let comparisonID = record.id
-        let limit = pageSize
-        let repository = resultRepository
-        isLoading = true
-        error = nil
-
-        DispatchQueue.global(qos: .userInitiated).async {
-            do {
-                let page = try repository.results(
-                    comparisonID: comparisonID,
-                    filter: filter,
-                    offset: offset,
-                    limit: limit
-                )
-                DispatchQueue.main.async {
-                    if generation == self.searchGeneration {
-                        self.currentPage = page
-                        self.activePageOffset = page.offset
-                        self.isLoading = false
-                        // Reset selection when it is not part of the new page.
-                        if let selectedRowID = self.selectedRowID {
-                            if !page.rows.contains(where: { $0.id == selectedRowID }) {
-                                self.selectedRowID = nil
-                            }
-                        }
-                        self.fetchDetailsForSelection()
-                        self.refreshNavigationAvailability()
-                    }
-                }
-            } catch {
-                DispatchQueue.main.async {
-                    if generation == self.searchGeneration {
-                        self.error = ComparisonUIErrorDescription.message(for: error)
-                        self.isLoading = false
-                    }
-                }
-            }
-        }
-    }
-
-    // MARK: - Navigation
-
-    /// Deterministic next/previous over the active filter. When the adjacent
-    /// row lies outside the loaded page, the bounded page containing it is
-    /// materialized and the row is selected within it.
     func navigate(direction: ComparisonResultRepository.ComparisonDirection) {
-        guard !isPausedForSave else { return }
-        let anchor = selectedRow.map { ComparisonResultAnchor(resultPath: $0.resultPath, id: $0.id) }
-        let filter = activeFilter
-        let comparisonID = record.id
-        let repository = resultRepository
-        do {
-            let target = try repository.navigate(
-                comparisonID: comparisonID,
-                filter: filter,
-                from: anchor,
-                direction: direction,
-                limit: 1
-            ).first
-            guard let target else {
-                refreshNavigationAvailability()
-                return
-            }
-            if currentPage?.rows.contains(where: { $0.id == target.id }) == true {
-                selectedRowID = target.id
-                refreshNavigationAvailability()
-            } else {
-                materializePage(containing: target, direction: direction)
-            }
-        } catch {
-            self.error = ComparisonUIErrorDescription.message(for: error)
-        }
+        guard !isPausedForSave, !isClosed else { return }
+        returnTarget = nil
+        request(.navigate(selectedRow,direction))
+    }
+    func revealAncestor(_ row: ComparisonResultRow) {
+        guard !isPausedForSave, !isClosed,
+              let context = ancestorContext, context.ancestors.contains(row) else { return }
+        returnTarget = returnTarget ?? context.target
+        reveal(row)
+    }
+    func returnToTarget() {
+        guard let row = returnTarget, !isPausedForSave, !isClosed else { return }
+        returnTarget = nil; reveal(row)
+    }
+    private func reveal(_ row: ComparisonResultRow) {
+        // An ancestor may have a different outcome; showing All is explicit,
+        // and position still requires the exact path+ID in this comparison.
+        changingFilter = true; activeFilter = .all; changingFilter = false
+        request(.locate(row))
+    }
+    func refreshNavigationAvailability() {
+        guard !isLoading else { return }
+        request(.page(activePageOffset,selectedRowID,false))
+    }
+    private func loadSelection() {
+        guard !isPausedForSave, !isClosed else { return }
+        returnTarget = nil
+        let id = selectedRowID
+        clearSelection()
+        request(.page(activePageOffset,id,false))
+    }
+    private func clearSelection() {
+        publishing = true; selectedRowID = nil; publishing = false
+        selectedRow = nil; selectedLeftMetadata = nil; selectedRightMetadata = nil
+        selectedFieldDifferences = []; ancestorContext = nil; ancestorError = nil
     }
 
-    /// Loads the bounded page containing `target`, then selects it.
-    private func materializePage(containing target: ComparisonResultRow, direction: ComparisonResultRepository.ComparisonDirection) {
-        guard !isPausedForSave else { return }
-        let anchor = ComparisonResultAnchor(resultPath: target.resultPath, id: target.id)
-        let comparisonID = record.id
-        let filter = activeFilter
-        let limit = pageSize
-        let repository = resultRepository
-        do {
-            guard let position = try repository.position(of: anchor, comparisonID: comparisonID, filter: filter) else {
-                // The row left the filtered set (should not happen under a
-                // stable filter); select it without a page so the UI shows
-                // the empty state rather than a stale row.
-                selectedRowID = nil
-                refreshNavigationAvailability()
-                return
+    private enum Request: Sendable {
+        case page(Int,Int64?,Bool)
+        case navigate(ComparisonResultRow?,ComparisonResultRepository.ComparisonDirection)
+        case locate(ComparisonResultRow)
+    }
+    private struct Response: Sendable {
+        let page: ComparisonResultPage
+        let counts: [ComparisonResultType:Int64]
+        let selected: ComparisonResultRow?
+        let left: SideMetadata?
+        let right: SideMetadata?
+        let differences: [FieldDifference]
+        let context: ComparisonAncestorContext?
+        let ancestorError: String?
+        let next: Bool
+        let previous: Bool
+    }
+    private func request(_ action: Request) {
+        guard !isPausedForSave, !isClosed else { return }
+        invalidate()
+        let generation = searchGeneration, token = ComparisonCancellationToken()
+        requestToken = token; isLoading = true; error = nil
+        let repo = resultRepository, record = record, filter = activeFilter, limit = pageSize
+        let oldOffset = activePageOffset
+        DispatchQueue.global(qos:.userInitiated).async { [weak self] in
+            let result = Result { () -> Response in
+                func check() throws { if token.isCancelled { throw ComparisonError.cancelled } }
+                try check()
+                var offset = oldOffset, targetID: Int64?, first = false
+                var target: ComparisonResultRow?
+                switch action {
+                case .page(let requested,let selection,let selectFirst): offset = requested; targetID = selection; first = selectFirst
+                case .navigate(let row,let direction):
+                    target = try repo.navigate(comparisonID:record.id,filter:filter,from:row.map { .init(resultPath:$0.resultPath,id:$0.id) },direction:direction,limit:1).first ?? row
+                case .locate(let row): target = row
+                }
+                try check()
+                if let target {
+                    guard target.comparisonID == record.id,
+                          let position = try repo.position(of:.init(resultPath:target.resultPath,id:target.id),comparisonID:record.id,filter:filter) else { throw ComparisonAncestorError.unavailable }
+                    offset = (position/limit)*limit; targetID = target.id
+                }
+                let page = try repo.results(comparisonID:record.id,filter:filter,offset:offset,limit:limit)
+                try check()
+                let row = first ? page.rows.first : page.rows.first { $0.id == targetID }
+                var context: ComparisonAncestorContext?, contextError: String?
+                if let row {
+                    do {
+                        context = try repo.ancestorContext(resultID:row.id,comparisonID:record.id)
+                        guard context?.target == row else { throw ComparisonAncestorError.invalidEvidence }
+                    } catch let error as ComparisonAncestorError { context = nil; contextError = error.errorDescription }
+                }
+                try check()
+                let left = try row.flatMap { try repo.entryMetadata(id:$0.leftEntryID,snapshotID:record.left.snapshotID) }
+                let right = try row.flatMap { try repo.entryMetadata(id:$0.rightEntryID,snapshotID:record.right.snapshotID) }
+                let differences = try row.map { try repo.fieldDifferences(for:$0,comparisonID:record.id) } ?? []
+                try check()
+                let anchor = row.map { ComparisonResultAnchor(resultPath:$0.resultPath,id:$0.id) }
+                let next = try !repo.navigate(comparisonID:record.id,filter:filter,from:anchor,direction:.next,limit:1).isEmpty
+                let previous = try anchor.map { try !repo.navigate(comparisonID:record.id,filter:filter,from:$0,direction:.previous,limit:1).isEmpty } ?? false
+                let counts = try repo.resultCounts(comparisonID:record.id)
+                try check()
+                return Response(page:page,counts:counts,selected:row,left:left,right:right,differences:differences,context:context,ancestorError:contextError,next:next,previous:previous)
             }
-            let pageOffset = (position / pageSize) * pageSize
-            searchGeneration += 1
-            let generation = searchGeneration
-            isLoading = true
-            error = nil
-            DispatchQueue.global(qos: .userInitiated).async {
-                do {
-                    let page = try repository.results(
-                        comparisonID: comparisonID,
-                        filter: filter,
-                        offset: pageOffset,
-                        limit: limit
-                    )
-                    DispatchQueue.main.async {
-                        if generation == self.searchGeneration {
-                            self.currentPage = page
-                            self.activePageOffset = page.offset
-                            self.isLoading = false
-                            self.selectedRowID = target.id
-                            self.fetchDetailsForSelection()
-                            self.refreshNavigationAvailability()
-                        }
-                    }
-                } catch {
-                    DispatchQueue.main.async {
-                        if generation == self.searchGeneration {
-                            self.error = ComparisonUIErrorDescription.message(for: error)
-                            self.isLoading = false
-                        }
-                    }
+            DispatchQueue.main.async {
+                guard let self, !self.isClosed, !self.isPausedForSave, !token.isCancelled,
+                      generation == self.searchGeneration else { return }
+                self.isLoading = false
+                switch result {
+                case .success(let value):
+                    self.currentPage = value.page; self.activePageOffset = value.page.offset
+                    self.resultCounts = value.counts
+                    self.publishing = true; self.selectedRowID = value.selected?.id; self.publishing = false
+                    self.selectedRow = value.selected; self.selectedLeftMetadata = value.left; self.selectedRightMetadata = value.right
+                    self.selectedFieldDifferences = value.differences; self.ancestorContext = value.context; self.ancestorError = value.ancestorError
+                    self.canGoNext = value.next; self.canGoPrevious = value.previous
+                    if value.selected != nil { self.revealGeneration += 1 }
+                case .failure(let error):
+                    self.clearSelection(); self.currentPage = nil
+                    self.error = (error as? ComparisonAncestorError)?.errorDescription ?? ComparisonUIErrorDescription.message(for:error)
                 }
             }
-        } catch {
-            self.error = ComparisonUIErrorDescription.message(for: error)
         }
-    }
-
-    /// Boundary truth from the repository: with no selection, "next" is
-    /// available exactly when the filtered set has a first row; with a
-    /// selection, each direction is available exactly when the repository
-    /// returns a row beyond it. Never derived from page emptiness.
-    func refreshNavigationAvailability() {
-        guard !isPausedForSave else { return }
-        let anchor = selectedRow.map { ComparisonResultAnchor(resultPath: $0.resultPath, id: $0.id) }
-        let filter = activeFilter
-        let comparisonID = record.id
-        let repository = resultRepository
-        do {
-            let hasNext = try !repository.navigate(
-                comparisonID: comparisonID, filter: filter, from: anchor, direction: .next, limit: 1
-            ).isEmpty
-            var hasPrevious = false
-            if anchor != nil {
-                hasPrevious = try !repository.navigate(
-                    comparisonID: comparisonID, filter: filter, from: anchor, direction: .previous, limit: 1
-                ).isEmpty
-            }
-            canGoNext = hasNext
-            canGoPrevious = hasPrevious
-        } catch {
-            canGoNext = false
-            canGoPrevious = false
-        }
-    }
-
-    // MARK: - Detail materialization
-
-    /// Loads the selected row's two-side metadata and field-level differences
-    /// through the approved repository APIs only.
-    private func fetchDetailsForSelection() {
-        guard !isPausedForSave else { return }
-        guard let rowID = selectedRowID, let row = currentPage?.rows.first(where: { $0.id == rowID }) else {
-            selectedRow = nil
-            selectedLeftMetadata = nil
-            selectedRightMetadata = nil
-            selectedFieldDifferences = []
-            refreshNavigationAvailability()
-            return
-        }
-        selectedRow = row
-        do {
-            selectedLeftMetadata = try resultRepository.entryMetadata(
-                id: row.leftEntryID, snapshotID: record.left.snapshotID
-            )
-            selectedRightMetadata = try resultRepository.entryMetadata(
-                id: row.rightEntryID, snapshotID: record.right.snapshotID
-            )
-            selectedFieldDifferences = try resultRepository.fieldDifferences(for: row, comparisonID: record.id)
-            error = nil
-        } catch {
-            self.error = ComparisonUIErrorDescription.message(for: error)
-        }
-        refreshNavigationAvailability()
     }
 }

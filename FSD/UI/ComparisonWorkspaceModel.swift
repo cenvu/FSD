@@ -83,7 +83,7 @@ final class ComparisonWorkspaceModel: ObservableObject {
     }
 
     func refresh() {
-        guard !savedComparisons.isSaving else { return }
+        guard !savedComparisons.isSaving, !isClosing else { return }
         do {
             history = try resultRepository.listComparisons()
             availableSnapshots = try historyRepository.listSnapshots().filter { $0.isComplete }
@@ -151,7 +151,7 @@ final class ComparisonWorkspaceModel: ObservableObject {
     }
 
     var canStart: Bool {
-        validationMessage == nil
+        validationMessage == nil && !isClosing
     }
 
     /// Which live side the given side selector presents in the current mode.
@@ -254,7 +254,9 @@ final class ComparisonWorkspaceModel: ObservableObject {
         guard !savedComparisons.isSaving, !isClosing else { return }
         savedComparisons.prepare(record)
         activeComparisonID = record.id
+        activeBrowser?.close()
         activeBrowser = ComparisonBrowserModel(database: database, record: record)
+        activeBrowser?.setSaveInProgress(showsSavedComparisons)
         activeBrowser?.open()
     }
 
@@ -274,14 +276,28 @@ final class ComparisonWorkspaceModel: ObservableObject {
             }
             return
         }
-        do {
-            try comparisonService.closeWorkspace()
-        } catch {
-            self.error = ComparisonUIErrorDescription.message(for: error)
+        isClosing = true
+        activeBrowser?.close()
+        let service = comparisonService, results = resultRepository
+        let db = database
+        // Disposal can wait behind a pending original/hidden-reader query.
+        // Keep that wait off MainActor and publish history only after settlement.
+        DispatchQueue.global(qos:.userInitiated).async { [weak self] in
+            let outcome = Result {
+                try service.closeWorkspace()
+                return (try results.listComparisons(),try SnapshotHistoryRepository(database:db).listSnapshots().filter { $0.isComplete },try ComparisonProfileRepository(database:db).allProfiles())
+            }
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.activeComparisonID = nil; self.activeBrowser = nil
+                self.isClosing = false
+                switch outcome {
+                case .success(let values):
+                    self.history = values.0; self.availableSnapshots = values.1; self.profiles = values.2; self.error = nil
+                case .failure(let error): self.error = ComparisonUIErrorDescription.message(for:error)
+                }
+            }
         }
-        activeComparisonID = nil
-        activeBrowser = nil
-        refresh()
     }
 
     /// Explicit whole-comparison disposal (the schema's disposal API,
@@ -295,6 +311,7 @@ final class ComparisonWorkspaceModel: ObservableObject {
             try TransientSnapshotLifecycle(database: database).cleanupUnreferencedTransients()
             if activeComparisonID == record.id {
                 activeComparisonID = nil
+                activeBrowser?.close()
                 activeBrowser = nil
             }
             refresh()

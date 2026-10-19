@@ -1,4 +1,7 @@
 import XCTest
+import AppKit
+import SwiftUI
+import ScreenCaptureKit
 @testable import FSD
 
 /// Milestone 4 visual comparison GUI correction suite: canonical orientation,
@@ -555,15 +558,18 @@ final class ComparisonGUIValidationTests: XCTestCase {
 
         let first = try XCTUnwrap(browser.currentPage?.rows.first)
         browser.selectedRowID = first.id
+        waitForIdle(browser)
         XCTAssertEqual(browser.selectedRow?.id, first.id)
         XCTAssertFalse(browser.canGoPrevious, "first row has no previous row")
         XCTAssertTrue(browser.canGoNext)
 
         browser.navigate(direction: .next)
+        waitForIdle(browser)
         XCTAssertEqual(browser.selectedRowID, browser.currentPage?.rows[1].id, "next within the page")
         XCTAssertEqual(browser.currentPage?.offset, 0, "no page change for in-page navigation")
 
         browser.navigate(direction: .previous)
+        waitForIdle(browser)
         XCTAssertEqual(browser.selectedRowID, first.id, "previous back to the first row")
         XCTAssertFalse(browser.canGoPrevious)
     }
@@ -577,6 +583,7 @@ final class ComparisonGUIValidationTests: XCTestCase {
 
         let lastOfPageOne = try XCTUnwrap(browser.currentPage?.rows.last)
         browser.selectedRowID = lastOfPageOne.id
+        waitForIdle(browser)
         XCTAssertTrue(browser.canGoNext, "page one is truncated: a next row exists")
 
         browser.navigate(direction: .next)
@@ -600,6 +607,7 @@ final class ComparisonGUIValidationTests: XCTestCase {
 
         let firstOfPageTwo = try XCTUnwrap(browser.currentPage?.rows.first)
         browser.selectedRowID = firstOfPageTwo.id
+        waitForIdle(browser)
 
         browser.navigate(direction: .previous)
         waitForIdle(browser)
@@ -618,9 +626,11 @@ final class ComparisonGUIValidationTests: XCTestCase {
         // Last row of the (non-truncated) result set: no next row.
         let last = try XCTUnwrap(browser.currentPage?.rows.last)
         browser.selectedRowID = last.id
+        waitForIdle(browser)
         XCTAssertFalse(browser.canGoNext, "boundary from repository truth, not page emptiness")
         XCTAssertTrue(browser.canGoPrevious)
         browser.navigate(direction: .next)
+        waitForIdle(browser)
         XCTAssertEqual(browser.selectedRowID, last.id, "next at the end is a no-op")
         XCTAssertFalse(browser.canGoNext)
     }
@@ -636,10 +646,12 @@ final class ComparisonGUIValidationTests: XCTestCase {
         XCTAssertTrue(browser.currentPage!.rows.allSatisfy { $0.resultType != .matched && $0.resultType != .ignored })
         let first = try XCTUnwrap(browser.currentPage?.rows.first)
         browser.selectedRowID = first.id
+        waitForIdle(browser)
 
         var cursor = first
         for _ in 0..<5 {
             browser.navigate(direction: .next)
+        waitForIdle(browser)
             waitForIdle(browser)
             let selected = try XCTUnwrap(browser.selectedRow)
             XCTAssertNotEqual(selected.id, cursor.id, "each next moves")
@@ -649,6 +661,7 @@ final class ComparisonGUIValidationTests: XCTestCase {
         // And back.
         for _ in 0..<5 {
             browser.navigate(direction: .previous)
+        waitForIdle(browser)
             waitForIdle(browser)
             let selected = try XCTUnwrap(browser.selectedRow)
             XCTAssertTrue(ComparisonResultFilter.differences.types.contains(selected.resultType))
@@ -665,6 +678,7 @@ final class ComparisonGUIValidationTests: XCTestCase {
 
         let lastOfPageOne = try XCTUnwrap(browser.currentPage?.rows.last)
         browser.selectedRowID = lastOfPageOne.id
+        waitForIdle(browser)
         browser.navigate(direction: .next)
         waitForIdle(browser)
         XCTAssertEqual(browser.currentPage?.offset, 20)
@@ -687,6 +701,7 @@ final class ComparisonGUIValidationTests: XCTestCase {
 
         let grown = try XCTUnwrap(browser.currentPage?.rows.first { $0.resultPath == "grown.bin" })
         browser.selectedRowID = grown.id
+        waitForIdle(browser)
         let leftMetadata = try XCTUnwrap(browser.selectedLeftMetadata)
         let rightMetadata = try XCTUnwrap(browser.selectedRightMetadata)
         XCTAssertEqual(leftMetadata.logicalSizeBytes, 10)
@@ -705,12 +720,14 @@ final class ComparisonGUIValidationTests: XCTestCase {
 
         let added = try XCTUnwrap(browser.currentPage?.rows.first { $0.resultPath == "fresh.txt" })
         browser.selectedRowID = added.id
+        waitForIdle(browser)
         XCTAssertNil(browser.selectedLeftMetadata, "added: nothing on the left/reference side")
         XCTAssertNotNil(browser.selectedRightMetadata, "added: metadata on the right/changed side")
         XCTAssertTrue(browser.selectedFieldDifferences.isEmpty, "no field differences for a missing-side outcome")
 
         let removed = try XCTUnwrap(browser.currentPage?.rows.first { $0.resultPath == "gone.txt" })
         browser.selectedRowID = removed.id
+        waitForIdle(browser)
         XCTAssertNotNil(browser.selectedLeftMetadata, "removed: metadata on the left/reference side")
         XCTAssertNil(browser.selectedRightMetadata, "removed: nothing on the right/changed side")
     }
@@ -730,6 +747,7 @@ final class ComparisonGUIValidationTests: XCTestCase {
         XCTAssertFalse(wording.contains("Removed"))
         XCTAssertFalse(wording.contains("Matched"))
         browser.selectedRowID = uncertain.id
+        waitForIdle(browser)
         XCTAssertNotNil(browser.selectedLeftMetadata, "uncertain pairs still have left metadata")
         XCTAssertNotNil(browser.selectedRightMetadata, "uncertain pairs still have right metadata")
     }
@@ -785,6 +803,9 @@ final class ComparisonGUIValidationTests: XCTestCase {
         workspace.openComparison(record)
         XCTAssertNotNil(workspace.activeBrowser)
         workspace.closeComparison()
+        let closeDeadline = Date().addingTimeInterval(15)
+        while workspace.isClosing && Date()<closeDeadline { RunLoop.current.run(until:Date().addingTimeInterval(0.01)) }
+        XCTAssertFalse(workspace.isClosing)
 
         XCTAssertNil(workspace.activeBrowser)
         workspace.refresh()
@@ -808,6 +829,9 @@ final class ComparisonGUIValidationTests: XCTestCase {
 
         workspace.openComparison(record)
         workspace.closeComparison()
+        let closeDeadline = Date().addingTimeInterval(15)
+        while workspace.isClosing && Date()<closeDeadline { RunLoop.current.run(until:Date().addingTimeInterval(0.01)) }
+        XCTAssertFalse(workspace.isClosing)
 
         XCTAssertNil(workspace.activeBrowser)
         XCTAssertTrue(workspace.history.isEmpty, "live-side comparison is disposed by workspace close")
@@ -1176,4 +1200,31 @@ final class ComparisonGUIValidationTests: XCTestCase {
         try repository.transition(id, to: status)
         return id
     }
+    func testTask064CategoryIsAnActualAccessibleControl() throws {
+        let (left,right) = try seedAllOutcomePair()
+        let record = try service.snapshotToSnapshot(leftSnapshotID:left,rightSnapshotID:right)
+        workspace.openComparison(record)
+        let browser = try XCTUnwrap(workspace.activeBrowser)
+        waitForIdle(browser)
+        let attribute = NSAccessibility.Attribute(rawValue:"AXEnhancedUserInterface")
+        let prior = NSApplication.shared.accessibilityAttributeValue(attribute)
+        NSApplication.shared.accessibilitySetValue(true,forAttribute:attribute)
+        defer { NSApplication.shared.accessibilitySetValue(prior,forAttribute:attribute) }
+        let host = NSHostingView(rootView:ComparisonWorkspaceView(model:workspace))
+        let window = NSWindow(contentRect:NSRect(x:0,y:0,width:1120,height:900),styleMask:[.titled,.resizable],backing:.buffered,defer:false)
+        window.contentView = host; window.makeKeyAndOrderFront(nil)
+        defer { window.orderOut(nil) }
+        host.layoutSubtreeIfNeeded(); RunLoop.current.run(until:Date().addingTimeInterval(0.2))
+        var seen = Set<ObjectIdentifier>(), found = false
+        func visit(_ value: Any, depth: Int) {
+            guard depth < 40, let object = value as? NSObject, seen.insert(ObjectIdentifier(object)).inserted else { return }
+            if (object as AnyObject).accessibilityRole?() == .button,
+               (object as AnyObject).accessibilityLabel?() == "Added: 1" { found = true }
+            if let view = object as? NSView { view.subviews.forEach { visit($0,depth:depth+1) } }
+            for child in (object as AnyObject).accessibilityChildren?() ?? [] { visit(child,depth:depth+1) }
+        }
+        visit(window,depth:0)
+        XCTAssertTrue(found,"An outcome count must be an actionable accessible button")
+    }
+
 }

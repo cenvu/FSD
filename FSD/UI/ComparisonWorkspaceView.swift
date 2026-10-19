@@ -24,6 +24,7 @@ struct ComparisonBrowserView: View {
     var body: some View {
         VStack(spacing: 0) {
             SaveComparisonControls(workspace:workspace, model:workspace.savedComparisons)
+                .disabled(workspace.isClosing)
             // Toolbar
             HStack {
                 Button(action: { workspace.closeComparison() }) {
@@ -42,20 +43,6 @@ struct ComparisonBrowserView: View {
                 .pickerStyle(.menu)
                 .frame(maxWidth: 200)
                 .accessibilityLabel("Result filter")
-
-                Spacer()
-
-                // Summary counts — every canonical outcome category is visible.
-                HStack(spacing: 12) {
-                    summaryPill(title: "All", count: browser.record.totalComparedEntries, color: .secondary)
-                    summaryPill(title: "Differences", count: browser.record.totalDifferences, color: .primary)
-                    summaryPill(title: "Matched", count: browser.record.matchedCount, color: .secondary)
-                    summaryPill(title: "Added", count: browser.resultCounts[.added] ?? 0, color: .green)
-                    summaryPill(title: "Removed", count: browser.resultCounts[.removed] ?? 0, color: .red)
-                    summaryPill(title: "Changed", count: browser.resultCounts[.changed] ?? 0, color: .blue)
-                    summaryPill(title: "Uncertain", count: browser.resultCounts[.uncertain] ?? 0, color: .orange)
-                    summaryPill(title: "Ignored", count: browser.resultCounts[.ignored] ?? 0, color: .gray)
-                }
 
                 Spacer()
 
@@ -88,9 +75,25 @@ struct ComparisonBrowserView: View {
                         .accessibilityLabel("Next page of results")
                 }
             }
-            .disabled(workspace.savedComparisons.isSaving)
+            .disabled(workspace.savedComparisons.isSaving || workspace.isClosing)
             .padding()
             .background(Color(NSColor.windowBackgroundColor))
+
+            LazyVGrid(columns:[GridItem(.adaptive(minimum:105),spacing:6)],spacing:6) {
+                summaryPill(title:"All",count:browser.record.totalComparedEntries,filter:.all)
+                summaryPill(title:"Differences",count:browser.record.totalDifferences,filter:.differences)
+                summaryPill(title:"Matched",count:browser.record.matchedCount,filter:.unchanged)
+                summaryPill(title:"Added",count:browser.resultCounts[.added] ?? 0,filter:.added)
+                summaryPill(title:"Removed",count:browser.resultCounts[.removed] ?? 0,filter:.removed)
+                summaryPill(title:"Changed",count:browser.resultCounts[.changed] ?? 0,filter:.modified)
+                summaryPill(title:"Uncertain",count:browser.resultCounts[.uncertain] ?? 0,filter:.conflicts)
+                summaryPill(title:"Ignored",count:browser.resultCounts[.ignored] ?? 0,filter:.ignored)
+            }
+            .padding(.horizontal).padding(.bottom,8)
+            .disabled(workspace.savedComparisons.isSaving || workspace.isClosing)
+            Text("“All” counts compared entries. Ignored rows remain browsable and are excluded from summary totals.")
+                .font(.caption2).foregroundStyle(.secondary).padding(.bottom,4)
+            ancestorBreadcrumb
 
             if let page = browser.currentPage {
                 Text(pageRangeText(page))
@@ -119,25 +122,22 @@ struct ComparisonBrowserView: View {
                                 detail: "No results matched the current filter."
                             )
                         } else {
-                            List(selection: $browser.selectedRowID) {
-                                ForEach(page.rows) { row in
-                                    ComparisonResultRowView(row: row)
-                                        .tag(row.id)
-                                        .onAppear {
-                                            if row == page.rows.last && page.isTruncated {
-                                                browser.showNextPage()
-                                            }
-                                        }
-                                }
-                                if page.isTruncated {
-                                    HStack {
-                                        Spacer()
-                                        ProgressView()
-                                        Spacer()
+                            ScrollViewReader { proxy in
+                                List(selection:$browser.selectedRowID) {
+                                    ForEach(page.rows) { row in
+                                        ComparisonResultRowView(row:row).tag(row.id).id(row.id)
                                     }
                                 }
+                                .accessibilityLabel("Comparison results")
+                                .onChange(of:browser.revealGeneration) { _,_ in
+                                    if let id = browser.selectedRowID, page.rows.contains(where:{ $0.id == id }) {
+                                        proxy.scrollTo(id,anchor:.center)
+                                    }
+                                }
+                                .onAppear {
+                                    if let id = browser.selectedRowID { proxy.scrollTo(id,anchor:.center) }
+                                }
                             }
-                            .accessibilityLabel("Comparison results")
                         }
                     }
                 }
@@ -147,25 +147,69 @@ struct ComparisonBrowserView: View {
                 ComparisonDetailPane(browser: browser)
                     .frame(minWidth: 300, idealWidth: 350)
             }
-            .disabled(workspace.savedComparisons.isSaving)
+            .disabled(workspace.savedComparisons.isSaving || workspace.isClosing)
         }
     }
 
     private func pageRangeText(_ page: ComparisonResultPage) -> String {
         let first = page.offset + 1
         let last = page.offset + page.rows.count
-        return "Showing rows \(first)–\(last) of \(page.totalCount)"
+        return page.rows.isEmpty ? "No stored results for this filter" : "Showing rows \(first)–\(last) of \(page.totalCount)"
     }
 
-    @ViewBuilder
-    private func summaryPill(title: String, count: Int64, color: Color) -> some View {
-        HStack(spacing: 4) {
-            Text(title).font(.caption).foregroundStyle(.secondary)
-            Text("\(count)").font(.caption).bold().foregroundStyle(color)
+    @FocusState private var focusedCategory: ComparisonResultFilter?
+
+    private func summaryPill(title: String, count: Int64, filter: ComparisonResultFilter) -> some View {
+        Button {
+            focusedCategory = filter
+            browser.selectCategory(filter)
+        } label: {
+            HStack(spacing:4) {
+                Image(systemName:browser.activeFilter == filter ? "checkmark.circle.fill" : "circle")
+                Text(title).font(.caption)
+                Text("\(count)").font(.caption).bold()
+            }
+            .frame(maxWidth:.infinity)
         }
-        .accessibilityElement(children: .ignore)
+        .focusable()
+        .focused($focusedCategory,equals:filter)
         .accessibilityLabel("\(title): \(count)")
+        .accessibilityValue(browser.activeFilter == filter ? "Selected" : "Not selected")
+        .accessibilityHint("Filter and select the first stored \(title.lowercased()) result")
+        .help("Show \(title); locate and select its first stored result")
     }
+
+    @ViewBuilder private var ancestorBreadcrumb: some View {
+        VStack(alignment:.leading,spacing:4) {
+            if let message = browser.ancestorError {
+                Text(message).font(.caption).accessibilityLabel("Ancestor context unavailable: \(message)")
+            } else if let context = browser.ancestorContext {
+                Text("Stored ancestor context — \(context.boundary.rawValue)")
+                    .font(.caption).foregroundStyle(.secondary)
+                ScrollView(.horizontal) {
+                    HStack(spacing:6) {
+                        ForEach(context.ancestors) { row in
+                            Button(row.resultPath.isEmpty ? "Recorded root" : row.displayName) { browser.revealAncestor(row) }
+                                .accessibilityLabel("Reveal stored ancestor \(row.resultPath.isEmpty ? "root" : row.resultPath), result \(row.id)")
+                            Image(systemName:"chevron.right").accessibilityHidden(true)
+                        }
+                        Text("\(context.target.displayName) · #\(context.target.id)")
+                            .font(.caption).bold().textSelection(.enabled)
+                    }
+                }
+                .accessibilityLabel("Stored result ancestors")
+            } else if browser.isLoading {
+                Text("Loading stored result context…").font(.caption)
+            }
+            if let target = browser.returnTarget {
+                Button("Return to target: \(target.displayName) · #\(target.id)") { browser.returnToTarget() }
+                    .accessibilityLabel("Return to stored target result \(target.id)")
+            }
+        }
+        .frame(maxWidth:.infinity,alignment:.leading).padding(.horizontal).padding(.bottom,6)
+        .disabled(workspace.savedComparisons.isSaving || workspace.isClosing || browser.isLoading)
+    }
+
 }
 
 struct ComparisonResultRowView: View {
@@ -265,7 +309,7 @@ struct ComparisonDetailPane: View {
 
                 HStack(alignment: .top, spacing: 16) {
                     sideMetadataView(
-                        title: "Left (Reference)",
+                        title: "Left — Before / Reference",
                         descriptor: browser.record.left,
                         metadata: browser.selectedLeftMetadata,
                         isMissing: row.resultType == .added
@@ -274,7 +318,7 @@ struct ComparisonDetailPane: View {
                     Divider()
 
                     sideMetadataView(
-                        title: "Right (Changed)",
+                        title: "Right — After / Changed",
                         descriptor: browser.record.right,
                         metadata: browser.selectedRightMetadata,
                         isMissing: row.resultType == .removed

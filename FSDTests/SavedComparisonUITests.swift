@@ -85,6 +85,7 @@ final class SavedComparisonUITests: XCTestCase {
         fresh.save()
         XCTAssertEqual(try db.scalar("SELECT count(*) FROM saved_operations")?.int64Value,1)
         workspace.closeComparison()
+        settle { !workspace.isClosing }
         XCTAssertEqual(try SavedComparisonRepository(database:db).list(),[id])
         try healthy()
     }
@@ -139,6 +140,7 @@ final class SavedComparisonUITests: XCTestCase {
         workspace.savedComparisons.reloadLibrary(); settle { !workspace.savedComparisons.libraryLoading }
         XCTAssertTrue(workspace.savedComparisons.summaries.isEmpty)
         workspace.closeComparison()
+        settle { !workspace.isClosing }
         XCTAssertTrue(try SavedComparisonRepository(database:db).list().isEmpty)
         XCTAssertNil(try db.scalar("SELECT id FROM snapshots WHERE id IN (?,?)",bindings:[.integer(l.rawValue),.integer(r.rawValue)]))
     }
@@ -148,6 +150,7 @@ final class SavedComparisonUITests: XCTestCase {
         settle { workspace.savedComparisons.eligibility != .checking }
         let id = try saved(workspace.savedComparisons)
         workspace.closeComparison()
+        settle { !workspace.isClosing }
         XCTAssertNil(try db.scalar("SELECT id FROM snapshots WHERE id IN (?,?)",bindings:[.integer(l.rawValue),.integer(r.rawValue)]))
         XCTAssertEqual(try db.scalar("SELECT count(*) FROM comparisons")?.int64Value,0)
         try db.execute("DELETE FROM volumes"); try db.execute("DELETE FROM comparison_profiles")
@@ -509,6 +512,7 @@ final class SavedComparisonUITests: XCTestCase {
         try capture("completed-save")
         try press("Open saved comparison offline"); settle { !model.readerLoading }
         workspace.closeComparison()
+        settle { !workspace.isClosing }
         model.closeReader(); model.reloadLibrary(); settle { !model.libraryLoading }
         host.rootView = AnyView(SavedComparisonsView(model:model).preferredColorScheme(.dark)); layout(); try capture("saved-library")
         try press("Open saved comparison \(id.uuidString)"); settle { !model.readerLoading }

@@ -1647,3 +1647,45 @@ isolated files and the FSD test window only. ScreenCaptureKit current-process
 shareable content is filtered to the exact owned window ID; no other application
 or global Accessibility tree is inspected. Manual VoiceOver/Owner acceptance and
 actual power-loss/disk-full proof are separate pending gates.
+
+## 20. Task064 original comparison category and ancestor navigation
+
+Original comparison summary controls map All/Differences/Matched/Added/Removed/
+Changed/Uncertain/Ignored to the existing all/differences/unchanged/added/removed/
+modified/conflicts/ignored repository filters. A category selects its first real
+stored `(result_path,id)` row. Existing All/summary totals exclude ignored rows;
+the All filter still admits them. Empty categories clear selection and details.
+
+`ComparisonResultRepository.ancestorContext` follows only `parent_result_id` in
+one consistent recursive SQLite statement. PK probes retrieve at most129 rows;
+128 stored results is the supported chain ceiling, including the selected row.
+It checks complete comparison ownership, typed result shape, canonical relative
+paths, exact immediate parent path and ascending stored IDs, side snapshot/key
+ownership, directory kind and exact side entry-parent IDs. Cycles, cross-owner,
+contradictory or excessive chains fail closed. NULL parents on non-root rows mean
+Ancestor not recorded; a dangling reference is a separate incomplete boundary.
+The current engine writes NULL parents, so ordinary nested paths alone never
+produce ancestor nodes. Neither name similarity nor source reads fill a gap.
+
+Each projected path/name must be SQL TEXT, admitted before Swift allocation at64KiB/4KiB,
+then read as BLOB and strictly decoded as UTF8 without NUL. SQL checks exact status/
+result-kind/directory discriminators, avoiding general C-string truncation or repair;
+129-row overflow bounds returned text to under9MiB. A one-second cooperative
+budget is checked before/after the statement and per decoded row; it cannot
+interrupt SQLite or guarantee lock-wait duration. This is read-only projection,
+not a receipt repair, a new matcher, a schema change or a new persisted identity.
+
+All browser counts/page/position/navigation/detail/ancestor reads run in the
+background with cancellation and generation-gated publication. The original
+browser retains one bounded page plus at most128 context rows. Ancestor selection
+explicitly shows All, locates the exact stored ID and keeps a return target.
+ScrollViewReader targets result IDs after page materialization. Explicit paging
+replaces the page; row appearance never automatically advances it.
+
+Task063 Save/hidden-reader pause and catalog-idle resumption remain in force.
+Closing/switching invalidates the detached browser. Workspace disposal and its
+history refresh run off MainActor; Close first settles an active Save through
+the existing cancel/wait barrier. Save/Command-S, creation, refresh and navigation
+are unavailable while closing. Terminal lifecycle/Save/Delete/schema contracts
+remain unchanged. No saved-offline ancestor projection or synchronized dual tree
+is delivered by this slice.

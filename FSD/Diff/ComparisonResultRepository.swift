@@ -196,6 +196,127 @@ public final class ComparisonResultRepository: @unchecked Sendable {
         return Int(before)
     }
 
+    // MARK: - Stored ancestor projection
+
+    public static let maximumAncestorDepth = 128
+    public static let maximumAncestorSeconds: TimeInterval = 1
+
+    /// One SQLite statement observes a consistent chain, including ownership
+    /// and side-entry links. It follows IDs only; a path never discovers a row.
+    /// At most 129 rows are returned (the last detects depth overflow).
+    /// The one-second budget is cooperative around the query and per row, not
+    /// an SQLite interrupt/lock-wait guarantee. All callers use a background queue.
+    /// Each row has <=64KiB path and <=4KiB name. Bounded BLOB projection and
+    /// strict UTF8/NUL decoding avoid the catalog's general C-string decoder.
+    /// Discriminators are checked in SQL; values reject, never truncate/repair.
+    public func ancestorContext(resultID: Int64, comparisonID: ComparisonID, timeBudget: TimeInterval = maximumAncestorSeconds) throws -> ComparisonAncestorContext {
+        let started = ProcessInfo.processInfo.systemUptime
+        let budget = min(Self.maximumAncestorSeconds,max(0,timeBudget.isFinite ? timeBudget : 0))
+        func checkTime() throws {
+            if ProcessInfo.processInfo.systemUptime-started >= budget { throw ComparisonAncestorError.timeLimit }
+        }
+        try checkTime()
+        let rows = try database.query(Self.ancestorSQL, bindings:[.integer(resultID), .integer(comparisonID.rawValue)])
+        try checkTime()
+        guard !rows.isEmpty else { throw ComparisonAncestorError.unavailable }
+        guard rows.count <= Self.maximumAncestorDepth else { throw ComparisonAncestorError.depthLimit }
+        var chain: [ComparisonResultRow] = []
+        var seen = Set<Int64>()
+        for raw in rows {
+            try checkTime()
+            var decoded = raw
+            for field in ["result_path","display_name"] {
+                guard case .blob(let bytes) = raw[field], !bytes.contains(0),
+                      let text = String(data:bytes,encoding:.utf8) else { throw ComparisonAncestorError.invalidEvidence }
+                decoded[field] = .text(text)
+            }
+            guard let row = Self.makeResultRow(from:decoded), row.comparisonID == comparisonID,
+                  raw["is_complete"]?.int64Value == 1,
+                  seen.insert(row.id).inserted,
+                  Self.validResultPath(row.resultPath), Self.validAncestorRow(raw,row:row),
+                  raw["left_valid"]?.int64Value == 1, raw["right_valid"]?.int64Value == 1 else {
+                throw ComparisonAncestorError.invalidEvidence
+            }
+            if let child = chain.last {
+                let childRaw = rows[chain.count-1]
+                guard childRaw["parent_result_id"]?.int64Value == row.id, row.id < child.id,
+                      Self.parentPath(of:child.resultPath).map({ $0.utf8.elementsEqual(row.resultPath.utf8) }) == true,
+                      raw["left_directory"]?.int64Value == 1 || raw["right_directory"]?.int64Value == 1 else {
+                    throw ComparisonAncestorError.invalidEvidence
+                }
+                for side in ["left", "right"] where childRaw["\(side)_entry_id"]?.int64Value != nil {
+                    guard let parentEntry = raw["\(side)_entry_id"]?.int64Value,
+                          childRaw["\(side)_parent"]?.int64Value == parentEntry,
+                          raw["\(side)_directory"]?.int64Value == 1 else { throw ComparisonAncestorError.invalidEvidence }
+                }
+            }
+            chain.append(row)
+        }
+        guard let target = chain.first, let top = chain.last, let topRaw = rows.last else { throw ComparisonAncestorError.unavailable }
+        let boundary: ComparisonAncestorContext.Boundary
+        if topRaw["parent_result_id"]?.int64Value != nil { boundary = .missingParent }
+        else if top.resultPath.isEmpty { boundary = .rooted }
+        else { boundary = .notRecorded }
+        return ComparisonAncestorContext(target:target,ancestors:Array(chain.dropFirst().reversed()),boundary:boundary)
+    }
+
+    // Internal to permit EXPLAIN QUERY PLAN against the exact production SQL.
+    static let ancestorSQL = """
+    WITH RECURSIVE chain(id, depth) AS (
+      SELECT id, 0 FROM comparison_results WHERE id=?
+      UNION ALL
+      SELECT p.id, chain.depth+1 FROM chain
+      JOIN comparison_results child ON child.id=chain.id
+      JOIN comparison_results p ON p.id=child.parent_result_id
+      WHERE chain.depth<128
+    )
+    SELECT r.id,r.comparison_id,r.parent_result_id,
+      CASE WHEN typeof(r.result_type)='text' AND r.result_type IN ('matched','added','removed','changed','ignored','uncertain') THEN r.result_type END AS result_type,
+      r.left_entry_id,r.right_entry_id,r.difference_flags,
+      CASE WHEN typeof(r.result_path)='text' AND length(CAST(r.result_path AS BLOB))<=65536 THEN CAST(r.result_path AS BLOB) END AS result_path,
+      CASE WHEN typeof(r.display_name)='text' AND length(CAST(r.display_name AS BLOB))<=4096 THEN CAST(r.display_name AS BLOB) END AS display_name,
+      (c.status='complete') AS is_complete,
+      (l.item_type='directory') AS left_directory,(rr.item_type='directory') AS right_directory,
+      l.parent_id AS left_parent,rr.parent_id AS right_parent,
+      (r.left_entry_id IS NULL OR (l.snapshot_id=c.left_snapshot_id AND
+        r.result_path=CASE WHEN ls.source_case_sensitivity='sensitive' AND rs.source_case_sensitivity='sensitive'
+          THEN l.case_preserving_path ELSE l.case_folded_path END)) AS left_valid,
+      (r.right_entry_id IS NULL OR (rr.snapshot_id=c.right_snapshot_id AND
+        r.result_path=CASE WHEN ls.source_case_sensitivity='sensitive' AND rs.source_case_sensitivity='sensitive'
+          THEN rr.case_preserving_path ELSE rr.case_folded_path END)) AS right_valid
+    FROM chain JOIN comparison_results r ON r.id=chain.id
+    JOIN comparisons c ON c.id=?
+    JOIN snapshots ls ON ls.id=c.left_snapshot_id JOIN snapshots rs ON rs.id=c.right_snapshot_id
+    LEFT JOIN entries l ON l.id=r.left_entry_id LEFT JOIN entries rr ON rr.id=r.right_entry_id
+    WHERE ls.source_case_sensitivity IN ('sensitive','insensitive','unknown')
+      AND rs.source_case_sensitivity IN ('sensitive','insensitive','unknown')
+    ORDER BY chain.depth
+    """
+
+    private static func validAncestorRow(_ raw: DatabaseRow, row: ComparisonResultRow) -> Bool {
+        for column in ["parent_result_id","left_entry_id","right_entry_id"] {
+            switch raw[column] { case .null?, .integer?: break; default: return false }
+        }
+        guard let flags = raw["difference_flags"]?.int64Value, (0...31).contains(flags) else { return false }
+        let l = row.leftEntryID != nil, r = row.rightEntryID != nil
+        switch row.resultType {
+        case .matched: return l && r && flags == 0
+        case .changed: return l && r && flags > 0
+        case .added: return !l && r && flags == 0
+        case .removed: return l && !r && flags == 0
+        case .ignored: return l != r && flags == 0
+        case .uncertain: return flags == 0
+        }
+    }
+
+    private static func validResultPath(_ path: String) -> Bool {
+        path.isEmpty || (!path.utf8.contains(0) && path.split(separator:"/",omittingEmptySubsequences:false).allSatisfy { !$0.isEmpty && $0 != "." && $0 != ".." })
+    }
+    private static func parentPath(of path: String) -> String? {
+        guard !path.isEmpty else { return nil }
+        return path.lastIndex(of:"/").map { String(path[..<$0]) } ?? ""
+    }
+
     // MARK: - Field-level differences and entry lookup
 
     /// Decodes one result row's stored field bits into view-ready
@@ -396,5 +517,29 @@ public final class ComparisonResultRepository: @unchecked Sendable {
             isPackage: (row["is_package"]?.int64Value ?? 0) == 1,
             isInaccessible: (row["is_inaccessible"]?.int64Value ?? 0) == 1
         )
+    }
+}
+
+/// View-ready stored evidence only; no fabricated root or directory nodes.
+public struct ComparisonAncestorContext: Sendable {
+    public enum Boundary: String, Sendable {
+        case rooted = "Recorded root"
+        case notRecorded = "Ancestor not recorded"
+        case missingParent = "Recorded ancestor reference is missing"
+    }
+    public let target: ComparisonResultRow
+    public let ancestors: [ComparisonResultRow]
+    public let boundary: Boundary
+}
+
+public enum ComparisonAncestorError: Error, LocalizedError {
+    case unavailable, invalidEvidence, depthLimit, timeLimit
+    public var errorDescription: String? {
+        switch self {
+        case .unavailable: return "The stored result is no longer available."
+        case .invalidEvidence: return "Ancestor evidence is inconsistent. No ancestor navigation is available."
+        case .timeLimit: return "Ancestor context exceeded its one-second cooperative read budget. Retry when the catalog is idle."
+        case .depthLimit: return "Ancestor context exceeds the supported limit of 128 stored results."
+        }
     }
 }

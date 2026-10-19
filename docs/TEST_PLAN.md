@@ -1360,3 +1360,35 @@ Require affected broader comparison/catalog/organizer/Task058–062 regressions,
 explicitly exclude the prohibited live disk-image mount test, clean arm64 Debug
 and Release, independent read-only source/safety/UI review and canonical finalizer.
 Synthetic rollback/reopen is not power-loss/disk-full or hardware acceptance.
+
+## 20. Task064 original comparison navigation — generated catalogs only
+
+`ComparisonAncestorNavigationTests` is registered through the existing
+ComparisonBrowserModelTests source. Real temporary file catalogs and production
+completion receipts cover all eight category actions and deterministic first
+selection, empty clearing, exact cross-page ID materialization, duplicate paths,
+Before/After missing sides, recorded parent chains, ancestor/return navigation,
+NULL and dangling boundaries, cycles, wrong comparison/path/side-parent evidence,
+noncanonical/oversized fields, embedded NUL/invalid UTF8/native BLOB or discriminator
+prefix corruption,128-result depth and cooperative timeout rejection.
+An11K+ result fixture measures retained pages and exact production ancestor plus
+existing ordinal/page SQL plans. Read-only navigation leaves total_changes and
+saved operations unchanged. Indexed ancestor probes are bounded by depth; the
+existing ordinal count/page ordering may still visit/sort comparison rows and
+are not advertised as constant-time seeks.
+
+Held catalog-lock tests exercise filter churn, pause, detached/closed callbacks,
+comparison switches and workspace close without MainActor lock waiting. Actual
+own-window disabled Save/Command-S and refresh during pending Close prevent a new
+Save/disposal race. Existing Task063 Save/Close, hidden-reader and offline lifecycle
+tests remain regression gates; only their explicit close completion waits change.
+
+FSD-owned-window AX category/ancestor/return presses, selected/focus feedback,
+Command-Down and own key-view traversal accompany real compositor captures at
+1120/1330/1440. Only current-process shareable content and the exact test-window
+ID are inspected. Manual VoiceOver/Owner visual approval remain pending. Require
+combined Task061–063/comparison/lifecycle/migration/organizer regressions, clean
+arm64 Debug/Release, FK/integrity, independent read-only review and publication
+checks. Exclude the prohibited generated live disk-image mount test from selection;
+record it as an exclusion, never an executed skip. No Owner catalog/media or
+hardware/power-loss acceptance is implied.
