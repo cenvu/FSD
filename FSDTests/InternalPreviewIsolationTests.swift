@@ -37,10 +37,12 @@ final class InternalPreviewIsolationTests: XCTestCase {
     // MARK: - Production flavor is unchanged
 
     func testProductionFlavorResolvesApplicationSupportAndRejectsOverrides() throws {
-        let defaultURL = try CatalogLocationResolver.defaultURL()
+        let fileManager = syntheticApplicationSupportFileManager
+        let defaultURL = try CatalogLocationResolver.defaultURL(fileManager: fileManager)
         let rejected = try CatalogLocationResolver.resolve(
             arguments: ["/path/to/FSD", "-FSDCatalogPath", directory.appendingPathComponent("elsewhere.sqlite3").path],
             environment: [:],
+            fileManager: fileManager,
             overrideAllowed: false,
             flavor: .production
         )
@@ -54,6 +56,7 @@ final class InternalPreviewIsolationTests: XCTestCase {
         let honoured = try CatalogLocationResolver.resolve(
             arguments: ["/path/to/FSD", "-FSDCatalogPath", directory.path],
             environment: [:],
+            fileManager: fileManager,
             overrideAllowed: true,
             flavor: .production
         )
@@ -65,38 +68,64 @@ final class InternalPreviewIsolationTests: XCTestCase {
     // MARK: - Preview flavor isolation
 
     func testInternalPreviewWithoutFlagsResolvesOnlyItsDedicatedCatalog() throws {
+        let fileManager = syntheticApplicationSupportFileManager
         let location = try CatalogLocationResolver.resolve(
             arguments: ["/Applications/FSD2InternalPreview.app/Contents/MacOS/FSD2InternalPreview"],
             environment: [:],
+            fileManager: fileManager,
             flavor: .internalPreview
         )
         XCTAssertEqual(location.origin, .internalPreview)
         XCTAssertTrue(location.isInternalPreview)
         XCTAssertEqual(location.url.lastPathComponent, CatalogDatabase.defaultDatabaseFileName)
         XCTAssertEqual(location.url.deletingLastPathComponent().lastPathComponent, CatalogLocationResolver.internalPreviewDirectoryName)
+        XCTAssertEqual(location.url, try CatalogLocationResolver.internalPreviewURL(fileManager: fileManager))
 
         // Never the production directory, and never the production file.
-        XCTAssertNotEqual(location.url, try CatalogLocationResolver.defaultURL())
+        XCTAssertNotEqual(location.url, try CatalogLocationResolver.defaultURL(fileManager: fileManager))
         XCTAssertFalse(location.url.path.contains("/Application Support/FSD/catalog.sqlite3"))
     }
 
     func testInternalPreviewIgnoresProductionPathOverrideAndReportsIt() throws {
+        let fileManager = syntheticApplicationSupportFileManager
         let productionLooking = directory.appendingPathComponent("FSD/catalog.sqlite3")
         let location = try CatalogLocationResolver.resolve(
             arguments: ["app", "-FSDCatalogPath", productionLooking.path],
             environment: [CatalogLocationResolver.environmentVariableName: productionLooking.path],
+            fileManager: fileManager,
             flavor: .internalPreview
         )
         XCTAssertEqual(location.origin, .internalPreview)
         XCTAssertTrue(location.isInternalPreview)
         XCTAssertNotEqual(location.url, productionLooking)
         XCTAssertEqual(location.rejectedOverridePath, productionLooking.path)
+        XCTAssertEqual(location.url, try CatalogLocationResolver.internalPreviewURL(fileManager: fileManager))
         XCTAssertTrue(location.diagnosticLine.contains("Internal Preview"))
         XCTAssertTrue(location.diagnosticLine.contains("dedicated catalog"))
     }
 
+    func testInternalPreviewIgnoresSpoofedXCTestEnvironmentKeys() throws {
+        let fileManager = syntheticApplicationSupportFileManager
+        let spoofedTestHostPath = directory.appendingPathComponent("synthetic-test-host/catalog.sqlite3").path
+        let location = try CatalogLocationResolver.resolve(
+            arguments: [],
+            environment: [
+                "XCTestConfigurationFilePath": directory.appendingPathComponent("spoofed.xctestconfiguration").path,
+                "XCTestBundlePath": directory.appendingPathComponent("FSDTests.xctest").path,
+                "XCTestSessionIdentifier": "synthetic-task065s-session-001"
+            ],
+            fileManager: fileManager,
+            flavor: .internalPreview
+        )
+
+        XCTAssertEqual(location.origin, .internalPreview)
+        XCTAssertTrue(location.isInternalPreview)
+        XCTAssertEqual(location.url, try CatalogLocationResolver.internalPreviewURL(fileManager: fileManager))
+        XCTAssertNotEqual(location.url.path, spoofedTestHostPath)
+        XCTAssertNil(location.rejectedOverridePath)
+    }
+
     func testInternalPreviewDoesNotFallBackToProductionWhenApplicationSupportIsUnavailable() throws {
-        let defaultURL = try CatalogLocationResolver.defaultURL()
         XCTAssertThrowsError(try CatalogLocationResolver.resolve(
             arguments: [],
             environment: [:],
@@ -106,7 +135,7 @@ final class InternalPreviewIsolationTests: XCTestCase {
             // It must fail loudly with the preview error and must not surface any
             // production path.
             XCTAssertEqual(error as? CatalogLocationError, .internalPreviewUnavailable)
-            XCTAssertFalse((error as? CatalogLocationError)?.errorDescription?.contains(defaultURL.path) == true)
+            XCTAssertFalse((error as? CatalogLocationError)?.errorDescription?.contains("/FSD/catalog.sqlite3") == true)
         }
     }
 
@@ -116,15 +145,23 @@ final class InternalPreviewIsolationTests: XCTestCase {
         }
     }
 
-    func testTestHostAlwaysUsesItsOwnIsolatedCatalogEvenInPreviewFlavor() throws {
+    func testDebugXCTestHostKeepsItsOwnIsolatedCatalogWhenXCTestKeysArePresent() throws {
+        #if DEBUG
         let location = try CatalogLocationResolver.resolve(
-            arguments: [],
-            environment: ["XCTestBundlePath": "/tmp/FSDTests.xctest"],
-            flavor: .internalPreview
+            arguments: ["FSD"],
+            environment: [
+                "XCTestConfigurationFilePath": directory.appendingPathComponent("synthetic.xctestconfiguration").path,
+                "XCTestBundlePath": directory.appendingPathComponent("FSDTests.xctest").path,
+                "XCTestSessionIdentifier": "synthetic-task065s-debug-session"
+            ],
+            flavor: .production
         )
         XCTAssertEqual(location.origin, .testHost)
         XCTAssertEqual(location.url, CatalogLocationResolver.testHostCatalogURL())
         XCTAssertNotEqual(location.url.deletingLastPathComponent().lastPathComponent, CatalogLocationResolver.internalPreviewDirectoryName)
+        #else
+        throw XCTSkip("The host-isolation branch is intentionally compiled only into Debug production builds.")
+        #endif
     }
 
     /// FINDING_A regression. The original Task065 preview honoured the
@@ -132,16 +169,18 @@ final class InternalPreviewIsolationTests: XCTestCase {
     /// binary could be pointed at any directory — including the production FSD
     /// catalog. The seam is removed; the variable must now be inert.
     func testInternalPreviewIgnoresTheRemovedTestRootEnvironmentVariable() throws {
+        let fileManager = syntheticApplicationSupportFileManager
         let productionLooking = directory.appendingPathComponent("FSD/catalog.sqlite3")
         let location = try CatalogLocationResolver.resolve(
             arguments: [],
             environment: ["FSD_INTERNAL_PREVIEW_TEST_ROOT": directory.path],
+            fileManager: fileManager,
             flavor: .internalPreview
         )
         XCTAssertEqual(location.origin, .internalPreview)
-        XCTAssertEqual(location.url, try CatalogLocationResolver.internalPreviewURL())
+        XCTAssertEqual(location.url, try CatalogLocationResolver.internalPreviewURL(fileManager: fileManager))
         XCTAssertNotEqual(location.url, productionLooking)
-        XCTAssertFalse(location.url.path.hasPrefix(directory.path))
+        XCTAssertEqual(location.url.deletingLastPathComponent().lastPathComponent, CatalogLocationResolver.internalPreviewDirectoryName)
         // A raw environment variable is not even reported as a rejected override.
         XCTAssertNil(location.rejectedOverridePath)
     }
@@ -149,17 +188,19 @@ final class InternalPreviewIsolationTests: XCTestCase {
     /// FINDING_A regression: no launch argument or environment catalog path may
     /// move the compiled preview, even when overrides are otherwise allowed.
     func testInternalPreviewRejectsEveryRuntimeCatalogOverride() throws {
+        let fileManager = syntheticApplicationSupportFileManager
         let decoy = directory.appendingPathComponent("decoy/catalog.sqlite3")
         let location = try CatalogLocationResolver.resolve(
             arguments: ["preview", "-FSDCatalogPath", decoy.path],
             environment: [CatalogLocationResolver.environmentVariableName: decoy.path],
+            fileManager: fileManager,
             overrideAllowed: true,
             flavor: .internalPreview
         )
         XCTAssertEqual(location.origin, .internalPreview)
-        XCTAssertEqual(location.url, try CatalogLocationResolver.internalPreviewURL())
+        XCTAssertEqual(location.url, try CatalogLocationResolver.internalPreviewURL(fileManager: fileManager))
         XCTAssertNotEqual(location.url, decoy)
-        XCTAssertFalse(location.url.path.hasPrefix(directory.path))
+        XCTAssertEqual(location.url.deletingLastPathComponent().lastPathComponent, CatalogLocationResolver.internalPreviewDirectoryName)
         XCTAssertEqual(location.rejectedOverridePath, decoy.path)
     }
 
@@ -185,6 +226,30 @@ final class InternalPreviewIsolationTests: XCTestCase {
         }
     }
 
+    func testInternalPreviewDirectoryCaseAliasToProductionFailsClosed() throws {
+        let appSupport = syntheticApplicationSupportRoot
+        let production = appSupport.appendingPathComponent(CatalogLocationResolver.productionDirectoryName, isDirectory: true)
+        try FileManager.default.createDirectory(at: production, withIntermediateDirectories: true)
+
+        let caseAlias = production.deletingLastPathComponent()
+            .appendingPathComponent(production.lastPathComponent.lowercased(), isDirectory: true)
+        let productionIdentity = try filesystemIdentity(at: production)
+        let caseAliasIdentity = try filesystemIdentity(at: caseAlias)
+        guard productionIdentity.device == caseAliasIdentity.device,
+              productionIdentity.inode == caseAliasIdentity.inode else {
+            throw XCTSkip("The generated fixture volume does not resolve case-only path aliases to one filesystem object.")
+        }
+
+        try FileManager.default.createSymbolicLink(
+            at: appSupport.appendingPathComponent(CatalogLocationResolver.internalPreviewDirectoryName, isDirectory: true),
+            withDestinationURL: caseAlias
+        )
+        let fileManager = ApplicationSupportFileManager(root: appSupport)
+        XCTAssertThrowsError(try CatalogLocationResolver.internalPreviewURL(fileManager: fileManager)) { error in
+            XCTAssertEqual(error as? CatalogLocationError, .internalPreviewConflictsWithProduction)
+        }
+    }
+
     func testInternalPreviewCatalogFileSymlinkedOntoProductionFailsClosed() throws {
         let appSupport = directory.appendingPathComponent("Library/Application Support", isDirectory: true)
         let production = appSupport.appendingPathComponent(CatalogLocationResolver.productionDirectoryName, isDirectory: true)
@@ -197,6 +262,27 @@ final class InternalPreviewIsolationTests: XCTestCase {
             at: preview.appendingPathComponent(CatalogDatabase.defaultDatabaseFileName),
             withDestinationURL: productionCatalog
         )
+        let fileManager = ApplicationSupportFileManager(root: appSupport)
+        XCTAssertThrowsError(try CatalogLocationResolver.internalPreviewURL(fileManager: fileManager)) { error in
+            XCTAssertEqual(error as? CatalogLocationError, .internalPreviewConflictsWithProduction)
+        }
+    }
+
+    func testInternalPreviewCatalogHardlinkedToProductionFailsClosed() throws {
+        let appSupport = syntheticApplicationSupportRoot
+        let production = appSupport.appendingPathComponent(CatalogLocationResolver.productionDirectoryName, isDirectory: true)
+        let preview = appSupport.appendingPathComponent(CatalogLocationResolver.internalPreviewDirectoryName, isDirectory: true)
+        try FileManager.default.createDirectory(at: production, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: preview, withIntermediateDirectories: true)
+        let productionCatalog = production.appendingPathComponent(CatalogDatabase.defaultDatabaseFileName)
+        let previewCatalog = preview.appendingPathComponent(CatalogDatabase.defaultDatabaseFileName)
+        try Data("synthetic-production-hardlink-sentinel".utf8).write(to: productionCatalog)
+        try FileManager.default.linkItem(at: productionCatalog, to: previewCatalog)
+
+        let productionIdentity = try filesystemIdentity(at: productionCatalog)
+        let previewIdentity = try filesystemIdentity(at: previewCatalog)
+        XCTAssertEqual(productionIdentity.device, previewIdentity.device)
+        XCTAssertEqual(productionIdentity.inode, previewIdentity.inode)
         let fileManager = ApplicationSupportFileManager(root: appSupport)
         XCTAssertThrowsError(try CatalogLocationResolver.internalPreviewURL(fileManager: fileManager)) { error in
             XCTAssertEqual(error as? CatalogLocationError, .internalPreviewConflictsWithProduction)
@@ -255,9 +341,10 @@ final class InternalPreviewIsolationTests: XCTestCase {
     }
 
     func testPreviewCatalogPathIsNeverTheProductionCatalog() throws {
+        let fileManager = syntheticApplicationSupportFileManager
         XCTAssertNotEqual(
-            try CatalogLocationResolver.internalPreviewURL(),
-            try CatalogLocationResolver.defaultURL()
+            try CatalogLocationResolver.internalPreviewURL(fileManager: fileManager),
+            try CatalogLocationResolver.defaultURL(fileManager: fileManager)
         )
     }
 
@@ -310,6 +397,23 @@ final class InternalPreviewIsolationTests: XCTestCase {
         defer { sqlite3_finalize(statement) }
         guard sqlite3_step(statement) == SQLITE_ROW else { throw NSError(domain: "InternalPreviewIsolationTests", code: 3) }
         return sqlite3_column_int64(statement, 0)
+    }
+
+    private var syntheticApplicationSupportRoot: URL {
+        directory.appendingPathComponent("Library/Application Support", isDirectory: true)
+    }
+
+    private var syntheticApplicationSupportFileManager: ApplicationSupportFileManager {
+        ApplicationSupportFileManager(root: syntheticApplicationSupportRoot)
+    }
+
+    private func filesystemIdentity(at url: URL) throws -> (device: UInt64, inode: UInt64) {
+        let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+        guard let device = (attributes[.systemNumber] as? NSNumber)?.uint64Value,
+              let inode = (attributes[.systemFileNumber] as? NSNumber)?.uint64Value else {
+            throw NSError(domain: "InternalPreviewIsolationTests", code: 4)
+        }
+        return (device, inode)
     }
 }
 

@@ -1,7 +1,7 @@
 {
   "flavor": "FSD2_INTERNAL_PREVIEW",
   "task": "FSD2_ISOLATED_INTERNAL_PREVIEW_BUILD_065",
-  "repair_task": "FSD2_INTERNAL_PREVIEW_ISOLATION_REPAIR_065R",
+  "repair_task": "FSD2_INTERNAL_PREVIEW_TEST_HOST_ESCAPE_REPAIR_065S",
   "scheme": "FSD",
   "configuration": "Preview",
   "product_name": "FSD2InternalPreview",
@@ -22,5 +22,5 @@
   "required_helpers": [
     "Contents/Helpers/FSDClassificationHostSeam"
   ],
-  "artifact_name": "FSD2-Internal-Preview-Task065R.zip"
+  "artifact_name": "FSD2-Internal-Preview-Task065S.zip"
 }

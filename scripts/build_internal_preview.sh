@@ -4,8 +4,10 @@
 #
 # Produces an unsigned, arm64 "Preview"-configuration build of the FSD app that
 # carries the FSD_INTERNAL_PREVIEW compile-time flag, then packages it as a
-# local ZIP artifact for the operator. All writes stay inside the repository
-# .ai-scratch area except for the final artifact staged on the Desktop.
+# local ZIP artifact for the operator. Persistent generated outputs stay inside
+# the repository .ai-scratch area except for the final artifact on the Desktop.
+# The spoofed-XCTest smoke also creates and removes one process-specific alias
+# symlink under macOS's temporary root.
 #
 set -euo pipefail
 
@@ -35,7 +37,7 @@ FLAVOR_MARKER="$(manifest_value flavor_marker)"
 PRODUCTION_FLAVOR_MARKER="$(manifest_value production_flavor_marker)"
 ARTIFACT_NAME="$(manifest_value artifact_name)"
 
-WORK_DIR="$REPO_ROOT/.ai-scratch/task065r/package"
+WORK_DIR="$REPO_ROOT/.ai-scratch/task065s/package"
 BUILD_DIR="$WORK_DIR/derived"
 STAGE_DIR="$WORK_DIR/stage"
 ZIP_PATH="$WORK_DIR/$ARTIFACT_NAME"
@@ -134,6 +136,18 @@ if grep -a -q "$PRODUCTION_FLAVOR_MARKER" "$APP_BINARY"; then
 fi
 echo "    marker present: $FLAVOR_MARKER"
 
+for TEST_HOST_ESCAPE in \
+  "XCTestConfigurationFilePath" \
+  "XCTestBundlePath" \
+  "XCTestSessionIdentifier" \
+  "FSD-TestHost-"; do
+  if grep -a -F -q "$TEST_HOST_ESCAPE" "$APP_BINARY"; then
+    echo "error: Preview binary contains Debug XCTest-host escape '$TEST_HOST_ESCAPE'." >&2
+    exit 1
+  fi
+done
+echo "    Debug XCTest-host keys and path helper are absent from Preview binary"
+
 echo "==> Bounded isolated launch smoke"
 # The smoke runs entirely on a generated synthetic home. CFFIXED_USER_HOME
 # makes Foundation resolve Application Support under this throwaway directory,
@@ -220,6 +234,125 @@ echo "    $SMOKE_LINE"
 echo "    synthetic production sentinel unchanged ($PROD_BEFORE)"
 rm -rf "$SMOKE_HOME" "$DECOY_ROOT"
 
+echo "==> Spoofed XCTest-host environment and synthetic alias smoke"
+# The process-specific test-host location is pre-created as a symlink to a
+# generated sentinel. If Preview accepts any spoofed XCTest key, the startup
+# diagnostic exposes that alias and opening it can change the sentinel. The
+# synthetic home and sentinel live under task scratch; cleanup removes only the
+# one process-specific symlink created at macOS's temporary root.
+XCTEST_HOME="$WORK_DIR/launch-xctest-home"
+XCTEST_APPSUP="$XCTEST_HOME/Library/Application Support"
+XCTEST_PROD_DIR="$XCTEST_APPSUP/FSD"
+XCTEST_EXPECTED_PREVIEW="$XCTEST_APPSUP/FSD-Internal-Preview/catalog.sqlite3"
+DARWIN_TEMP_DIR="$(getconf DARWIN_USER_TEMP_DIR)"
+XCTEST_TMP="${DARWIN_TEMP_DIR%/}"
+XCTEST_SENTINEL_DIR="$WORK_DIR/launch-xctest-sentinel"
+XCTEST_INPUTS="$WORK_DIR/launch-xctest-inputs"
+XCTEST_ALIAS_RECORD="$WORK_DIR/launch-xctest-alias-path.txt"
+XCTEST_LOG="$WORK_DIR/launch-xctest.log"
+XCTEST_DECOY="$WORK_DIR/launch-xctest-decoy/catalog.sqlite3"
+rm -rf "$XCTEST_HOME" "$XCTEST_SENTINEL_DIR" "$XCTEST_INPUTS" "$WORK_DIR/launch-xctest-decoy"
+rm -f "$XCTEST_ALIAS_RECORD"
+mkdir -p "$XCTEST_PROD_DIR" "$XCTEST_SENTINEL_DIR" "$XCTEST_INPUTS" "$(dirname "$XCTEST_DECOY")"
+printf 'synthetic-production-sentinel-task065s-xctest\n' > "$XCTEST_PROD_DIR/catalog.sqlite3"
+printf 'synthetic-test-host-alias-sentinel-task065s\n' > "$XCTEST_SENTINEL_DIR/catalog.sqlite3"
+: > "$XCTEST_INPUTS/FSD.xctestconfiguration"
+mkdir -p "$XCTEST_INPUTS/FSDTests.xctest"
+printf 'synthetic-xctest-decoy-task065s\n' > "$XCTEST_DECOY"
+XCTEST_SENTINEL_BEFORE="$(shasum -a 256 "$XCTEST_SENTINEL_DIR/catalog.sqlite3" | awk '{print $1}')"
+XCTEST_PROD_BEFORE="$(shasum -a 256 "$XCTEST_PROD_DIR/catalog.sqlite3" | awk '{print $1}')"
+
+cleanup_xctest_alias() {
+  if [[ -s "$XCTEST_ALIAS_RECORD" ]]; then
+    local recorded_alias recorded_directory
+    recorded_alias="$(cat "$XCTEST_ALIAS_RECORD")"
+    recorded_directory="$(dirname "$recorded_alias")"
+    if [[ -L "$recorded_directory" ]] && [[ "$(readlink "$recorded_directory")" == "$XCTEST_SENTINEL_DIR" ]]; then
+      rm "$recorded_directory"
+    fi
+  fi
+}
+trap cleanup_xctest_alias EXIT
+
+CFFIXED_USER_HOME="$XCTEST_HOME" \
+TMPDIR="$XCTEST_TMP" \
+LLVM_PROFILE_FILE="$WORK_DIR/launch-xctest-%p.profraw" \
+XCTestConfigurationFilePath="$XCTEST_INPUTS/FSD.xctestconfiguration" \
+XCTestBundlePath="$XCTEST_INPUTS/FSDTests.xctest" \
+XCTestSessionIdentifier="synthetic-task065s-session-001" \
+FSD_INTERNAL_PREVIEW_TEST_ROOT="$XCTEST_SENTINEL_DIR" \
+FSD_CATALOG_PATH="$XCTEST_DECOY" \
+FSD_INTERNAL_PREVIEW_SENTINEL_DIR="$XCTEST_SENTINEL_DIR" \
+FSD_PREVIEW_TEST_HOST_ALIAS_RECORD="$XCTEST_ALIAS_RECORD" \
+FSD_PREVIEW_BINARY="$APP_BINARY" \
+  /bin/bash -c '
+    test_host_dir="${TMPDIR%/}/FSD-TestHost-$$"
+    if [[ -e "$test_host_dir" || -L "$test_host_dir" ]]; then
+      echo "error: process-specific test-host path already exists; leaving it untouched." >&2
+      exit 78
+    fi
+    ln -s "$FSD_INTERNAL_PREVIEW_SENTINEL_DIR" "$test_host_dir" || exit 79
+    printf "%s\n" "$test_host_dir/catalog.sqlite3" > "$FSD_PREVIEW_TEST_HOST_ALIAS_RECORD"
+    exec "$FSD_PREVIEW_BINARY" -FSDCatalogPath "$FSD_CATALOG_PATH"
+  ' >"$XCTEST_LOG" 2>&1 &
+XCTEST_PID=$!
+for _ in $(seq 1 20); do
+  if grep -a -Eq "source: (internalPreview|testHost)|FSD startup failed" "$XCTEST_LOG"; then break; fi
+  sleep 0.5
+done
+if ! grep -a -q "source: internalPreview" "$XCTEST_LOG"; then
+  kill "$XCTEST_PID" 2>/dev/null || true
+  wait "$XCTEST_PID" 2>/dev/null || true
+  echo "error: spoofed XCTest environment did not resolve the dedicated Preview catalog." >&2
+  cat "$XCTEST_LOG" >&2
+  exit 1
+fi
+sleep 2
+kill "$XCTEST_PID" 2>/dev/null || true
+wait "$XCTEST_PID" 2>/dev/null || true
+
+XCTEST_HOST_ALIAS="$(cat "$XCTEST_ALIAS_RECORD")"
+if [[ "$XCTEST_HOST_ALIAS" != "$XCTEST_TMP"/FSD-TestHost-*/catalog.sqlite3 ]]; then
+  echo "error: synthetic test-host alias path was not created where expected: $XCTEST_HOST_ALIAS" >&2
+  exit 1
+fi
+if [[ ! -L "$(dirname "$XCTEST_HOST_ALIAS")" ]] || [[ "$(readlink "$(dirname "$XCTEST_HOST_ALIAS")")" != "$XCTEST_SENTINEL_DIR" ]]; then
+  echo "error: generated test-host path is not aliased to the synthetic sentinel." >&2
+  exit 1
+fi
+XCTEST_SMOKE_LINE="$(grep -a '^FSD Internal Preview catalog: ' "$XCTEST_LOG" | head -1)"
+if [[ "$XCTEST_SMOKE_LINE" != *"$XCTEST_EXPECTED_PREVIEW"* ]]; then
+  echo "error: spoofed XCTest environment resolved the wrong catalog:" >&2
+  echo "       expected: $XCTEST_EXPECTED_PREVIEW" >&2
+  echo "       resolved: $XCTEST_SMOKE_LINE" >&2
+  cat "$XCTEST_LOG" >&2
+  exit 1
+fi
+if grep -a -F -q "$XCTEST_HOST_ALIAS" "$XCTEST_LOG" || grep -a -q "source: testHost" "$XCTEST_LOG"; then
+  echo "error: Preview followed the synthetic test-host alias." >&2
+  cat "$XCTEST_LOG" >&2
+  exit 1
+fi
+if [[ ! -f "$XCTEST_EXPECTED_PREVIEW" ]]; then
+  echo "error: the synthetic dedicated Preview catalog was not opened." >&2
+  cat "$XCTEST_LOG" >&2
+  exit 1
+fi
+XCTEST_SENTINEL_AFTER="$(shasum -a 256 "$XCTEST_SENTINEL_DIR/catalog.sqlite3" | awk '{print $1}')"
+XCTEST_PROD_AFTER="$(shasum -a 256 "$XCTEST_PROD_DIR/catalog.sqlite3" | awk '{print $1}')"
+if [[ "$XCTEST_SENTINEL_BEFORE" != "$XCTEST_SENTINEL_AFTER" ]]; then
+  echo "error: synthetic test-host alias sentinel changed during launch smoke." >&2
+  exit 1
+fi
+if [[ "$XCTEST_PROD_BEFORE" != "$XCTEST_PROD_AFTER" ]]; then
+  echo "error: synthetic production sentinel changed during launch smoke." >&2
+  exit 1
+fi
+echo "    $XCTEST_SMOKE_LINE"
+echo "    synthetic test-host alias: $XCTEST_HOST_ALIAS"
+echo "    spoofed XCTest keys ignored; synthetic test-host alias/sentinel unchanged ($XCTEST_SENTINEL_BEFORE)"
+rm -rf "$XCTEST_HOME" "$XCTEST_SENTINEL_DIR" "$XCTEST_INPUTS" "$WORK_DIR/launch-xctest-decoy"
+
 echo "==> Bounded symlink fail-closed smoke"
 # A filesystem symlink that aliases the preview directory onto the production
 # directory must make the shipped preview refuse to start rather than open
@@ -230,6 +363,7 @@ SYMLINK_APPSUP="$SYMLINK_HOME/Library/Application Support"
 SYMLINK_PROD="$SYMLINK_APPSUP/FSD"
 mkdir -p "$SYMLINK_PROD"
 printf 'synthetic-production-sentinel-task065r\n' > "$SYMLINK_PROD/catalog.sqlite3"
+SYMLINK_SENTINEL_BEFORE="$(shasum -a 256 "$SYMLINK_PROD/catalog.sqlite3" | awk '{print $1}')"
 ln -s "$SYMLINK_PROD" "$SYMLINK_APPSUP/FSD-Internal-Preview"
 SYMLINK_LOG="$WORK_DIR/launch-symlink.log"
 CFFIXED_USER_HOME="$SYMLINK_HOME" \
@@ -252,7 +386,13 @@ if ! grep -a -q "resolves onto the production FSD catalog" "$SYMLINK_LOG"; then
   cat "$SYMLINK_LOG" >&2
   exit 1
 fi
+SYMLINK_SENTINEL_AFTER="$(shasum -a 256 "$SYMLINK_PROD/catalog.sqlite3" | awk '{print $1}')"
+if [[ "$SYMLINK_SENTINEL_BEFORE" != "$SYMLINK_SENTINEL_AFTER" ]]; then
+  echo "error: synthetic production sentinel changed during symlink fail-closed smoke." >&2
+  exit 1
+fi
 echo "    symlinked preview refused to start (fail closed)"
+echo "    synthetic symlink target sentinel unchanged ($SYMLINK_SENTINEL_BEFORE)"
 rm -rf "$SYMLINK_HOME"
 
 echo "==> Computing bundle tree digest"
@@ -274,15 +414,17 @@ ZIP_SHA="$(shasum -a 256 "$ZIP_PATH" | awk '{print $1}')"
 ZIP_SIZE="$(stat -f '%z' "$ZIP_PATH")"
 
 echo "==> Writing build receipt"
-python3 - "$WORK_DIR" "$MANIFEST" "$BUILD_VERSION" "$DIRTY" "$BUNDLE_TREE_SHA" "$ZIP_SHA" "$ZIP_SIZE" "$ZIP_PATH" "$SMOKE_LINE" "$PROD_BEFORE" <<'PY'
+python3 - "$WORK_DIR" "$MANIFEST" "$BUILD_VERSION" "$DIRTY" "$BUNDLE_TREE_SHA" "$ZIP_SHA" "$ZIP_SIZE" "$ZIP_PATH" "$SMOKE_LINE" "$PROD_BEFORE" "$XCTEST_SMOKE_LINE" "$XCTEST_SENTINEL_BEFORE" "$XCTEST_HOST_ALIAS" "$SYMLINK_SENTINEL_BEFORE" <<'PY'
 import datetime, json, os, sys
 
 (work_dir, manifest_path, version, dirty, tree_sha, zip_sha, zip_size,
- zip_path, smoke_line, sentinel_sha) = sys.argv[1:]
+ zip_path, smoke_line, sentinel_sha, xctest_smoke_line, xctest_alias_sentinel_sha,
+ xctest_alias_path, symlink_target_sentinel_sha) = sys.argv[1:]
 manifest = json.load(open(manifest_path))
 receipt = {
     "flavor": manifest["flavor"],
     "task": manifest["task"],
+    "repair_task": manifest["repair_task"],
     "source_commit": version,
     "worktree_state": dirty or "clean",
     "configuration": manifest["configuration"],
@@ -301,6 +443,11 @@ receipt = {
     "launch_smoke_line": smoke_line,
     "launch_smoke_home": "CFFIXED_USER_HOME;generated_synthetic_only",
     "synthetic_production_sentinel_sha256": sentinel_sha,
+    "xctest_spoof_smoke_line": xctest_smoke_line,
+    "xctest_spoof_keys": ["XCTestConfigurationFilePath", "XCTestBundlePath", "XCTestSessionIdentifier"],
+    "synthetic_test_host_alias_path": xctest_alias_path,
+    "synthetic_test_host_alias_sentinel_sha256": xctest_alias_sentinel_sha,
+    "synthetic_symlink_target_sentinel_sha256": symlink_target_sentinel_sha,
     "owner_catalog_accessed": False,
     "built_at_utc": datetime.datetime.now(datetime.timezone.utc)
         .replace(microsecond=0).isoformat(),

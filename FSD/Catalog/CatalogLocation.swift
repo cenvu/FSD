@@ -1,4 +1,5 @@
 import Foundation
+import Darwin
 
 /// Where the catalog lives for this process, and why.
 ///
@@ -68,6 +69,7 @@ public enum CatalogLocationError: Error, LocalizedError, Equatable {
     case applicationSupportUnavailable
     case internalPreviewUnavailable
     case internalPreviewConflictsWithProduction
+    case internalPreviewIdentityUnavailable
     case emptyOverridePath
 
     public var errorDescription: String? {
@@ -78,6 +80,8 @@ public enum CatalogLocationError: Error, LocalizedError, Equatable {
             return "The Application Support directory is unavailable, so the Internal Preview catalog location cannot be resolved. The Internal Preview never falls back to the production catalog."
         case .internalPreviewConflictsWithProduction:
             return "The Internal Preview catalog location resolves onto the production FSD catalog, so the Internal Preview refuses to start. The Internal Preview never opens the production catalog."
+        case .internalPreviewIdentityUnavailable:
+            return "The Internal Preview could not verify that its catalog location is separate from the production FSD catalog, so it refuses to start."
         case .emptyOverridePath:
             return "The requested catalog path override is empty."
         }
@@ -139,8 +143,8 @@ public enum CatalogLocationResolver {
         let requested = requestedOverride(arguments: arguments, environment: environment)
 
         // Internal Preview flavor. It resolves only its dedicated catalog and
-        // never consults the production path. The XCTest host still gets its own
-        // isolated synthetic catalog so automated runs never touch preview data.
+        // never consults the production path. Test-host isolation is a Debug
+        // production-build affordance compiled out of Preview.
         //
         // There is deliberately no runtime catalog override in this flavor: no
         // launch argument, environment variable, test seam or symlink may move
@@ -148,13 +152,6 @@ public enum CatalogLocationResolver {
         // production catalog. `internalPreviewURL` fails closed if the preview
         // location aliases the production location.
         if flavor == .internalPreview {
-            if isRunningAsTestHost(environment: environment) {
-                return CatalogLocation(
-                    url: testHostCatalogURL(),
-                    origin: .testHost,
-                    rejectedOverridePath: requested?.path
-                )
-            }
             return CatalogLocation(
                 url: try internalPreviewURL(fileManager: fileManager),
                 origin: .internalPreview,
@@ -172,6 +169,7 @@ public enum CatalogLocationResolver {
         // model would open the person's real catalog, migrate it, and hold the
         // process lock on it for the duration of every test run. An automated
         // run must never reach a real catalog, so the test host gets its own.
+#if DEBUG && !FSD_INTERNAL_PREVIEW
         if isRunningAsTestHost(environment: environment) {
             return CatalogLocation(
                 url: testHostCatalogURL(),
@@ -179,6 +177,7 @@ public enum CatalogLocationResolver {
                 rejectedOverridePath: requested?.path
             )
         }
+#endif
         guard let requested else {
             return CatalogLocation(url: try defaultURL(fileManager: fileManager), origin: .applicationSupport)
         }
@@ -205,6 +204,7 @@ public enum CatalogLocationResolver {
     }
 
     /// Set by XCTest in the host process it injects into.
+#if DEBUG && !FSD_INTERNAL_PREVIEW
     public static let testHostEnvironmentKeys = ["XCTestConfigurationFilePath", "XCTestBundlePath", "XCTestSessionIdentifier"]
 
     public static func isRunningAsTestHost(
@@ -220,6 +220,7 @@ public enum CatalogLocationResolver {
             .appendingPathComponent("FSD-TestHost-\(ProcessInfo.processInfo.processIdentifier)", isDirectory: true)
             .appendingPathComponent(CatalogDatabase.defaultDatabaseFileName, isDirectory: false)
     }
+#endif
 
     public static func defaultURL(fileManager: FileManager = .default) throws -> URL {
         guard let applicationSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
@@ -234,10 +235,9 @@ public enum CatalogLocationResolver {
     /// fallback to the production `FSD/catalog.sqlite3` path: if the Application
     /// Support directory cannot be resolved the preview fails loudly instead.
     ///
-    /// The location is also verified against the production location after
-    /// resolving symbolic links, so a symlinked `FSD-Internal-Preview` directory
-    /// (or catalog file) that aliases the production catalog fails closed instead
-    /// of opening production data.
+    /// The location is verified against the production location after resolving
+    /// symbolic links and comparing filesystem identities. This rejects
+    /// symlink, case-folded and hardlink aliases before catalog open.
     public static func internalPreviewURL(fileManager: FileManager = .default) throws -> URL {
         guard let applicationSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
             throw CatalogLocationError.internalPreviewUnavailable
@@ -250,11 +250,38 @@ public enum CatalogLocationResolver {
             .appendingPathComponent(productionDirectoryName, isDirectory: true)
         let productionURL = productionDirectory
             .appendingPathComponent(CatalogDatabase.defaultDatabaseFileName, isDirectory: false)
-        if canonicalPath(previewDirectory) == canonicalPath(productionDirectory)
-            || canonicalPath(previewURL) == canonicalPath(productionURL) {
+        if try filesystemAliases(previewDirectory, productionDirectory)
+            || filesystemAliases(previewURL, productionURL) {
             throw CatalogLocationError.internalPreviewConflictsWithProduction
         }
         return previewURL
+    }
+
+    private struct FileSystemIdentity: Equatable {
+        let device: UInt64
+        let inode: UInt64
+    }
+
+    /// Compare device/inode identity for existing items, then fall back to
+    /// canonical names for paths that do not exist yet. Filesystem identity
+    /// catches case aliases and hardlinks that have different path strings.
+    private static func filesystemAliases(_ first: URL, _ second: URL) throws -> Bool {
+        let firstIdentity = try filesystemIdentity(at: first)
+        let secondIdentity = try filesystemIdentity(at: second)
+        if let firstIdentity, let secondIdentity, firstIdentity == secondIdentity {
+            return true
+        }
+        return canonicalPath(first) == canonicalPath(second)
+    }
+
+    private static func filesystemIdentity(at url: URL) throws -> FileSystemIdentity? {
+        var metadata = stat()
+        let result = url.path.withCString { Darwin.fstatat(AT_FDCWD, $0, &metadata, 0) }
+        if result == 0 {
+            return FileSystemIdentity(device: UInt64(metadata.st_dev), inode: UInt64(metadata.st_ino))
+        }
+        if errno == ENOENT || errno == ENOTDIR { return nil }
+        throw CatalogLocationError.internalPreviewIdentityUnavailable
     }
 
     /// A symlink-resolved, standardised path used only for the fail-closed
